@@ -1,0 +1,187 @@
+from langchain_core.messages import AIMessage
+import json
+from langchain_ollama import ChatOllama
+from langchain_openai import ChatOpenAI
+from PIL import Image
+import io
+from src.multi_agent_analyst.agents.execution_agents import controller_agent
+from src.multi_agent_analyst.utils.utils import object_store, context
+from src.multi_agent_analyst.graph.states import GraphState, CriticStucturalResponse, Plan, RevisionState, IntentSchema
+from src.multi_agent_analyst.prompts.graph.planner import  GLOBAL_PLANNER_PROMPT
+from src.multi_agent_analyst.prompts.graph.critic import CRITIC_PROMPT
+from src.multi_agent_analyst.prompts.graph.revision import PLAN_REVISION_PROMPT
+from src.multi_agent_analyst.prompts.graph.summarizer import SUMMARIZER_PROMPT
+from src.multi_agent_analyst.prompts.chat.intent_classifier import CHAT_INTENT_PROMPT
+
+
+ollama_llm=ChatOllama(model='gpt-oss:20b', temperature=0)
+llm=ChatOpenAI(model='gpt-4.1-mini')
+
+
+def planner_node(state: GraphState):
+    plan=ollama_llm.with_structured_output(Plan).invoke(GLOBAL_PLANNER_PROMPT.format(query=state.query))
+    return {'plan':plan}
+
+def critic(state:GraphState):
+    
+    print(' ')
+    print('CRITIC RECIVED A PLAN ')
+    print(' ')
+    print(state)
+    plan=state.plan
+    query=state.query
+
+    print(plan)
+    print(' ')
+    print(query)
+
+    response=llm.with_structured_output(CriticStucturalResponse).invoke(CRITIC_PROMPT.format(query=query, plan=plan))
+    
+    print(response)
+    print(type(response))
+    fixable, requires_user_input, message_to_user, valid=response.fixable, response.requires_user_input, response.message_to_user, response.valid
+
+    return {'critic_output':response, 'message_to_user':message_to_user, 'fixable':fixable, 'requires_user_clarification':requires_user_input, 'valid':valid}
+
+
+def revision_node(state:GraphState):
+    print(' ')
+    print('REVISOR RECEIVED A PLAN')
+    print(' ')
+
+    critic_output, initial_plan, user_query, valid =state.critic_output, state.plan, state.query, state.valid
+
+    response=llm.with_structured_output(RevisionState).invoke(PLAN_REVISION_PROMPT.format(critic_output=critic_output, initial_plan=initial_plan, user_query=user_query))
+
+    fixed_plan, fixed_manually = response.fixed_plan, response.fixed_manually
+
+    return {'message_to_user':state.message_to_user, 'valid':valid, 'plan':fixed_plan, 'fixed_manually':fixed_manually}
+
+
+def router_node(state: GraphState):
+    result = controller_agent.invoke({
+        'messages': [
+            {'role':'user', 'content': str(state.plan)}
+        ]
+    })
+
+    ai_messages = [m for m in result["messages"] if isinstance(m, AIMessage)]
+    last_ai_msg = ai_messages[-1].content
+    d = json.loads(last_ai_msg)
+
+    id, summary=d['object_id'], d['summary']
+
+    print(id)
+    print(summary)
+
+    return {'final_obj_id':id, 'summary':summary}
+
+
+def summarizer_node(state:GraphState):
+    user_query=state.query
+
+    obj_id, summary=state.final_obj_id, state.summary
+
+    obj=object_store.get(obj_id)
+
+    if isinstance(obj, io.BytesIO):
+        img = Image.open(obj)
+        img.show()
+
+    llm=ChatOllama(model='gpt-oss:20b', temperature=0)
+
+    final_output=llm.invoke(SUMMARIZER_PROMPT.format(user_query=user_query, obj=obj, summary=summary)).content
+    return {'final_response':final_output}
+
+
+
+def revision_router(state: GraphState):
+    if state.valid:
+        return {'desicion':'valid'}
+    
+    if state.requires_user_clarification:
+        return {'desicion' : 'ask_user', 'message_to_user':state.message_to_user}
+    
+    if state.fixed_manually:        
+        return {'desicion':'critic'}
+
+    return {'desicion':'END'}
+
+
+def ask_user_node(state: GraphState):
+    print('SUSPENDING GRAPH FOR USER EXECUTION')
+    return {
+        "message_to_user": state.message_to_user,
+        "requires_user_clarification": True,
+        "awaiting_user_input": True,
+        'f':'suspended',
+        "interrupt": "user_input"
+
+    }
+
+def routing(state:GraphState):
+    return state.desicion
+
+
+def allow_execution(state:GraphState):
+    print(' ')
+    print('ALLOWING FINAL EXECUTION AFTER REVISING THE PLAN')
+    print(state.plan)
+    print(' ')
+
+    return state
+
+
+
+intent_llm = llm.with_structured_output(IntentSchema)
+
+def clarification_node(state: GraphState):
+    print(state.clarification)
+    print(state)
+    # Build the corrected query
+    new_query = state.query + " " + state.clarification
+    
+    print(new_query)
+
+    # Reset flags
+    return {
+        "query": new_query,
+        "requires_user_clarification": False,
+        "awaiting_user_input": False,
+        "desicion": "planner"
+    }
+
+def chat_node(state: GraphState):
+
+    user_msg = state.query
+
+    # 1. Update memory
+    state.conversation_history.append({"role": "user", "content": user_msg})
+
+    # 2. If system is expecting clarification → skip classification
+    if state.requires_user_clarification:
+        return {
+            "desicion": "clarification",
+            "clarification": user_msg
+        }
+
+    # 3. Classify intent normally
+    intent = intent_llm.invoke(
+        CHAT_INTENT_PROMPT)
+
+    # 4. Route based on intent
+    if intent.intent == "plan":
+        return {"desicion": "planner"}
+
+    if intent.intent == "clarification":
+        return {"desicion": "clarification"}
+
+    return {}
+def chat_reply(state:GraphState):
+    reply = llm.invoke(
+        f"You are a helpful assistant. Respond naturally to: {state.query}"
+    ).content
+
+    return {
+        "final_response": reply
+    }
