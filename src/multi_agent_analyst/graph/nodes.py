@@ -4,7 +4,7 @@ from langchain_ollama import ChatOllama
 from langchain_openai import ChatOpenAI
 from PIL import Image
 import io
-from src.multi_agent_analyst.react_agents.execution_agents import controller_agent
+from src.multi_agent_analyst.react_agents.controller_agent import controller_agent
 from src.multi_agent_analyst.utils.utils import object_store, context
 from src.multi_agent_analyst.graph.states import GraphState, CriticStucturalResponse, Plan, RevisionState, IntentSchema
 from src.multi_agent_analyst.prompts.graph.planner import  GLOBAL_PLANNER_PROMPT
@@ -26,14 +26,10 @@ def critic(state:GraphState):
     
     print(' ')
     print('CRITIC RECIVED A PLAN ')
-    print(' ')
-    print(state)
+
     plan=state.plan
     query=state.query
 
-    print(plan)
-    print(' ')
-    print(query)
 
     response=llm.with_structured_output(CriticStucturalResponse).invoke(CRITIC_PROMPT.format(query=query, plan=plan))
     
@@ -70,9 +66,6 @@ def router_node(state: GraphState):
     d = json.loads(last_ai_msg)
 
     id, summary=d['object_id'], d['summary']
-
-    print(id)
-    print(summary)
 
     return {'final_obj_id':id, 'summary':summary}
 
@@ -136,13 +129,10 @@ def allow_execution(state:GraphState):
 intent_llm = llm.with_structured_output(IntentSchema)
 
 def clarification_node(state: GraphState):
-    print(state.clarification)
-    print(state)
+
     # Build the corrected query
     new_query = state.query + " " + state.clarification
     
-    print(new_query)
-
     # Reset flags
     return {
         "query": new_query,

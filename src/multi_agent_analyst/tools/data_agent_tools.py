@@ -17,6 +17,7 @@ def make_sql_query_tool():
         conn = get_conn()
         df = pd.read_sql_query(query, conn)
         conn.close()
+        print(df)
         return object_store.save(df)
 
     return StructuredTool.from_function(

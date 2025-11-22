@@ -25,6 +25,7 @@ def load_sample_tables():
                 "description": f"SQL table with information about {table.replace('_', ' ')}",
                 "columns": df
             }
+            print(df)
         except Exception as e:
             # If table doesn't exist, skip instead of crashing
             output[table] = {
@@ -34,3 +35,4 @@ def load_sample_tables():
 
     conn.close()
     return output
+

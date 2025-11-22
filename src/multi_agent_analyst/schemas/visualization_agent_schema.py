@@ -8,7 +8,7 @@ class ScatterPlotSchema(BaseModel):
     pass
 
 class PieChartSchema(BaseModel):
-    pass
+    column_names:List[str]=Field(..., description='The names of the target columns for the pie chart')
 
 class TableVisualizationSchema(BaseModel):
     pass
