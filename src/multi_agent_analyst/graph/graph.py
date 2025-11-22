@@ -1,6 +1,6 @@
 from langgraph.graph import StateGraph, END
 from langgraph.checkpoint.memory import InMemorySaver
-from src.multi_agent_analyst.graph.nodes import planner_node, critic, router_node, routing, revision_node, revision_router, allow_execution, summarizer_node, chat_node, chat_reply, ask_user_node, clarification_node
+from src.multi_agent_analyst.graph.nodes import planner_node, critic, router_node, routing, revision_node, revision_router, allow_execution, summarizer_node, chat_node, chat_reply, ask_user_node, clarification_node, context_node
 from src.multi_agent_analyst.graph.states import GraphState
 
 
@@ -17,9 +17,10 @@ graph.add_node('ask_user', ask_user_node)
 graph.add_node('chat_node', chat_node)
 graph.add_node('chat_reply', chat_reply)
 graph.add_node("clarification_node", clarification_node)
-
+graph.add_node('context_node', context_node)
 
 graph.set_entry_point('chat_node')
+graph.add_edge('chat_node', 'context_node')
 graph.add_conditional_edges('chat_node', routing, {'chat':'chat_reply', 'planner': 'planner', 'clarification':'ask_user'})
 graph.add_edge('ask_user', 'clarification_node')
 graph.add_edge('clarification_node', 'planner')
@@ -33,4 +34,6 @@ graph.add_edge('router_node', 'summarizer_node')
 
 g = graph.compile(checkpointer=InMemorySaver())
 
-#implement memory, fix tools, 
+#FIX CHAT NODES
+
+#chat node - accept the incoming query - classify it and send to respective agents 

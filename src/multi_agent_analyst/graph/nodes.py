@@ -7,12 +7,13 @@ import io
 import base64
 from src.multi_agent_analyst.react_agents.controller_agent import controller_agent
 from src.multi_agent_analyst.utils.utils import object_store, context
-from src.multi_agent_analyst.graph.states import GraphState, CriticStucturalResponse, Plan, RevisionState, IntentSchema
+from src.multi_agent_analyst.graph.states import GraphState, CriticStucturalResponse, Plan, RevisionState, IntentSchema, ContextSchema
 from src.multi_agent_analyst.prompts.graph.planner import  GLOBAL_PLANNER_PROMPT
 from src.multi_agent_analyst.prompts.graph.critic import CRITIC_PROMPT
 from src.multi_agent_analyst.prompts.graph.revision import PLAN_REVISION_PROMPT
 from src.multi_agent_analyst.prompts.graph.summarizer import SUMMARIZER_PROMPT
 from src.multi_agent_analyst.prompts.chat.intent_classifier import CHAT_INTENT_PROMPT
+from src.multi_agent_analyst.prompts.chat.context_agent import CONTEXT_AGENT_PROMPT
 
 
 ollama_llm=ChatOllama(model='gpt-oss:20b', temperature=0)
@@ -20,7 +21,13 @@ llm=ChatOpenAI(model='gpt-4.1-mini')
 
 
 def planner_node(state: GraphState):
-    plan=ollama_llm.with_structured_output(Plan).invoke(GLOBAL_PLANNER_PROMPT.format(query=state.query))
+    print(' ')
+    print('PLAN RECEIVED')
+    print(' ')
+    
+    plan=llm.with_structured_output(Plan).invoke(GLOBAL_PLANNER_PROMPT.format(query=state.query))
+    print(plan)
+    print(' ')
     return {'plan':plan}
 
 def critic(state:GraphState):
@@ -146,27 +153,30 @@ def chat_node(state: GraphState):
     user_msg = state.query
 
     # 1. Update memory
-    state.conversation_history.append({"role": "user", "content": user_msg})
+    print(' ')
+    print('CONVERSATION SO FAR')
+    print(state.conversation_history)
+    print(' ')
 
+    new_history = state.conversation_history + [
+        {"role": "user", "content": user_msg}
+    ]
     # 2. If system is expecting clarification → skip classification
-    if state.requires_user_clarification:
-        return {
-            "desicion": "clarification",
-            "clarification": user_msg
-        }
-
     # 3. Classify intent normally
     intent = intent_llm.invoke(
-        CHAT_INTENT_PROMPT)
-
+        CHAT_INTENT_PROMPT.format(user_query=user_msg))
+    print(intent)
     # 4. Route based on intent
     if intent.intent == "plan":
-        return {"desicion": "planner"}
+        return {"desicion": "planner", 'conversation_history':new_history}
+    
+    if intent.intent == "chat":
+        return {"desicion": "chat"}
 
-    if intent.intent == "clarification":
-        return {"desicion": "clarification"}
+    return {
+        "conversation_history": new_history
+    }
 
-    return {}
 def chat_reply(state:GraphState):
     reply = llm.invoke(
         f"You are a helpful assistant. Respond naturally to: {state.query}"
@@ -175,3 +185,18 @@ def chat_reply(state:GraphState):
     return {
         "final_response": reply
     }
+
+#refactor react agents (architecture/tools), add memory for the session
+
+#context node that utilizes memory, and rewrites the query.
+
+def context_node(state:GraphState):
+    user_query, conversational_history=state.query, state.conversation_history
+
+    clean_query=llm.with_structured_output(ContextSchema).invoke(CONTEXT_AGENT_PROMPT.format(user_msg=user_query, conversation_history=conversational_history))
+    print(' ')
+    print(conversational_history)
+    print('REWRITTEN QUERY')
+    print(clean_query)
+    print(' ')
+    return {"clean_query": str(clean_query)}
