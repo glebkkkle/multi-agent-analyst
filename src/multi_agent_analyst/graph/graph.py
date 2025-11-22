@@ -31,46 +31,6 @@ graph.add_conditional_edges('revision_router', routing, {'valid':'finalizer', 'a
 graph.add_edge('finalizer', 'router_node')
 graph.add_edge('router_node', 'summarizer_node')
 
-
-# graph.add_node('router', router_node)
-# graph.add_node('finalizer', finalizer_node)
-
-
-# graph.set_entry_point('planner')
-# graph.add_edge('planner','router')
-# graph.add_edge('router', 'finalizer')
-# graph.add_edge('finalizer', END)
-
-
 g = graph.compile(checkpointer=InMemorySaver())
 
-# thread_id = "user-123"
-
-# events = g.stream(
-#     {"query": "visualize profit,units_sold, revenue"},
-#     config={"configurable": {"thread_id": thread_id}}
-# )
-
-# for event in events:
-#     print(event)
-#     print(' ')
-
-#     # STOP HERE if interruption requested
-#     if "ask_user" in event:
-#         print("❗ WAITING FOR USER CLARIFICATION")
-#         print("MESSAGE_TO_USER:", event["ask_user"]["message_to_user"])
-#         break
-
-# new_state=g.update_state({'configurable':{'thread_id':thread_id}}, values={'clarification':'with a pie chart'})
-
-# events = g.stream(
-#     None,
-#     config=new_state
-# )
-
-# for event in events:
-#     print(' ')
-#     print('RESUMING GRAPH')
-#     print(' ')
-#     print(event)
-    
+#implement memory, fix tools, 

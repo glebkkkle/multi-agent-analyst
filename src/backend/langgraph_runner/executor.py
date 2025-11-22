@@ -15,9 +15,18 @@ def run_initial_graph(thread_id: str, message: str):
                 "message_to_user": event["ask_user"]["message_to_user"],
             }
 
+    # Extract data from summarizer_node
+    summarizer_data = final.get("summarizer_node", {})
+    
     return {
         "status": "completed",
-        "result": final,
+        "result": {
+            "summarizer_node": {
+                "final_response": summarizer_data.get("final_response"),
+                "image_base64": summarizer_data.get("image_base64"),
+                "final_obj_id": summarizer_data.get("final_obj_id")
+            }
+        }
     }
 
 
@@ -33,7 +42,16 @@ def resume_graph(thread_id: str, clarification: str):
     for event in events:
         final = event
 
+    # Extract data from summarizer_node
+    summarizer_data = final.get("summarizer_node", {})
+    
     return {
         "status": "completed",
-        "result": final,
+        "result": {
+            "summarizer_node": {
+                "final_response": summarizer_data.get("final_response"),
+                "image_base64": summarizer_data.get("image_base64"),
+                "final_obj_id": summarizer_data.get("final_obj_id")
+            }
+        }
     }
