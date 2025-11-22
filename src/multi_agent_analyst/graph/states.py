@@ -8,7 +8,6 @@ class CriticStucturalResponse(BaseModel):
     plan_errors:List[str]
     valid:bool
 
-
 class Step(BaseModel):
     id:str
     agent:str
@@ -18,7 +17,6 @@ class Step(BaseModel):
 
 class Plan(BaseModel):
     plan:List[Step]
-
 
 class RevisionState(BaseModel):
     fixed_plan:Plan
@@ -42,8 +40,6 @@ class GraphState(BaseModel):
     summary:str | None = None
     final_response:str | None = None
 
-    f:str=None
-    
     fixable:bool =False
 
     fixed_plan:Plan | None = None
@@ -55,7 +51,3 @@ class GraphState(BaseModel):
     critic_output: CriticStucturalResponse | None = None
     valid:bool=False
 
-
-class ExternalAgentSchema(BaseModel):
-    object_id:str=Field(..., description='A final ID of the object after all the modification completed.')
-    summary:str=Field(..., description='A short summary of steps peformed and final result')

@@ -1,8 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multi-Agent Analyst</title>
+    <link rel="stylesheet" href="style.css" />
+</head>
 <body>
-  <div id="chat-box"></div>
+    <div class="chat-container">
+        <div class="chat-header">
+            <h1>Multi-Agent Analyst</h1>
+            <p>Powered by AI • Ask anything about your data</p>
+        </div>
+        
+        <div id="messages"></div>
 
-  <input id="msg" placeholder="Type your message..." />
-  <button onclick="send()">Send</button>
+        <div class="input-container">
+            <input id="chat-input" type="text" placeholder="Ask me anything about your data..." />
+            <button id="send-btn">Send</button>
+        </div>
+    </div>
 
-  <script src="app.js"></script>
+    <script src="app.js"></script>
 </body>
+</html>

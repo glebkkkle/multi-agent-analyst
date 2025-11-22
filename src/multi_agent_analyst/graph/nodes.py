@@ -4,6 +4,7 @@ from langchain_ollama import ChatOllama
 from langchain_openai import ChatOpenAI
 from PIL import Image
 import io
+import base64
 from src.multi_agent_analyst.react_agents.controller_agent import controller_agent
 from src.multi_agent_analyst.utils.utils import object_store, context
 from src.multi_agent_analyst.graph.states import GraphState, CriticStucturalResponse, Plan, RevisionState, IntentSchema
@@ -23,18 +24,14 @@ def planner_node(state: GraphState):
     return {'plan':plan}
 
 def critic(state:GraphState):
-    
     print(' ')
     print('CRITIC RECIVED A PLAN ')
 
     plan=state.plan
     query=state.query
 
-
     response=llm.with_structured_output(CriticStucturalResponse).invoke(CRITIC_PROMPT.format(query=query, plan=plan))
     
-    print(response)
-    print(type(response))
     fixable, requires_user_input, message_to_user, valid=response.fixable, response.requires_user_input, response.message_to_user, response.valid
 
     return {'critic_output':response, 'message_to_user':message_to_user, 'fixable':fixable, 'requires_user_clarification':requires_user_input, 'valid':valid}
@@ -71,21 +68,27 @@ def router_node(state: GraphState):
 
 
 def summarizer_node(state:GraphState):
-    user_query=state.query
+    user_query = state.query
 
-    obj_id, summary=state.final_obj_id, state.summary
+    obj_id, summary = state.final_obj_id, state.summary
+    obj = object_store.get(obj_id)
 
-    obj=object_store.get(obj_id)
-
+    # If object is image BytesIO → convert to base64
+    image_base64 = None
     if isinstance(obj, io.BytesIO):
-        img = Image.open(obj)
-        img.show()
+        image_bytes = obj.getvalue()
+        image_base64 = base64.b64encode(image_bytes).decode("utf-8")
 
-    llm=ChatOllama(model='gpt-oss:20b', temperature=0)
+    llm = ChatOllama(model='gpt-oss:20b', temperature=0)
+    final_text = llm.invoke(SUMMARIZER_PROMPT.format(user_query=user_query, obj=obj, summary=summary)).content
 
-    final_output=llm.invoke(SUMMARIZER_PROMPT.format(user_query=user_query, obj=obj, summary=summary)).content
-    return {'final_response':final_output}
+    print(obj_id)
 
+    return {
+        "final_response": final_text,
+        "image_base64": image_base64,
+        "final_obj_id":obj_id
+    }
 
 
 def revision_router(state: GraphState):
@@ -107,7 +110,6 @@ def ask_user_node(state: GraphState):
         "message_to_user": state.message_to_user,
         "requires_user_clarification": True,
         "awaiting_user_input": True,
-        'f':'suspended',
         "interrupt": "user_input"
 
     }
@@ -123,8 +125,6 @@ def allow_execution(state:GraphState):
     print(' ')
 
     return state
-
-
 
 intent_llm = llm.with_structured_output(IntentSchema)
 
