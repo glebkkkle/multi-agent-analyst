@@ -23,9 +23,12 @@ class RevisionState(BaseModel):
     fixed_manually: bool
 
 class IntentSchema(BaseModel):
-    intent: Literal["plan", "clarification"]
+    intent: Literal["plan", "chat"]
     reason: str
     
+
+class ContextSchema(BaseModel):
+    clean_query:str
 
 class GraphState(BaseModel):
     query: str
@@ -33,6 +36,7 @@ class GraphState(BaseModel):
     plan: Plan | None = None
     desicion : str | None = None
     conversation_history: List[Dict[str, str]] = Field(default_factory=list)
+    clean_query:str | None = None
 
     awaiting_user_input : bool = False
 
@@ -51,3 +55,9 @@ class GraphState(BaseModel):
     critic_output: CriticStucturalResponse | None = None
     valid:bool=False
 
+
+    @staticmethod
+    def reducers():
+        return {
+            "conversation_history": lambda old, new: old + new
+        }
