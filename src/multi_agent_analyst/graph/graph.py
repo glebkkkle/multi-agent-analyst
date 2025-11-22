@@ -44,33 +44,33 @@ graph.add_edge('router_node', 'summarizer_node')
 
 g = graph.compile(checkpointer=InMemorySaver())
 
-thread_id = "user-123"
+# thread_id = "user-123"
 
-events = g.stream(
-    {"query": "visualize profit,units_sold, revenue"},
-    config={"configurable": {"thread_id": thread_id}}
-)
+# events = g.stream(
+#     {"query": "visualize profit,units_sold, revenue"},
+#     config={"configurable": {"thread_id": thread_id}}
+# )
 
-for event in events:
-    print(event)
-    print(' ')
+# for event in events:
+#     print(event)
+#     print(' ')
 
-    # STOP HERE if interruption requested
-    if "ask_user" in event:
-        print("❗ WAITING FOR USER CLARIFICATION")
-        print("MESSAGE_TO_USER:", event["ask_user"]["message_to_user"])
-        break
+#     # STOP HERE if interruption requested
+#     if "ask_user" in event:
+#         print("❗ WAITING FOR USER CLARIFICATION")
+#         print("MESSAGE_TO_USER:", event["ask_user"]["message_to_user"])
+#         break
 
-new_state=g.update_state({'configurable':{'thread_id':thread_id}}, values={'clarification':'with a pie chart'})
+# new_state=g.update_state({'configurable':{'thread_id':thread_id}}, values={'clarification':'with a pie chart'})
 
-events = g.stream(
-    None,
-    config=new_state
-)
+# events = g.stream(
+#     None,
+#     config=new_state
+# )
 
-for event in events:
-    print(' ')
-    print('RESUMING GRAPH')
-    print(' ')
-    print(event)
+# for event in events:
+#     print(' ')
+#     print('RESUMING GRAPH')
+#     print(' ')
+#     print(event)
     
