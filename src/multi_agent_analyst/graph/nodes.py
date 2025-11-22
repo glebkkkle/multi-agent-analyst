@@ -4,7 +4,7 @@ from langchain_ollama import ChatOllama
 from langchain_openai import ChatOpenAI
 from PIL import Image
 import io
-from src.multi_agent_analyst.agents.execution_agents import controller_agent
+from src.multi_agent_analyst.react_agents.execution_agents import controller_agent
 from src.multi_agent_analyst.utils.utils import object_store, context
 from src.multi_agent_analyst.graph.states import GraphState, CriticStucturalResponse, Plan, RevisionState, IntentSchema
 from src.multi_agent_analyst.prompts.graph.planner import  GLOBAL_PLANNER_PROMPT
