@@ -47,7 +47,7 @@ g = graph.compile(checkpointer=InMemorySaver())
 thread_id = "user-123"
 
 events = g.stream(
-    {"query": "visualize profit versus revenue with a scatter plot"},
+    {"query": "visualize profit,units_sold, revenue"},
     config={"configurable": {"thread_id": thread_id}}
 )
 

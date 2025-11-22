@@ -23,10 +23,10 @@ controller_agent = create_agent(
     response_format=ExternalAgentSchema,
 )
 
-plan=llm.with_structured_output(Plan).invoke(GLOBAL_PLANNER_PROMPT.format(query='Run correlation analysis on profit from sales table'))
+# plan=openai_llm.with_structured_output(Plan).invoke(GLOBAL_PLANNER_PROMPT.format(query='Run correlation analysis on profit column from sales table'))
 
-plan=str(plan)
-print(plan)
+# plan=str(plan)
+# print(plan)
 
-res=controller_agent.invoke({'messages':[{'role':'user', 'content':plan}]})
+# res=controller_agent.invoke({'messages':[{'role':'user', 'content':plan}]})
 

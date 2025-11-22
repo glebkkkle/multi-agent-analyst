@@ -39,6 +39,8 @@ def data_agent(data_agent_query: str, current_plan_step: str):
     print(last_msg)
     msg=json.loads(last_msg)
     final_obj_id=msg['object_id']
+    
+    print(object_store.get(final_obj_id))
 
     context.set("DataAgent", current_plan_step, final_obj_id)
 

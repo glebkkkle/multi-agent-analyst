@@ -45,7 +45,6 @@ def make_scatter_plot_tool(df):
 
 
 def make_line_plot_tool(df):
-
     def line_plot():
         # Find date column
         date_col = None
@@ -88,12 +87,12 @@ def make_line_plot_tool(df):
 def make_pie_chart_tool(df):
     """Factory: returns a pie chart tool bound to the given dataframe."""
 
-    def pie_chart(columns: list):
-        values = df[columns].iloc[0].tolist() if len(df) > 0 else []
-        labels = columns
+    def pie_chart(column_names: list):
+        values = df.iloc[0].tolist() if len(df) > 0 else []
+        
 
         plt.figure(figsize=(6, 6))
-        plt.pie(values, labels=labels)
+        plt.pie(values, labels=column_names)
         
         buf = io.BytesIO()
         plt.savefig(buf, format="png", bbox_inches="tight")
