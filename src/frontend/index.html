@@ -7,25 +7,114 @@
     <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-    <div class="chat-container">
-        <div class="chat-header">
-            <h1>Multi-Agent Analyst</h1>
-            <p>Powered by AI • Ask anything about your data</p>
-        </div>
-        
-        <div id="messages">
-            <div class="welcome-message">
-                <div class="welcome-avatar">🤖</div>
-                <div class="welcome-content">
-                    Hello! I'm your Multi-Agent Analyst. I can help you analyze your data, create visualizations, and answer any questions you have. What would you like to explore today?
+    <div class="noise-overlay"></div>
+    <div class="ambient-glow ambient-glow-1"></div>
+    <div class="ambient-glow ambient-glow-2"></div>
+    
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo-container">
+                    <div class="logo-icon">AI</div>
+                    <span class="logo-text">Analyst</span>
                 </div>
             </div>
-        </div>
+            
+            <nav class="sidebar-nav">
+                <div class="nav-section">
+                    <div class="nav-section-title">Navigation</div>
+                    <button class="nav-item active" data-page="chat">
+                        <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                        </svg>
+                        <span class="nav-text">Chat</span>
+                    </button>
+                    <button class="nav-item" data-page="data">
+                        <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="3" y="3" width="7" height="7"></rect>
+                            <rect x="14" y="3" width="7" height="7"></rect>
+                            <rect x="14" y="14" width="7" height="7"></rect>
+                            <rect x="3" y="14" width="7" height="7"></rect>
+                        </svg>
+                        <span class="nav-text">Data</span>
+                    </button>
+                    <button class="nav-item" data-page="tracker">
+                        <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="12" y1="1" x2="12" y2="23"></line>
+                            <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+                        </svg>
+                        <span class="nav-text">Tracker</span>
+                    </button>
+                </div>
+            </nav>
+            
+            <div class="sidebar-footer">
+                <div class="user-profile">
+                    <div class="user-avatar">U</div>
+                    <div class="user-info">
+                        <div class="user-name">User</div>
+                        <div class="user-status">
+                            <span class="status-indicator"></span>
+                            Online
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </aside>
 
-        <div class="input-container">
-            <input id="chat-input" type="text" placeholder="Ask me anything about your data..." />
-            <button id="send-btn">➤</button>
-        </div>
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Chat Page -->
+            <div class="page active" id="chat-page">
+                <div class="chat-container">
+                    <div class="chat-header">
+                        <div class="chat-title">Multi-Agent Analyst</div>
+                        <div class="chat-subtitle">AI-powered data analysis</div>
+                    </div>
+                    
+                    <div id="messages"></div>
+
+                    <div class="input-container">
+                        <div class="input-wrapper">
+                            <input id="chat-input" type="text" placeholder="Ask anything..." />
+                            <button id="send-btn">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <line x1="22" y1="2" x2="11" y2="13"></line>
+                                    <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Data Page -->
+            <div class="page" id="data-page">
+                <div class="empty-state">
+                    <svg class="empty-icon" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                        <rect x="3" y="3" width="7" height="7"></rect>
+                        <rect x="14" y="3" width="7" height="7"></rect>
+                        <rect x="14" y="14" width="7" height="7"></rect>
+                        <rect x="3" y="14" width="7" height="7"></rect>
+                    </svg>
+                    <h2>Data Explorer</h2>
+                    <p>Your data sources will appear here</p>
+                </div>
+            </div>
+
+            <!-- Tracker Page -->
+            <div class="page" id="tracker-page">
+                <div class="empty-state">
+                    <svg class="empty-icon" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                        <line x1="12" y1="1" x2="12" y2="23"></line>
+                        <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+                    </svg>
+                    <h2>Performance Tracker</h2>
+                    <p>Analytics and metrics will be displayed here</p>
+                </div>
+            </div>
+        </main>
     </div>
 
     <script src="app.js"></script>

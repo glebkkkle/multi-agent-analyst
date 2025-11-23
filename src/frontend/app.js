@@ -6,6 +6,44 @@ const messagesDiv = document.getElementById("messages");
 const input = document.getElementById("chat-input");
 const sendBtn = document.getElementById("send-btn");
 
+// Navigation functionality
+const navItems = document.querySelectorAll('.nav-item');
+const pages = document.querySelectorAll('.page');
+
+
+navItems.forEach(item => {
+    item.addEventListener('click', () => {
+        const pageName = item.getAttribute('data-page');
+        
+        // Update active nav item
+        navItems.forEach(nav => nav.classList.remove('active'));
+        item.classList.add('active');
+        
+        // Update active page
+        pages.forEach(page => page.classList.remove('active'));
+        document.getElementById(`${pageName}-page`).classList.add('active');
+
+        // 👇 FIX: whenever Chat page is selected, refocus the input
+        if (pageName === 'chat') {
+            setTimeout(() => input.focus(), 0);
+        }
+    });
+});
+
+const chatPage = document.getElementById('chat-page');
+
+chatPage.addEventListener('click', (e) => {
+    // Don't override normal behaviour when actually clicking the input or send button
+    if (e.target.closest('#chat-input') || e.target.closest('#send-btn')) {
+        return;
+    }
+
+    // Only auto-focus if chat page is visible
+    if (chatPage.classList.contains('active')) {
+        input.focus();
+    }
+});
+// Chat functionality (unchanged backend logic)
 function addMessage(text, sender) {
     const wrapper = document.createElement("div");
     wrapper.classList.add("message", sender);

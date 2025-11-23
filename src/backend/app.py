@@ -15,8 +15,7 @@ app.add_middleware(
 )
 
 # Serve frontend
-app.mount("/frontend", StaticFiles(directory="src/frontend"), name="frontend")
-
+app.mount("/frontend", StaticFiles(directory="src/frontend", html=True), name="frontend")
 
 @app.post("/api/message")
 async def handle_message(payload: dict):

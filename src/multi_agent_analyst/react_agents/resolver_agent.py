@@ -11,19 +11,19 @@ from langchain_ollama import ChatOllama
 from langchain_openai import ChatOpenAI
 from langchain_core.tools import tool 
 from langchain.agents import create_agent
-openai_llm = ChatOllama(model="gpt-oss:20b", reasoning=True, temperature=0)
-llm = ChatOpenAI(model="gpt-4.1-mini")
+# openai_llm = ChatOllama(model="gpt-oss:20b", reasoning=True, temperature=0)
+# llm = ChatOpenAI(model="gpt-4.1-mini")
 
-log=ExecutionLogEntry(id='S1', agent='DataAgent', sub_query='Retrive sales data with sql tool', status='Error', output_object_id='12sfdgbd', inputs=[' '], outputs=['sales_data'])
+# log=ExecutionLogEntry(id='S1', agent='DataAgent', sub_query='Retrive sales data with sql tool', status='Error', output_object_id='12sfdgbd', inputs=[' '], outputs=['sales_data'])
 
 
-obj=ExecutionLogList()
+# obj=ExecutionLogList()
 
-obj.execution_log_list.setdefault('S1', log)
+# obj.execution_log_list.setdefault('S1', log)
 
-exception='Key Error: context.get[12sfdgbd]'
+# exception='Key Error: context.get[12sfdgbd]'
 
-context={'DataAgent':{'S1':'a324hdfs'}, 'AnalysisAgent':{'S2':'3sdkfjh'}}
+# context={'DataAgent':{'S1':'a324hdfs'}, 'AnalysisAgent':{'S2':'3sdkfjh'}}
 
 # @tool 
 def resolver_agent(failed_step:str, exception:str):
@@ -46,4 +46,4 @@ def resolver_agent(failed_step:str, exception:str):
     
     return 
 
-resolver_agent('S1', exception)
+# resolver_agent('S1', exception)

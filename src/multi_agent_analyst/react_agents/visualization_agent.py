@@ -46,7 +46,7 @@ def visualization_agent(visualizer_query: str, current_plan_step: str, data_id: 
     final_obj_id=msg['final_obj_id']
 
     context.set("VisualizationAgent", current_plan_step, final_obj_id)
-    log=ExecutionLogEntry(step_id=current_plan_step, agent='VisualizationAgent', sub_query=visualizer_query, status='success', output_object_id=final_obj_id)
+    log=ExecutionLogEntry(id=current_plan_step, agent='VisualizationAgent', sub_query=visualizer_query, status='success', output_object_id=final_obj_id)
     print(' ')
     print('VIZ AGENT LOG')
     print(log)
