@@ -233,7 +233,6 @@ async function sendMessage() {
         console.log("Final Response:", finalResponse);
         console.log("Image Base64:", imageBase64 ? "Present" : "Not present");
         console.log("Object ID:", objId);
-        console.log("Full result structure:", data.result);
 
         if (finalResponse) {
             addMessage(finalResponse, "bot");

@@ -14,6 +14,7 @@ from src.multi_agent_analyst.tools.visualization_agent_tools import (
     make_table_visualization_tool,
 )
 from src.multi_agent_analyst.utils.utils import context, object_store
+from src.multi_agent_analyst.schemas.resolver_agent_schema import ExecutionLogList, ExecutionLogEntry
 
 tool_llm = ChatOllama(model="gpt-oss:20b", temperature=0)
 
@@ -45,5 +46,11 @@ def visualization_agent(visualizer_query: str, current_plan_step: str, data_id: 
     final_obj_id=msg['final_obj_id']
 
     context.set("VisualizationAgent", current_plan_step, final_obj_id)
+    log=ExecutionLogEntry(step_id=current_plan_step, agent='VisualizationAgent', sub_query=visualizer_query, status='success', output_object_id=final_obj_id)
+    print(' ')
+    print('VIZ AGENT LOG')
+    print(log)
+    print(' ')
+
 
     return last_msg

@@ -47,33 +47,37 @@ def make_scatter_plot_tool(df):
 def make_line_plot_tool(df):
     def line_plot():
         # Find date column
-        date_col = None
-        for col in df.columns:
-            if "date" in col.lower():
-                date_col = col
-                break
+        try:
+            date_col = None
+            for col in df.columns:
+                if "date" in col.lower():
+                    date_col = col
+                    break
 
-        if date_col is None:
-            raise ValueError("Line plot requires a date column.")
+            if date_col is None:
+                raise ValueError("Line plot requires a date column.")
 
-        # choose first numeric column
-        numeric_cols = df.select_dtypes(include=['float', 'int']).columns
-        if len(numeric_cols) == 0:
-            raise ValueError("No numeric column to plot.")
+            # choose first numeric column
+            numeric_cols = df.select_dtypes(include=['float', 'int']).columns
+            if len(numeric_cols) == 0:
+                raise ValueError("No numeric column to plot.")
 
-        y_col = numeric_cols[0]
+            y_col = numeric_cols[0]
 
-        plt.figure(figsize=(10, 5))
-        plt.plot(df[date_col], df[y_col], marker="o")
-        plt.xlabel(date_col)
-        plt.ylabel(y_col)
-        plt.grid(True)
+            plt.figure(figsize=(10, 5))
+            plt.plot(df[date_col], df[y_col], marker="o")
+            plt.xlabel(date_col)
+            plt.ylabel(y_col)
+            plt.grid(True)
 
-        buf = io.BytesIO()
-        plt.savefig(buf, format="png")
-        buf.seek(0)
-        plt.close()
-
+            buf = io.BytesIO()
+            plt.savefig(buf, format="png")
+            buf.seek(0)
+            plt.close()
+        except Exception as e:
+            return {
+                'exception':e
+            }
         return object_store.save(buf)
 
     return StructuredTool.from_function(
@@ -88,16 +92,19 @@ def make_pie_chart_tool(df):
     """Factory: returns a pie chart tool bound to the given dataframe."""
 
     def pie_chart(column_names: list):
-        values = df.iloc[0].tolist() if len(df) > 0 else []
-        
+        try:
+            values = df.iloc[0].tolist() if len(df) > 0 else []
+            
 
-        plt.figure(figsize=(6, 6))
-        plt.pie(values, labels=column_names)
-        
-        buf = io.BytesIO()
-        plt.savefig(buf, format="png", bbox_inches="tight")
-        buf.seek(0)
-        plt.close()
+            plt.figure(figsize=(6, 6))
+            plt.pie(values, labels=column_names)
+            
+            buf = io.BytesIO()
+            plt.savefig(buf, format="png", bbox_inches="tight")
+            buf.seek(0)
+            plt.close()
+        except Exception as e:
+            return {'exception' : e}
 
         return object_store.save(buf)
 

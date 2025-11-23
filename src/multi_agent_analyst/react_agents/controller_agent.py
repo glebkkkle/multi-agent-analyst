@@ -23,6 +23,8 @@ controller_agent = create_agent(
     response_format=ExternalAgentSchema,
 )
 
+
+
 # plan=openai_llm.with_structured_output(Plan).invoke(GLOBAL_PLANNER_PROMPT.format(query='Run correlation analysis on profit column from sales table'))
 
 # plan=str(plan)
@@ -30,3 +32,4 @@ controller_agent = create_agent(
 
 # res=controller_agent.invoke({'messages':[{'role':'user', 'content':plan}]})
 
+#controller is passing ids around, so resolver might provide one if any agent fails 

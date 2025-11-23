@@ -14,7 +14,13 @@ from src.multi_agent_analyst.utils.utils import object_store
 
 def make_correlation_tool(df):
     def correlation():
-        result = df.corr(numeric_only=True)
+        try:
+            result = df.corr(numeric_only=True)
+        #format exception flag properly for the controller
+        except Exception as e:
+            return {
+                'exception': e
+            }
         return object_store.save(result)
 
     return StructuredTool.from_function(
@@ -27,15 +33,20 @@ def make_correlation_tool(df):
 
 def make_anomaly_tool(df):
     def anomaly():
-        numeric = df.select_dtypes(include=["int", "float"])
-        # if column:
-        #     numeric = numeric[[column]]
+        try:
+            numeric = df.select_dtypes(include=["int", "float"])
+            # if column:
+            #     numeric = numeric[[column]]
 
-        q1 = numeric.quantile(0.25)
-        q3 = numeric.quantile(0.75)
-        iqr = q3 - q1
+            q1 = numeric.quantile(0.25)
+            q3 = numeric.quantile(0.75)
+            iqr = q3 - q1
 
-        outliers = numeric[(numeric < q1 - 1.5 * iqr) | (numeric > q3 + 1.5 * iqr)]
+            outliers = numeric[(numeric < q1 - 1.5 * iqr) | (numeric > q3 + 1.5 * iqr)]
+        except Exception as e:
+            return {
+                'exception': e
+            }
         return object_store.save(outliers)
 
     return StructuredTool.from_function(
@@ -48,20 +59,26 @@ def make_anomaly_tool(df):
 
 def make_periodic_tool(df):
     def periodic(frequency: int):
-        dfc = df.copy()
-        dfc["date"] = pd.to_datetime(dfc["date"])
-        dfc = dfc.sort_values("date")
+        try:
+            dfc = df.copy()
+            dfc["date"] = pd.to_datetime(dfc["date"])
+            dfc = dfc.sort_values("date")
 
-        series = dfc.select_dtypes(include=["float", "int"]).values
-        series -= np.mean(series)
+            series = dfc.select_dtypes(include=["float", "int"]).values
+            series -= np.mean(series)
 
-        stl = STL(series, period=frequency, robust=True).fit()
+            stl = STL(series, period=frequency, robust=True).fit()
 
-        decomposition = {
-            "trend": stl.trend.tolist(),
-            "seasonal": stl.seasonal.tolist(),
-            "residual": stl.resid.tolist(),
-        }
+            decomposition = {
+                "trend": stl.trend.tolist(),
+                "seasonal": stl.seasonal.tolist(),
+                "residual": stl.resid.tolist(),
+            }
+
+        except Exception as e:
+            return {
+                'exception': e
+            }
 
         return object_store.save(decomposition)
 
@@ -75,7 +92,12 @@ def make_periodic_tool(df):
 
 def make_summary_tool(df):
     def summary():
-        stats = df.describe(include="all").to_dict()
+        try:
+            stats = df.describe(include="all").to_dict()
+        except Exception as e:
+            return {
+                'exception': e
+            }
         return object_store.save(stats)
 
     return StructuredTool.from_function(

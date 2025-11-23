@@ -14,10 +14,18 @@ def make_sql_query_tool():
     """Factory: returns a SQL query execution tool."""
 
     def sql_query(query: str):
-        conn = get_conn()
-        df = pd.read_sql_query(query, conn)
-        conn.close()
-        print(df)
+        try:
+            conn = get_conn()
+            df = pd.read_sql_query(query, conn)
+            conn.close()
+            print(df)
+
+        except Exception as e:
+            print(f'{e} was hit')
+            return {
+                'error_message':e, 
+
+            }
         return object_store.save(df)
 
     return StructuredTool.from_function(
@@ -32,8 +40,13 @@ def make_select_columns_tool():
     """Factory: returns a column-selection tool."""
 
     def select_columns(table_id: str, columns: list):
-        df = object_store.get(table_id)
-        result = df[columns]
+        try:
+            df = object_store.get(table_id)
+            result = df[columns]
+        except Exception as e:
+            return {
+                'exception': e
+            }
         return object_store.save(result)
 
     return StructuredTool.from_function(
@@ -48,10 +61,16 @@ def make_merge_tool():
     """Factory: returns a dataframe merge tool."""
 
     def merge_tables(left_id: str, right_id: str, on: str, how: str = "inner"):
-        left = object_store.get(left_id)
-        right = object_store.get(right_id)
+        try:
+            left = object_store.get(left_id)
+            right = object_store.get(right_id)
 
-        merged = left.merge(right, on=on, how=how)
+            merged = left.merge(right, on=on, how=how)
+
+        except Exception as e:
+            return {
+                'exception': e
+            }
         return object_store.save(merged)
 
     return StructuredTool.from_function(
