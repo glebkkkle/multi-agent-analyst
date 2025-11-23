@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import List, Dict, Literal
+from typing import List, Dict, Literal, Any 
 
 class CriticStucturalResponse(BaseModel):
     fixable:bool    
@@ -53,8 +53,13 @@ class GraphState(BaseModel):
     requires_user_clarification:bool=False
 
     critic_output: CriticStucturalResponse | None = None
-    valid:bool=False
+    valid:bool=False 
 
+    react_error:str | None = None
+    failed_agent: str | None = None
+    failed_step: str | None = None
+    error_message : str | None = None
+    _inputs: Dict[Any, Any] = {}
 
     @staticmethod
     def reducers():

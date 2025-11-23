@@ -15,6 +15,7 @@ from src.multi_agent_analyst.tools.analysis_agent_tools import (
 from src.multi_agent_analyst.prompts.react_agents.analysis_agent import ANALYST_AGENT_PROMPT
 from src.multi_agent_analyst.schemas.analysis_agent_schema import ExternalAgentSchema
 from src.multi_agent_analyst.utils.utils import context, object_store
+from src.multi_agent_analyst.schemas.resolver_agent_schema import ExecutionLogList, ExecutionLogEntry
 
 openai_llm = ChatOpenAI(model="gpt-4.1-mini")
 
@@ -40,15 +41,22 @@ def analysis_agent(analysis_query: str, current_plan_step: str, data_id: str):
         response_format=ExternalAgentSchema,
     )
 
+    #catch exception here, return with schema (ExternalAgentSchema) to controller that error occurred
+
     # 4) Execute LLM agent
     result = agent.invoke({"messages": [{"role": "user", "content": analysis_query}]})
 
     last = [m for m in result["messages"] if isinstance(m, AIMessage)][-1].content
-    print(result)
-    print(last)
+
     msg=json.loads(last)
     final_obj_id=msg['object_id']
     # 5) Save final output ID
+
     context.set("AnalysisAgent", current_plan_step,final_obj_id)
 
+    log=ExecutionLogEntry(step_id=current_plan_step, agent='AnalysisAgent', sub_query=analysis_query, status='success', output_object_id=final_obj_id)
+    print(' ')
+    print('ANALYSIS AGENT LOG')
+    print(log)
+    print(' ')
     return last

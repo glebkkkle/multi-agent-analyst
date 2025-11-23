@@ -16,6 +16,6 @@ ALL of the tools available already operate within a relevant table internally, s
 Your final response should follow the given schema :
    final_obj_id: str - The id of the final object after all the modifications has been completed
    summary: str - A short summary of performed steps that ensure accuracy.   
-
+   exception:Optional[str] | None - Optional error message (**ONLY** INDICATE WHEN ANY EXCEPTION OCCURRED DURING EXECUTION)
 Begin.
 """

@@ -25,7 +25,7 @@ def planner_node(state: GraphState):
     print('PLAN RECEIVED')
     print(' ')
     
-    plan=llm.with_structured_output(Plan).invoke(GLOBAL_PLANNER_PROMPT.format(query=state.query))
+    plan=llm.with_structured_output(Plan).invoke(GLOBAL_PLANNER_PROMPT.format(query=state.clean_query if state.clean_query else state.query))
     print(plan)
     print(' ')
     return {'plan':plan}
@@ -49,7 +49,7 @@ def revision_node(state:GraphState):
     print('REVISOR RECEIVED A PLAN')
     print(' ')
 
-    critic_output, initial_plan, user_query, valid =state.critic_output, state.plan, state.query, state.valid
+    critic_output, initial_plan, user_query, valid =state.critic_output, state.plan, state.clean_query, state.valid
 
     response=llm.with_structured_output(RevisionState).invoke(PLAN_REVISION_PROMPT.format(critic_output=critic_output, initial_plan=initial_plan, user_query=user_query))
 
@@ -64,9 +64,14 @@ def router_node(state: GraphState):
             {'role':'user', 'content': str(state.plan)}
         ]
     })
-
+    print(' ')
+    print('CONTROLLER AGENT')
+    
+    print(result)
+    print(' ')
     ai_messages = [m for m in result["messages"] if isinstance(m, AIMessage)]
     last_ai_msg = ai_messages[-1].content
+    
     d = json.loads(last_ai_msg)
 
     id, summary=d['object_id'], d['summary']
@@ -138,7 +143,7 @@ intent_llm = llm.with_structured_output(IntentSchema)
 def clarification_node(state: GraphState):
 
     # Build the corrected query
-    new_query = state.query + " " + state.clarification
+    new_query = state.clean_query + " " + state.clarification
     
     # Reset flags
     return {
@@ -186,17 +191,17 @@ def chat_reply(state:GraphState):
         "final_response": reply
     }
 
-#refactor react agents (architecture/tools), add memory for the session
-
-#context node that utilizes memory, and rewrites the query.
+#refactor react agents (architecture/tools)
 
 def context_node(state:GraphState):
     user_query, conversational_history=state.query, state.conversation_history
-
     clean_query=llm.with_structured_output(ContextSchema).invoke(CONTEXT_AGENT_PROMPT.format(user_msg=user_query, conversation_history=conversational_history))
     print(' ')
     print(conversational_history)
     print('REWRITTEN QUERY')
     print(clean_query)
+    print(clean_query.clean_query)
+
     print(' ')
-    return {"clean_query": str(clean_query)}
+
+    return {"clean_query": clean_query.clean_query}

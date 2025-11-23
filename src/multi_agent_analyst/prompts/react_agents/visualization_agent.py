@@ -25,4 +25,5 @@ VISUALIZATION_AGENT_PROMPT = """
 Your final response **MUST** follow the provided schema:
    final_obj_id: str - The id of the final object after all the modifications has been completed (provided by tools)
    summary: str - A short summary of performed steps that ensure accuracy.   
+   exception:Optional[str] | None - Optional error message (**ONLY** INDICATE WHEN ANY EXCEPTION OCCURRED DURING EXECUTION)
 """
