@@ -20,6 +20,7 @@ openai_llm = ChatOpenAI(model="gpt-4.1-mini")
 @tool
 def data_agent(data_agent_query: str, current_plan_step: str):
     """High-level DataAgent using SQL, selection, and merge tools."""
+    print('DATA AGENT IS HIT')
 
     tools = [
         make_sql_query_tool(),
@@ -36,18 +37,24 @@ def data_agent(data_agent_query: str, current_plan_step: str):
 
     result = agent.invoke({"messages": [{"role": "user", "content": data_agent_query}]})
 
+    print(result)
+
+    print('CONTINUING EXECUTION')
     last_msg = [m for m in result["messages"] if isinstance(m, AIMessage)][-1].content
 
     msg=json.loads(last_msg)
-    final_obj_id=msg['object_id']
-
-    log=ExecutionLogEntry(step_id=current_plan_step, agent='DataAgent', sub_query=data_agent_query, status='success', output_object_id=final_obj_id)
+    final_obj_id =msg['object_id']
+    exception=msg['exception']
+    print(exception)
+    print(type(exception))
+    print(final_obj_id)
+    log=ExecutionLogEntry(id=current_plan_step, agent='DataAgent', sub_query=data_agent_query, status='success' if exception is None else exception, output_object_id=final_obj_id, error_message=exception if exception is not None else None)
     print(' ')
     print('DATA AGENT LOG')
     print(log)
     print(' ')
     context.set("DataAgent", current_plan_step, final_obj_id)
-    
+    print(last_msg)
     return last_msg
 
 

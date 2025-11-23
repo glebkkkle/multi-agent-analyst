@@ -27,7 +27,7 @@ def make_sql_query_tool():
 
             }
         return object_store.save(df)
-
+    print('EXECUTED CORRECTLY')
     return StructuredTool.from_function(
         func=sql_query,
         name="sql_query",
