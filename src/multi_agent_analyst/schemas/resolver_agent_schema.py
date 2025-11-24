@@ -1,30 +1,6 @@
 from pydantic import BaseModel
 from typing import Optional, Any, List, Dict
-from src.multi_agent_analyst.prompts.react_agents.resolver_agent import RESOLVER_AGENT_PROMPT
-from langchain_ollama import ChatOllama
-from langchain_openai import ChatOpenAI
 from src.multi_agent_analyst.graph.states import Step
-# class ResolverAgentState(BaseModel):
-#     failed_step:str=''
-#     failed_agent:str=''
-#     execution_log:List=[]
-#     error_message=''
-
-openai_llm = ChatOllama(model="gpt-oss:20b", reasoning=True, temperature=0)
-llm = ChatOpenAI(model="gpt-4.1-mini")
-
-class ExecutionLogEntry(BaseModel):
-    id: str
-    agent: str
-    sub_query: str
-    inputs:List[str]=[]
-    outputs:List[str]=[]
-    status: str  # "success" | "error"
-    output_object_id: Optional[str] = None
-    error_message: str | None = None
-
-class ExecutionLogList(BaseModel):
-    execution_log_list:Dict[str, ExecutionLogEntry]={}
 
 class ResolverOutput(BaseModel):
     action: str 

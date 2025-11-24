@@ -13,8 +13,7 @@ from src.multi_agent_analyst.tools.visualization_agent_tools import (
     make_pie_chart_tool,
     make_table_visualization_tool,
 )
-from src.multi_agent_analyst.utils.utils import context, object_store
-from src.multi_agent_analyst.schemas.resolver_agent_schema import ExecutionLogList, ExecutionLogEntry
+from src.multi_agent_analyst.utils.utils import context, object_store, execution_list, ExecutionLogEntry
 
 tool_llm = ChatOllama(model="gpt-oss:20b", temperature=0)
 
@@ -52,5 +51,6 @@ def visualization_agent(visualizer_query: str, current_plan_step: str, data_id: 
     print(log)
     print(' ')
 
-
+    execution_list.execution_log_list.setdefault(current_plan_step, log)
+    print(execution_list.execution_log_list)
     return last_msg

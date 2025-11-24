@@ -1,4 +1,6 @@
 import uuid
+from typing import List, Optional, Dict
+from pydantic import BaseModel
 
 class ObjectStore:
     def __init__(self):
@@ -27,6 +29,20 @@ class CurrentToolContext:
     def get(self,agent, step_id):
         return self.dict[agent][step_id]
     
+class ExecutionLogEntry(BaseModel):
+    id: str
+    agent: str
+    sub_query: str
+    inputs:List[str]=[]
+    outputs:List[str]=[]
+    status: str  # "success" | "error"
+    output_object_id: Optional[str] = None
+    error_message: str | None = None
 
+class ExecutionLogList(BaseModel):
+    execution_log_list:Dict[str, ExecutionLogEntry]={}
+
+
+execution_list=ExecutionLogList()
 
 context=CurrentToolContext()

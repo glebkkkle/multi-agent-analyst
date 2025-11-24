@@ -8,6 +8,7 @@ from langchain_ollama import ChatOllama
 from src.multi_agent_analyst.react_agents.data_agent import data_agent
 from src.multi_agent_analyst.react_agents.analysis_agent import analysis_agent
 from src.multi_agent_analyst.react_agents.visualization_agent import visualization_agent
+from src.multi_agent_analyst.react_agents.resolver_agent import resolver_agent
 from src.multi_agent_analyst.graph.states import Plan
 from src.multi_agent_analyst.prompts.graph.planner import GLOBAL_PLANNER_PROMPT
 from pydantic import BaseModel, Field
@@ -16,21 +17,11 @@ from typing import Optional
 openai_llm = ChatOpenAI(model="gpt-4.1-mini")
 llm = ChatOllama(model="gpt-oss:20b", temperature=0)
 
-
 controller_agent = create_agent(
     model=openai_llm,
-    tools=[data_agent, analysis_agent, visualization_agent],
+    tools=[data_agent, analysis_agent, visualization_agent, resolver_agent],
     system_prompt=CONTROLLER_AGENT_PROMPT,
     response_format=ExternalAgentSchema,
 )
 
-
-
-# plan=openai_llm.with_structured_output(Plan).invoke(GLOBAL_PLANNER_PROMPT.format(query='Run correlation analysis on profit column from sales table'))
-
-# plan=str(plan)
-# print(plan)
-
-# res=controller_agent.invoke({'messages':[{'role':'user', 'content':plan}]})
-
-#controller is passing ids around, so resolver might provide one if any agent fails 
+#could potentially pass all the previous logs, for safety
