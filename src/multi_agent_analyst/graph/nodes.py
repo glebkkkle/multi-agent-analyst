@@ -15,7 +15,6 @@ from src.multi_agent_analyst.prompts.graph.summarizer import SUMMARIZER_PROMPT
 from src.multi_agent_analyst.prompts.chat.intent_classifier import CHAT_INTENT_PROMPT
 from src.multi_agent_analyst.prompts.chat.context_agent import CONTEXT_AGENT_PROMPT
 
-
 ollama_llm=ChatOllama(model='gpt-oss:20b', temperature=0)
 llm=ChatOpenAI(model='gpt-4.1-mini')
 
@@ -35,9 +34,8 @@ def critic(state:GraphState):
     print('CRITIC RECIVED A PLAN ')
 
     plan=state.plan
-    query=state.query
 
-    response=llm.with_structured_output(CriticStucturalResponse).invoke(CRITIC_PROMPT.format(query=query, plan=plan))
+    response=llm.with_structured_output(CriticStucturalResponse).invoke(CRITIC_PROMPT.format(query=state.clean_query, plan=plan))
     
     fixable, requires_user_input, message_to_user, valid=response.fixable, response.requires_user_input, response.message_to_user, response.valid
 
@@ -123,7 +121,6 @@ def ask_user_node(state: GraphState):
         "requires_user_clarification": True,
         "awaiting_user_input": True,
         "interrupt": "user_input"
-
     }
 
 def routing(state:GraphState):

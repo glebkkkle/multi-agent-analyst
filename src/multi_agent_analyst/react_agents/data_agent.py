@@ -13,8 +13,7 @@ import json
 from src.multi_agent_analyst.prompts.react_agents.data_agent import DATA_AGENT_PROMPT
 from src.multi_agent_analyst.utils.utils import context, object_store
 from src.multi_agent_analyst.schemas.data_agent_schema import ExternalAgentSchema
-from src.multi_agent_analyst.schemas.resolver_agent_schema import ExecutionLogList, ExecutionLogEntry
-
+from src.multi_agent_analyst.utils.utils import ExecutionLogEntry, execution_list
 openai_llm = ChatOpenAI(model="gpt-4.1-mini")
 
 @tool
@@ -48,13 +47,17 @@ def data_agent(data_agent_query: str, current_plan_step: str):
     print(exception)
     print(type(exception))
     print(final_obj_id)
+    
     log=ExecutionLogEntry(id=current_plan_step, agent='DataAgent', sub_query=data_agent_query, status='success' if exception is None else exception, output_object_id=final_obj_id, error_message=exception if exception is not None else None)
+    execution_list.execution_log_list.setdefault(current_plan_step, log)
+
     print(' ')
     print('DATA AGENT LOG')
     print(log)
     print(' ')
     context.set("DataAgent", current_plan_step, final_obj_id)
     print(last_msg)
+    print(execution_list.execution_log_list)
     return last_msg
 
 
