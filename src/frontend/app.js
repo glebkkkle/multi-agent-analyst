@@ -6,10 +6,75 @@ const messagesDiv = document.getElementById("messages");
 const input = document.getElementById("chat-input");
 const sendBtn = document.getElementById("send-btn");
 
+// Get Data page elements
+let dataFileInput;
+let dataUploadBtn;
+let dataUploadStatus;
+let dataSourceList;
+
+// Use event delegation on document to catch button clicks
+document.addEventListener("click", function(e) {
+    // Check if clicked element or any parent has the data-upload-btn id
+    const target = e.target.closest("#data-upload-btn");
+    if (target) {
+        console.log("Upload button clicked via event delegation!");
+        e.preventDefault();
+        e.stopPropagation();
+        uploadDataFile();
+    }
+});
+
+// Function to initialize data page elements
+function initDataPageListeners() {
+    dataFileInput = document.getElementById("data-file-input");
+    dataUploadBtn = document.getElementById("data-upload-btn");
+    dataUploadStatus = document.getElementById("data-upload-status");
+    dataSourceList = document.getElementById("data-source-list");
+    
+    console.log("Data page elements initialized:", {
+        dataFileInput: !!dataFileInput,
+        dataUploadBtn: !!dataUploadBtn,
+        dataUploadStatus: !!dataUploadStatus,
+        dataSourceList: !!dataSourceList
+    });
+    
+    // Force enable pointer events and clickability on ALL data page elements
+    const dataPage = document.getElementById("data-page");
+    if (dataPage) {
+        dataPage.style.pointerEvents = 'auto';
+        const allElements = dataPage.querySelectorAll('*');
+        allElements.forEach(el => {
+            el.style.pointerEvents = 'auto';
+        });
+        console.log("Enabled pointer-events on", allElements.length, "elements");
+    }
+    
+    // Ensure button has pointer-events enabled and log its computed style
+    if (dataUploadBtn) {
+        dataUploadBtn.style.pointerEvents = 'auto';
+        dataUploadBtn.style.cursor = 'pointer';
+        dataUploadBtn.style.zIndex = '9999';
+        const computedStyle = window.getComputedStyle(dataUploadBtn);
+        console.log("Button styles:", {
+            pointerEvents: computedStyle.pointerEvents,
+            display: computedStyle.display,
+            visibility: computedStyle.visibility,
+            cursor: computedStyle.cursor,
+            zIndex: computedStyle.zIndex
+        });
+    }
+}
+
+// Add mouseover detection to help debug
+document.addEventListener("mouseover", function(e) {
+    if (e.target && e.target.id === "data-upload-btn") {
+        console.log("Mouse is over the upload button!");
+    }
+});
+
 // Navigation functionality
 const navItems = document.querySelectorAll('.nav-item');
 const pages = document.querySelectorAll('.page');
-
 
 navItems.forEach(item => {
     item.addEventListener('click', () => {
@@ -23,9 +88,17 @@ navItems.forEach(item => {
         pages.forEach(page => page.classList.remove('active'));
         document.getElementById(`${pageName}-page`).classList.add('active');
 
-        // 👇 FIX: whenever Chat page is selected, refocus the input
+        // Refocus input when Chat page is selected
         if (pageName === 'chat') {
             setTimeout(() => input.focus(), 0);
+        }
+        
+        // Reinitialize data page listeners when switching to Data page
+        if (pageName === 'data') {
+            setTimeout(() => {
+                console.log("Switched to Data page, reinitializing listeners...");
+                initDataPageListeners();
+            }, 100);
         }
     });
 });
@@ -43,7 +116,8 @@ chatPage.addEventListener('click', (e) => {
         input.focus();
     }
 });
-// Chat functionality (unchanged backend logic)
+
+// Chat functionality
 function addMessage(text, sender) {
     const wrapper = document.createElement("div");
     wrapper.classList.add("message", sender);
@@ -308,6 +382,61 @@ async function sendMessage() {
     }
 }
 
+// ==== DATA PAGE LOGIC ====
+async function uploadDataFile() {
+    console.log("Upload button clicked!");
+
+    if (!dataFileInput) {
+        console.error("dataFileInput element not found!");
+        return;
+    }
+
+    const file = dataFileInput.files[0];
+    if (!file) {
+        dataUploadStatus.textContent = "❌ Please select a file.";
+        return;
+    }
+
+    dataUploadBtn.disabled = true;
+    dataUploadStatus.textContent = "⏳ Uploading...";
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    try {
+        console.log("Sending request to:", `${API_BASE}/upload_data`);
+        const resp = await fetch(`${API_BASE}/upload_data`, {
+            method: "POST",
+            body: formData
+        });
+
+        console.log("Response status:", resp.status);
+
+        if (!resp.ok) {
+            const errorText = await resp.text();
+            console.error("Upload failed:", errorText);
+            dataUploadStatus.textContent = "❌ Error: " + errorText;
+            return;
+        }
+
+        const result = await resp.json();
+        console.log("Server response:", result);
+
+        dataUploadStatus.textContent = `✅ Imported table '${result.table_name}' with ${result.rows} rows.`;
+
+        const el = document.createElement("div");
+        el.textContent = `📄 ${result.table_name} — ${result.rows} rows`;
+        dataSourceList.appendChild(el);
+
+    } catch (err) {
+        console.error("Upload error:", err);
+        dataUploadStatus.textContent = "❌ Error occurred: " + err.message;
+    } finally {
+        dataUploadBtn.disabled = false;
+    }
+}
+
+// Event Listeners
 sendBtn.addEventListener("click", sendMessage);
 input.addEventListener("keypress", (e) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -318,4 +447,8 @@ input.addEventListener("keypress", (e) => {
 
 window.addEventListener("load", () => {
     input.focus();
+    
+    // Initialize data page listeners on load
+    console.log("Page loaded, initializing data page...");
+    initDataPageListeners();
 });

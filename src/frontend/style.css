@@ -1031,3 +1031,13 @@ body {
         max-width: 85%;
     }
 }
+
+.data-upload-container,
+.data-upload-container * {
+    pointer-events: auto !important;
+}
+
+#data-upload-btn {
+    pointer-events: auto !important;
+    cursor: pointer !important;
+}
