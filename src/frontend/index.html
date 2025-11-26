@@ -91,15 +91,21 @@
 
             <!-- Data Page -->
             <div class="page" id="data-page">
-                <div class="empty-state">
-                    <svg class="empty-icon" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                        <rect x="3" y="3" width="7" height="7"></rect>
-                        <rect x="14" y="3" width="7" height="7"></rect>
-                        <rect x="14" y="14" width="7" height="7"></rect>
-                        <rect x="3" y="14" width="7" height="7"></rect>
-                    </svg>
-                    <h2>Data Explorer</h2>
-                    <p>Your data sources will appear here</p>
+                <div class="data-upload-container">
+                    <h2>📁 Upload Data Source</h2>
+
+                    <p>Upload a CSV or Excel (.xlsx) file and convert it to SQL.</p>
+
+                    <input type="file" id="data-file-input" accept=".csv, .xlsx">
+
+                    <button id="data-upload-btn">Upload & Convert</button>
+
+                    <div id="data-upload-status"></div>
+
+                    <hr>
+
+                    <h3>📊 Data Sources</h3>
+                    <div id="data-source-list">No data sources uploaded yet.</div>
                 </div>
             </div>
 
