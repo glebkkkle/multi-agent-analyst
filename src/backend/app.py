@@ -92,31 +92,18 @@ async def upload_data(
     # Clean table name (no extension)
     table_name = filename.split(".")[0]
 
-    # ============================================================
-    # 1) NEW: Ensure PostgreSQL schema exists for this thread
-    # ============================================================
     ensure_schema(thread_id)
 
-    # ============================================================
-    # 2) NEW: Create table *inside thread-specific schema*
-    # ============================================================
     create_table(thread_id, table_name, schema_dict)
 
-    # ============================================================
-    # 3) NEW: COPY data into schema.table
-    # ============================================================
     copy_dataframe(thread_id, table_name, df)
 
-    # ============================================================
-    # 4) UPDATED: Register in metadata table with schema_name
-    # ============================================================
     source_id = register_data_source(
         table_name=table_name,
         filename=filename,
-        schema_name=thread_id   # <-- NEW FIELD
+        schema_name=thread_id 
     )
 
-    # Return JSON output
     return {
         "status": "success",
         "thread_id": thread_id,
