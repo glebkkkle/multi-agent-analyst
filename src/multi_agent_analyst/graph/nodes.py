@@ -6,7 +6,7 @@ from PIL import Image
 import io
 import base64
 from src.multi_agent_analyst.react_agents.controller_agent import controller_agent
-from src.multi_agent_analyst.utils.utils import object_store, context
+from src.multi_agent_analyst.utils.utils import object_store, execution_list
 from src.multi_agent_analyst.graph.states import GraphState, CriticStucturalResponse, Plan, RevisionState, IntentSchema, ContextSchema
 from src.multi_agent_analyst.prompts.graph.planner import  GLOBAL_PLANNER_PROMPT
 from src.multi_agent_analyst.prompts.graph.critic import CRITIC_PROMPT
@@ -23,7 +23,8 @@ def planner_node(state: GraphState):
     print(' ')
     print('PLAN RECEIVED')
     print(' ')
-    
+    print(state.query)
+    print(state.clean_query)
     plan=llm.with_structured_output(Plan).invoke(GLOBAL_PLANNER_PROMPT.format(query=state.clean_query if state.clean_query else state.query))
     print(plan)
     print(' ')
@@ -81,6 +82,8 @@ def summarizer_node(state:GraphState):
     user_query = state.query
 
     obj_id, summary = state.final_obj_id, state.summary
+    print(f'FINAL OBJ ID:{obj_id}')
+
     obj = object_store.get(obj_id)
 
     # If object is image BytesIO → convert to base64
@@ -92,7 +95,15 @@ def summarizer_node(state:GraphState):
     llm = ChatOllama(model='gpt-oss:20b', temperature=0)
     final_text = llm.invoke(SUMMARIZER_PROMPT.format(user_query=user_query, obj=obj, summary=summary)).content
 
-    print(obj_id)
+    print('INITIAL EX')
+    print(execution_list.execution_log_list)
+
+    #clear the log list after the graph has been compiled for one turn 
+
+    execution_list.execution_log_list.clear()
+
+    print('FINAL EX')
+    print(execution_list.execution_log_list)
 
     return {
         "final_response": final_text,
@@ -194,11 +205,14 @@ def context_node(state:GraphState):
     user_query, conversational_history=state.query, state.conversation_history
     clean_query=llm.with_structured_output(ContextSchema).invoke(CONTEXT_AGENT_PROMPT.format(user_msg=user_query, conversation_history=conversational_history))
     print(' ')
+    print(state.desicion)
+    
+    print(' ')
     print(conversational_history)
     print('REWRITTEN QUERY')
     print(clean_query)
-    print(clean_query.clean_query)
-
+    cl_query=clean_query.clean_query
+    desicion=state.desicion
     print(' ')
 
-    return {"clean_query": clean_query.clean_query}
+    return {"clean_query": cl_query, 'desicion':desicion}

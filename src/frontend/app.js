@@ -6,136 +6,175 @@ const messagesDiv = document.getElementById("messages");
 const input = document.getElementById("chat-input");
 const sendBtn = document.getElementById("send-btn");
 
-// Get Data page elements
 let dataFileInput;
 let dataUploadBtn;
 let dataUploadStatus;
 let dataSourceList;
 
-// Use event delegation on document to catch button clicks
-document.addEventListener("click", function(e) {
-    // Check if clicked element or any parent has the data-upload-btn id
+document.addEventListener("click", function (e) {
     const target = e.target.closest("#data-upload-btn");
     if (target) {
-        console.log("Upload button clicked via event delegation!");
         e.preventDefault();
         e.stopPropagation();
         uploadDataFile();
     }
 });
 
-// Function to initialize data page elements
 function initDataPageListeners() {
     dataFileInput = document.getElementById("data-file-input");
     dataUploadBtn = document.getElementById("data-upload-btn");
     dataUploadStatus = document.getElementById("data-upload-status");
     dataSourceList = document.getElementById("data-source-list");
-    
-    console.log("Data page elements initialized:", {
-        dataFileInput: !!dataFileInput,
-        dataUploadBtn: !!dataUploadBtn,
-        dataUploadStatus: !!dataUploadStatus,
-        dataSourceList: !!dataSourceList
-    });
-    
-    // Force enable pointer events and clickability on ALL data page elements
+
     const dataPage = document.getElementById("data-page");
     if (dataPage) {
-        dataPage.style.pointerEvents = 'auto';
-        const allElements = dataPage.querySelectorAll('*');
+        dataPage.style.pointerEvents = "auto";
+        const allElements = dataPage.querySelectorAll("*");
         allElements.forEach(el => {
-            el.style.pointerEvents = 'auto';
+            el.style.pointerEvents = "auto";
         });
-        console.log("Enabled pointer-events on", allElements.length, "elements");
     }
-    
-    // Ensure button has pointer-events enabled and log its computed style
+
     if (dataUploadBtn) {
-        dataUploadBtn.style.pointerEvents = 'auto';
-        dataUploadBtn.style.cursor = 'pointer';
-        dataUploadBtn.style.zIndex = '9999';
-        const computedStyle = window.getComputedStyle(dataUploadBtn);
-        console.log("Button styles:", {
-            pointerEvents: computedStyle.pointerEvents,
-            display: computedStyle.display,
-            visibility: computedStyle.visibility,
-            cursor: computedStyle.cursor,
-            zIndex: computedStyle.zIndex
-        });
+        dataUploadBtn.style.pointerEvents = "auto";
+        dataUploadBtn.style.cursor = "pointer";
+        dataUploadBtn.style.zIndex = "9999";
     }
 }
 
-// Add mouseover detection to help debug
-document.addEventListener("mouseover", function(e) {
-    if (e.target && e.target.id === "data-upload-btn") {
-        console.log("Mouse is over the upload button!");
-    }
-});
-
-// Navigation functionality
-const navItems = document.querySelectorAll('.nav-item');
-const pages = document.querySelectorAll('.page');
+const navItems = document.querySelectorAll(".nav-item");
+const pages = document.querySelectorAll(".page");
 
 navItems.forEach(item => {
-    item.addEventListener('click', () => {
-        const pageName = item.getAttribute('data-page');
-        
-        // Update active nav item
-        navItems.forEach(nav => nav.classList.remove('active'));
-        item.classList.add('active');
-        
-        // Update active page
-        pages.forEach(page => page.classList.remove('active'));
-        document.getElementById(`${pageName}-page`).classList.add('active');
+    item.addEventListener("click", () => {
+        const pageName = item.getAttribute("data-page");
 
-        // Refocus input when Chat page is selected
-        if (pageName === 'chat') {
+        navItems.forEach(nav => nav.classList.remove("active"));
+        item.classList.add("active");
+
+        pages.forEach(page => page.classList.remove("active"));
+        const pageEl = document.getElementById(`${pageName}-page`);
+        if (pageEl) {
+            pageEl.classList.add("active");
+        }
+
+        if (pageName === "chat") {
             setTimeout(() => input.focus(), 0);
         }
-        
-        // Reinitialize data page listeners when switching to Data page
-        if (pageName === 'data') {
+
+        if (pageName === "data") {
             setTimeout(() => {
-                console.log("Switched to Data page, reinitializing listeners...");
                 initDataPageListeners();
             }, 100);
         }
     });
 });
 
-const chatPage = document.getElementById('chat-page');
+const chatPage = document.getElementById("chat-page");
 
-chatPage.addEventListener('click', (e) => {
-    // Don't override normal behaviour when actually clicking the input or send button
-    if (e.target.closest('#chat-input') || e.target.closest('#send-btn')) {
+chatPage.addEventListener("click", e => {
+    if (e.target.closest("#chat-input") || e.target.closest("#send-btn")) {
         return;
     }
-
-    // Only auto-focus if chat page is visible
-    if (chatPage.classList.contains('active')) {
+    if (chatPage.classList.contains("active")) {
         input.focus();
     }
 });
 
-// Chat functionality
+function showChatEmptyState() {
+    messagesDiv.innerHTML = `
+        <div class="chat-empty-state">
+            <div class="chat-empty-icon-wrapper">
+                <svg class="chat-empty-icon" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                    <line x1="9" y1="10" x2="15" y2="10"></line>
+                    <line x1="9" y1="14" x2="13" y2="14"></line>
+                </svg>
+            </div>
+            <h2 class="chat-empty-title">Start a Conversation</h2>
+            <p class="chat-empty-subtitle">
+                Ask questions about your data, request analysis, or explore insights.
+            </p>
+            <div class="chat-suggestions">
+                <div class="suggestion-card" data-suggestion="What are the main trends in my data?">
+                    <div class="suggestion-icon-wrapper">
+                        <svg class="suggestion-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="18" y1="20" x2="18" y2="10"></line>
+                            <line x1="12" y1="20" x2="12" y2="4"></line>
+                            <line x1="6" y1="20" x2="6" y2="14"></line>
+                        </svg>
+                    </div>
+                    <div class="suggestion-title">Analyze Trends</div>
+                    <div class="suggestion-description">Identify patterns and trends in your dataset</div>
+                </div>
+                <div class="suggestion-card" data-suggestion="Show me a summary of my data">
+                    <div class="suggestion-icon-wrapper">
+                        <svg class="suggestion-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <line x1="12" y1="16" x2="12" y2="12"></line>
+                            <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                        </svg>
+                    </div>
+                    <div class="suggestion-title">Get Summary</div>
+                    <div class="suggestion-description">Quick overview of your data structure</div>
+                </div>
+                <div class="suggestion-card" data-suggestion="What insights can you provide?">
+                    <div class="suggestion-icon-wrapper">
+                        <svg class="suggestion-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                            <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+                            <line x1="12" y1="22.08" x2="12" y2="12"></line>
+                        </svg>
+                    </div>
+                    <div class="suggestion-title">Generate Insights</div>
+                    <div class="suggestion-description">Discover hidden patterns and correlations</div>
+                </div>
+                <div class="suggestion-card" data-suggestion="Compare different metrics in my data">
+                    <div class="suggestion-icon-wrapper">
+                        <svg class="suggestion-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                            <polyline points="12 5 19 12 12 19"></polyline>
+                        </svg>
+                    </div>
+                    <div class="suggestion-title">Compare Data</div>
+                    <div class="suggestion-description">Side-by-side comparison of metrics</div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    messagesDiv.querySelectorAll(".suggestion-card").forEach(card => {
+        card.addEventListener("click", () => {
+            const suggestion = card.dataset.suggestion;
+            input.value = suggestion;
+            input.focus();
+        });
+    });
+}
+
 function addMessage(text, sender) {
+    const emptyState = messagesDiv.querySelector(".chat-empty-state");
+    if (emptyState) {
+        emptyState.remove();
+    }
+
     const wrapper = document.createElement("div");
     wrapper.classList.add("message", sender);
-    
+
     const avatar = document.createElement("div");
     avatar.classList.add("message-avatar");
     avatar.textContent = sender === "user" ? "👤" : "🤖";
-    
+
     const content = document.createElement("div");
     content.classList.add("message-content");
-    
+
     try {
         const parsed = JSON.parse(text);
         content.innerHTML = `<pre>${JSON.stringify(parsed, null, 2)}</pre>`;
     } catch {
         content.textContent = text;
     }
-    
+
     wrapper.appendChild(avatar);
     wrapper.appendChild(content);
     messagesDiv.appendChild(wrapper);
@@ -145,20 +184,20 @@ function addMessage(text, sender) {
 function addDataTable(data) {
     const wrapper = document.createElement("div");
     wrapper.classList.add("message", "bot", "data-message");
-    
+
     const avatar = document.createElement("div");
     avatar.classList.add("message-avatar");
     avatar.textContent = "📊";
-    
+
     const content = document.createElement("div");
     content.classList.add("message-content");
-    
-    if (Array.isArray(data)) {
+
+    if (Array.isArray(data) && data.length > 0 && typeof data[0] === "object") {
         const table = document.createElement("table");
         const thead = document.createElement("thead");
         const headerRow = document.createElement("tr");
-        const keys = Object.keys(data[0] || {});
-        
+        const keys = Object.keys(data[0]);
+
         keys.forEach(key => {
             const th = document.createElement("th");
             th.textContent = key;
@@ -166,7 +205,7 @@ function addDataTable(data) {
         });
         thead.appendChild(headerRow);
         table.appendChild(thead);
-        
+
         const tbody = document.createElement("tbody");
         data.forEach(row => {
             const tr = document.createElement("tr");
@@ -179,14 +218,14 @@ function addDataTable(data) {
         });
         table.appendChild(tbody);
         content.appendChild(table);
-    } else if (typeof data === 'object') {
+    } else if (typeof data === "object") {
         const pre = document.createElement("pre");
         pre.textContent = JSON.stringify(data, null, 2);
         content.appendChild(pre);
     } else {
         content.textContent = String(data);
     }
-    
+
     wrapper.appendChild(avatar);
     wrapper.appendChild(content);
     messagesDiv.appendChild(wrapper);
@@ -196,21 +235,21 @@ function addDataTable(data) {
 function addImage(base64OrBlob) {
     const wrapper = document.createElement("div");
     wrapper.classList.add("message", "bot", "image-message");
-    
+
     const avatar = document.createElement("div");
     avatar.classList.add("message-avatar");
     avatar.textContent = "📈";
-    
+
     const content = document.createElement("div");
     content.classList.add("message-content");
-    
+
     const img = document.createElement("img");
-    if (typeof base64OrBlob === 'string') {
+    if (typeof base64OrBlob === "string") {
         img.src = "data:image/png;base64," + base64OrBlob;
     } else {
         img.src = URL.createObjectURL(base64OrBlob);
     }
-    
+
     content.appendChild(img);
     wrapper.appendChild(avatar);
     wrapper.appendChild(content);
@@ -222,15 +261,15 @@ function addLoadingIndicator() {
     const wrapper = document.createElement("div");
     wrapper.classList.add("message", "bot", "loading");
     wrapper.id = "loading-indicator";
-    
+
     const avatar = document.createElement("div");
     avatar.classList.add("message-avatar");
     avatar.textContent = "🤖";
-    
+
     const content = document.createElement("div");
     content.classList.add("message-content");
     content.textContent = "Thinking";
-    
+
     wrapper.appendChild(avatar);
     wrapper.appendChild(content);
     messagesDiv.appendChild(wrapper);
@@ -250,15 +289,15 @@ async function fetchObjectData(objId) {
             console.error(`Failed to fetch object ${objId}`);
             return null;
         }
-        
-        const contentType = resp.headers.get('content-type');
-        if (contentType && contentType.includes('image')) {
+
+        const contentType = resp.headers.get("content-type");
+        if (contentType && contentType.includes("image")) {
             const blob = await resp.blob();
-            return { type: 'image', data: blob };
+            return { type: "image", data: blob };
         }
-        
+
         const data = await resp.json();
-        return { type: 'data', data: data };
+        return { type: "data", data: data };
     } catch (error) {
         console.error(`Error fetching object ${objId}:`, error);
         return null;
@@ -276,8 +315,8 @@ async function sendMessage() {
     const loadingIndicator = addLoadingIndicator();
 
     try {
-        let endpoint = waitingForClarification ? "/clarify" : "/message";
-        let payload = waitingForClarification
+        const endpoint = waitingForClarification ? "/clarify" : "/message";
+        const payload = waitingForClarification
             ? { thread_id: threadId, clarification: msg }
             : { thread_id: threadId, message: msg };
 
@@ -292,7 +331,6 @@ async function sendMessage() {
         }
 
         const data = await resp.json();
-        console.log("FULL RESPONSE:", data);
 
         removeLoadingIndicator();
 
@@ -325,7 +363,7 @@ async function sendMessage() {
         if (!objId && data.result) {
             const allNodes = Object.values(data.result);
             for (const node of allNodes) {
-                if (node && typeof node === 'object') {
+                if (node && typeof node === "object") {
                     if (node.object_id) {
                         objId = node.object_id;
                         break;
@@ -342,24 +380,17 @@ async function sendMessage() {
             }
         }
 
-        console.log("Final Response:", finalResponse);
-        console.log("Image Base64:", imageBase64 ? "Present" : "Not present");
-        console.log("Object ID:", objId);
-
         if (finalResponse) {
             addMessage(finalResponse, "bot");
         }
 
         if (objId) {
-            console.log("Fetching object data for:", objId);
             const objectResult = await fetchObjectData(objId);
-            
+
             if (objectResult) {
-                console.log("Object Result:", objectResult);
-                
-                if (objectResult.type === 'image') {
+                if (objectResult.type === "image") {
                     addImage(objectResult.data);
-                } else if (objectResult.type === 'data') {
+                } else if (objectResult.type === "data") {
                     addDataTable(objectResult.data);
                 }
             }
@@ -372,7 +403,6 @@ async function sendMessage() {
         if (!finalResponse && !objId && !imageBase64) {
             addMessage("Task completed successfully.", "bot");
         }
-
     } catch (error) {
         removeLoadingIndicator();
         console.error("Error sending message:", error);
@@ -382,10 +412,7 @@ async function sendMessage() {
     }
 }
 
-// ==== DATA PAGE LOGIC ====
 async function uploadDataFile() {
-    console.log("Upload button clicked!");
-
     if (!dataFileInput) {
         console.error("dataFileInput element not found!");
         return;
@@ -393,52 +420,56 @@ async function uploadDataFile() {
 
     const file = dataFileInput.files[0];
     if (!file) {
-        dataUploadStatus.textContent = "❌ Please select a file.";
+        if (dataUploadStatus) {
+            dataUploadStatus.textContent = "❌ Please select a file.";
+        }
         return;
     }
 
-    dataUploadBtn.disabled = true;
-    dataUploadStatus.textContent = "⏳ Uploading...";
+    if (dataUploadBtn) dataUploadBtn.disabled = true;
+    if (dataUploadStatus) dataUploadStatus.textContent = "⏳ Uploading...";
 
     const formData = new FormData();
     formData.append("file", file);
 
     try {
-        console.log("Sending request to:", `${API_BASE}/upload_data`);
         const resp = await fetch(`${API_BASE}/upload_data`, {
             method: "POST",
             body: formData
         });
 
-        console.log("Response status:", resp.status);
-
         if (!resp.ok) {
             const errorText = await resp.text();
             console.error("Upload failed:", errorText);
-            dataUploadStatus.textContent = "❌ Error: " + errorText;
+            if (dataUploadStatus) {
+                dataUploadStatus.textContent = "❌ Error: " + errorText;
+            }
             return;
         }
 
         const result = await resp.json();
-        console.log("Server response:", result);
 
-        dataUploadStatus.textContent = `✅ Imported table '${result.table_name}' with ${result.rows} rows.`;
+        if (dataUploadStatus) {
+            dataUploadStatus.textContent = `✅ Imported table '${result.table_name}' with ${result.rows} rows.`;
+        }
 
-        const el = document.createElement("div");
-        el.textContent = `📄 ${result.table_name} — ${result.rows} rows`;
-        dataSourceList.appendChild(el);
-
+        if (dataSourceList) {
+            const el = document.createElement("div");
+            el.textContent = `📄 ${result.table_name} — ${result.rows} rows`;
+            dataSourceList.appendChild(el);
+        }
     } catch (err) {
         console.error("Upload error:", err);
-        dataUploadStatus.textContent = "❌ Error occurred: " + err.message;
+        if (dataUploadStatus) {
+            dataUploadStatus.textContent = "❌ Error occurred: " + err.message;
+        }
     } finally {
-        dataUploadBtn.disabled = false;
+        if (dataUploadBtn) dataUploadBtn.disabled = false;
     }
 }
 
-// Event Listeners
 sendBtn.addEventListener("click", sendMessage);
-input.addEventListener("keypress", (e) => {
+input.addEventListener("keypress", e => {
     if (e.key === "Enter" && !e.shiftKey) {
         e.preventDefault();
         sendMessage();
@@ -447,8 +478,6 @@ input.addEventListener("keypress", (e) => {
 
 window.addEventListener("load", () => {
     input.focus();
-    
-    // Initialize data page listeners on load
-    console.log("Page loaded, initializing data page...");
+    showChatEmptyState();
     initDataPageListeners();
 });

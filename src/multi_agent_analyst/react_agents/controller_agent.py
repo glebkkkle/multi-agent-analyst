@@ -25,3 +25,4 @@ controller_agent = create_agent(
 )
 
 #could potentially pass all the previous logs, for safety
+#maybe catch some errors in the controller output and loop again with resolver, as with planning 
