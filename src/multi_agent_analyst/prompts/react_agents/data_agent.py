@@ -33,7 +33,6 @@ IMPORTANT RULES FOR WORKING WITH DATA:
 - The next tool must use obj_92bc33 as the input table.
 
 
-
 You must follow these rules EXACTLY.
 """
 

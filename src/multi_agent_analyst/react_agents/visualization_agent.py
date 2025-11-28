@@ -52,5 +52,6 @@ def visualization_agent(visualizer_query: str, current_plan_step: str, data_id: 
     print(' ')
 
     execution_list.execution_log_list.setdefault(current_plan_step, log)
+    print('EX LIST')
     print(execution_list.execution_log_list)
     return last_msg

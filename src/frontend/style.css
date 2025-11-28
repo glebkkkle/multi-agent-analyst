@@ -20,12 +20,11 @@
 }
 
 body {
-    background: var(--bg-primary);
-    color: var(--text-primary);
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    font-size: 14px;
-    line-height: 1.6;
+    background: #0a0a0a;
+    color: #e8e8f0;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
     min-height: 100vh;
+    overflow: hidden;
     position: relative;
 }
 
@@ -410,6 +409,7 @@ body {
 }
 
 /* Chat Container */
+/* Chat Container */
 .chat-container {
     flex: 1;
     display: flex;
@@ -423,6 +423,9 @@ body {
     animation: slideDown 0.5s ease both;
     position: relative;
     overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
 }
 
 .chat-header::before {
@@ -456,24 +459,83 @@ body {
     }
 }
 
+.chat-header-content {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    position: relative;
+    z-index: 1;
+}
+
+.chat-header-icon-wrapper {
+    width: 48px;
+    height: 48px;
+    background: linear-gradient(135deg, rgba(14, 165, 233, 0.15), rgba(14, 165, 233, 0.05));
+    border: 1px solid rgba(14, 165, 233, 0.3);
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: iconFloat 4s ease-in-out infinite;
+    position: relative;
+    overflow: hidden;
+}
+
+.chat-header-icon-wrapper::before {
+    content: '';
+    position: absolute;
+    inset: -50%;
+    background: linear-gradient(45deg, transparent, rgba(14, 165, 233, 0.3), transparent);
+    animation: iconShine 3s linear infinite;
+}
+
+.chat-header-icon {
+    color: var(--accent-blue);
+    position: relative;
+    z-index: 1;
+    animation: iconPulse 2s ease-in-out infinite;
+}
+
+.clear-chat-btn {
+    width: 40px;
+    height: 40px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--border-subtle);
+    border-radius: 10px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    z-index: 1;
+}
+
+.clear-chat-btn:hover {
+    background: rgba(239, 68, 68, 0.1);
+    border-color: rgba(239, 68, 68, 0.3);
+    color: #ef4444;
+    transform: scale(1.05) rotate(5deg);
+}
+
+.clear-chat-btn:active {
+    transform: scale(0.95) rotate(0deg);
+}
+
 .chat-title {
-    font-size: 18px;
+    font-size: 20px;
     font-weight: 600;
     color: var(--text-primary);
     letter-spacing: -0.3px;
     margin-bottom: 2px;
-    position: relative;
-    z-index: 1;
 }
 
 .chat-subtitle {
     font-size: 13px;
     color: var(--text-secondary);
-    position: relative;
-    z-index: 1;
     animation: fadeIn 0.6s ease 0.3s both;
 }
-
 #messages {
     flex: 1;
     overflow-y: auto;
