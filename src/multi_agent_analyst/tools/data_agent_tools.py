@@ -7,15 +7,22 @@ from src.multi_agent_analyst.schemas.data_agent_schema import (
     MergeTablesSchema,
 )
 
-from src.multi_agent_analyst.db.connection import get_conn
-from src.multi_agent_analyst.utils.utils import object_store
+from src.multi_agent_analyst.db.db2 import get_conn
+
+from src.multi_agent_analyst.utils.utils import object_store, current_tables
+
+
+#need to make sure executes from the correct thread_id tables
+
 
 def make_sql_query_tool():
     """Factory: returns a SQL query execution tool."""
-
+    print(list(current_tables.keys())[0])
+    conn=get_conn(list(current_tables.keys())[0])
+    
     def sql_query(query: str):
+        print(query)
         try:
-            conn = get_conn()
             df = pd.read_sql_query(query, conn)
             conn.close()
             print(df)

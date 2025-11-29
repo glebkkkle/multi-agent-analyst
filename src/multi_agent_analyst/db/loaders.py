@@ -43,7 +43,7 @@ def load_user_tables(thread_id: str):
     and return a dict containing sample rows + descriptions.
     """
 
-    schema = f"thread_{thread_id}"
+    schema = thread_id
     
     query_tables = f"""
         SELECT tablename
@@ -61,8 +61,7 @@ def load_user_tables(thread_id: str):
             df = pd.read_sql(f'SELECT * FROM "{schema}"."{table}" LIMIT 5', conn)
 
             output[table] = {
-                "schema": schema,
-                "description": f"User table '{table}' in schema '{schema}'",
+                "description": f"User table '{table}'",
                 "sample": df
             }
 
@@ -74,6 +73,6 @@ def load_user_tables(thread_id: str):
                 "sample": None
             }
 
-    conn.close()
+    # conn.close()
     return output
 
