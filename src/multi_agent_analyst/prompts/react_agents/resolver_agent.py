@@ -1,5 +1,4 @@
 RESOLVER_AGENT_PROMPT="""
-
 You are a Resolver Agent inside a multi-step AI execution system.
 
 A **Plan** consists of ordered steps.  
@@ -39,7 +38,6 @@ Always use this tool when:
 - An input ID looks wrong
 - The failing step references an object not present in the context
 - You need to restore the correct upstream output
-
 
 If the ID in the step is incorrect, replace it with the correct one.
 
@@ -85,6 +83,9 @@ Where:
 ### --- FAILED STEP ---
 {failed_step}
 
+### ---EXECUTION LOG ---
+{execution_log}
+
 ### --- ERROR MESSAGE ---
 {error_message}
 
@@ -93,6 +94,5 @@ Where:
 
 Think carefully.  
 Use context_lookup whenever IDs seem wrong.  
-
 """
 

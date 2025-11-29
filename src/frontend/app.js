@@ -1,5 +1,7 @@
 const API_BASE = "http://localhost:8000/api";
-let threadId = "user-123";
+const user = JSON.parse(localStorage.getItem("user"));
+let threadId = user?.thread_id;
+
 let waitingForClarification = false;
 
 const messagesDiv = document.getElementById("messages");
@@ -431,7 +433,9 @@ async function uploadDataFile() {
 
     const formData = new FormData();
     formData.append("file", file);
-
+    const user = JSON.parse(localStorage.getItem("user"));
+    formData.append("thread_id", user.thread_id);
+    
     try {
         const resp = await fetch(`${API_BASE}/upload_data`, {
             method: "POST",

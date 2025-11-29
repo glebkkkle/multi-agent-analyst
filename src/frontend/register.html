@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register - Data Analyst</title>
+
+    <!-- Load external CSS -->
+    <link rel="stylesheet" href="/frontend/register.css">
+</head>
+
+<body>
+    <div class="background-animation"></div>
+    <div class="orb orb1"></div>
+    <div class="orb orb2"></div>
+
+    <div class="register-container">
+        <div class="logo-section">
+            <div class="logo-icon">A</div>
+            <div class="logo-text">Data Analyst</div>
+        </div>
+
+        <h2>Create your account</h2>
+
+        <div id="error" class="error-message"></div>
+
+        <div class="form-group">
+            <label for="email">Email address</label>
+            <div class="input-wrapper">
+                <input type="email" id="email" placeholder="you@example.com" autocomplete="email">
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="password">Password</label>
+            <div class="input-wrapper">
+                <input type="password" id="password" placeholder="••••••••••" autocomplete="new-password">
+            </div>
+        </div>
+
+        <button class="register-button" id="registerBtn" onclick="registerUser()">
+            <span id="btnText">Create account</span>
+        </button>
+
+        <div class="login-link">
+            Already have an account? <a href="/frontend/index.html">Sign in</a>
+        </div>
+    </div>
+
+    <!-- Load external JS -->
+    <script src="/frontend/register.js"></script>
+</body>
+</html>

@@ -29,6 +29,6 @@ def resolver_agent(failed_step:str):
 
     agent=create_agent(model=llm, tools=[context_lookup],response_format=ResolverOutput)
 
-    result=agent.invoke({'messages':[{'role':'user', 'content':RESOLVER_AGENT_PROMPT.format(error_message=current_exception,failed_step=step_log, context=context)}]})
+    result=agent.invoke({'messages':[{'role':'user', 'content':RESOLVER_AGENT_PROMPT.format(error_message=current_exception,failed_step=step_log, context=context, execution_log=execution_list.execution_log_list)}]})
 
     return result

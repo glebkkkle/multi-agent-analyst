@@ -7,7 +7,16 @@ from fastapi.responses import StreamingResponse
 from data.converter.reader import read_file
 from data.converter.infer_schema import infer_schema
 import io
-import pandas as pd
+from data.converter.reader import read_file
+from data.converter.infer_schema import infer_schema
+from src.multi_agent_analyst.db.db_core import create_table, copy_dataframe, register_data_source, ensure_schema
+from fastapi import UploadFile, File, HTTPException
+from fastapi import APIRouter, HTTPException
+from pydantic import BaseModel
+import psycopg2
+import bcrypt
+from src.multi_agent_analyst.db.db2 import conn 
+from fastapi import Form
 
 app = FastAPI()
 
@@ -20,8 +29,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Serve frontend
-app.mount("/frontend", StaticFiles(directory="src/frontend", html=True), name="frontend")
+# app.mount("/frontend", StaticFiles(directory="src/frontend", html=True), name="frontend")
+# app.mount("/", StaticFiles(directory="src/frontend", html=True), name="frontend")
+
+app.mount("/frontend", StaticFiles(directory="src/frontend"), name="frontend")
 
 @app.post("/api/message")
 async def handle_message(payload: dict):
@@ -59,49 +70,38 @@ async def get_object(object_id: str):
     # Case 3: raw python object
     return obj
 
-
-
-from data.converter.reader import read_file
-from data.converter.infer_schema import infer_schema
-from src.multi_agent_analyst.db.db_core import create_table, copy_dataframe, register_data_source, ensure_schema
-from fastapi import UploadFile, File, HTTPException
-
 @app.post("/api/upload_data")
 async def upload_data(
-    file: UploadFile = File(...),
-    thread_id: str = "thread_1"  # ✅ NEW: thread_id parameter
+    thread_id: str = Form(...),
+    file: UploadFile = File(...),    
 ):
+    print("Received thread_id:", thread_id)
+    if not thread_id:
+        raise HTTPException(status_code=400, detail="thread_id missing")
+
     filename = file.filename.lower()
 
-    # Validate file extension
     if not (filename.endswith(".csv") or filename.endswith(".xlsx")):
         raise HTTPException(status_code=400, detail="Only CSV and XLSX accepted")
 
-    # Read raw bytes
     raw = await file.read()
     buffer = io.BytesIO(raw)
 
-    # Convert to DataFrame
     df = read_file(buffer, override_filename=filename)
     if df.empty:
         raise HTTPException(status_code=400, detail="File is empty")
 
-    # Detect column types
     schema_dict = infer_schema(df)
-
-    # Clean table name (no extension)
     table_name = filename.split(".")[0]
 
     ensure_schema(thread_id)
-
     create_table(thread_id, table_name, schema_dict)
-
     copy_dataframe(thread_id, table_name, df)
 
     source_id = register_data_source(
+        thread_id=thread_id,
         table_name=table_name,
-        filename=filename,
-        schema_name=thread_id 
+        filename=filename
     )
 
     return {
@@ -109,6 +109,88 @@ async def upload_data(
         "thread_id": thread_id,
         "table_name": table_name,
         "source_id": source_id,
-        "schema": thread_id,
         "rows": len(df)
     }
+
+router = APIRouter()
+
+class LoginRequest(BaseModel):
+    email: str
+    password: str
+
+@router.post("/login_raw")
+def login_raw(data: LoginRequest):
+    cur = conn.cursor()
+    
+    cur.execute("""
+        SELECT id, email, password_hash, thread_id 
+        FROM users WHERE email = %s
+    """, (data.email,))
+    
+    row = cur.fetchone()
+    
+    if not row:
+        raise HTTPException(401, "Invalid email or password")
+    
+    user_id, email, password_hash, thread_id = row
+    
+    # verify password
+    if not bcrypt.checkpw(data.password.encode(), password_hash.encode()):
+        raise HTTPException(401, "Invalid email or password")
+    
+    # success
+    return {
+        "user_id": user_id,
+        "email": email,
+        "thread_id": thread_id
+    }
+
+
+@router.post("/register_raw")
+def register_raw(data: LoginRequest):
+    email = data.email.strip().lower()
+    password = data.password.strip()
+
+    if len(password) < 6:
+        raise HTTPException(400, "Password must be at least 6 characters")
+
+    cur = conn.cursor()
+
+    # Check if user already exists
+    cur.execute("SELECT id FROM users WHERE email = %s", (email,))
+    exists = cur.fetchone()
+
+    if exists:
+        raise HTTPException(400, "Email already registered")
+
+    # Hash pw
+    hashed = bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
+
+    # Temporary thread placeholder
+    cur.execute("""
+        INSERT INTO users(email, password_hash, thread_id)
+        VALUES (%s, %s, %s)
+        RETURNING id
+    """, (email, hashed, "temp"))
+    
+    user_id = cur.fetchone()[0]
+
+    # Create thread schema name
+    thread_id = f"thread_{user_id}"
+
+    # Update thread_id
+    cur.execute("UPDATE users SET thread_id = %s WHERE id = %s", (thread_id, user_id))
+
+    # Create schema
+    cur.execute(f"CREATE SCHEMA IF NOT EXISTS {thread_id}")
+
+    conn.commit()
+
+    return {
+        "user_id": user_id,
+        "email": email,
+        "thread_id": thread_id
+    }
+
+
+app.include_router(router)
