@@ -26,8 +26,6 @@ YOUR RESPONSIBILITIES
    • STOP normal execution  
    • Call the **Resolver Agent tool** with:
          - the failing step_id  
-         - full execution log  
-         - the raw error message  
    • Wait for the Resolver Agent response.
 
 3. **Resolver Agent outcome**

@@ -37,15 +37,14 @@ def copy_dataframe(schema_name, table_name, df):
             )
         conn.commit()
 
-
-def register_data_source(table_name: str, filename: str, schema_name:str):
+def register_data_source(thread_id: str, table_name: str, filename: str):
     with get_conn() as conn:
         with conn.cursor() as cur:
             cur.execute("""
-                INSERT INTO data_sources (table_name, original_filename, schema_name)
+                INSERT INTO data_sources (thread_id, table_name, original_filename)
                 VALUES (%s, %s, %s)
                 RETURNING id;
-            """, (table_name, filename, schema_name))
+            """, (thread_id, table_name, filename))
             new_id = cur.fetchone()[0]
         conn.commit()
     return new_id

@@ -16,6 +16,9 @@ from src.multi_agent_analyst.schemas.data_agent_schema import ExternalAgentSchem
 from src.multi_agent_analyst.utils.utils import ExecutionLogEntry, execution_list
 openai_llm = ChatOpenAI(model="gpt-4.1-mini")
 
+#were good to use a specifc sql-based model for that
+
+
 @tool
 def data_agent(data_agent_query: str, current_plan_step: str):
     """High-level DataAgent using SQL, selection, and merge tools."""
