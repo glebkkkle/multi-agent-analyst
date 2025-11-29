@@ -61,6 +61,8 @@ class GraphState(BaseModel):
     error_message : str | None = None
     _inputs: Dict[Any, Any] = {}
 
+    thread_id:str=None
+
     @staticmethod
     def reducers():
         return {

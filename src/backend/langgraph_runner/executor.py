@@ -2,7 +2,7 @@ from src.multi_agent_analyst.graph.graph import g as compiled_graph
 
 def run_initial_graph(thread_id: str, message: str):
     events = compiled_graph.stream(
-        {"query": message},
+        {"query": message, 'thread_id':thread_id},
         config={"configurable": {"thread_id": thread_id}}
     )
 

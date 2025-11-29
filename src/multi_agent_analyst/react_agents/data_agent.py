@@ -9,21 +9,22 @@ from src.multi_agent_analyst.tools.data_agent_tools import (
     make_select_columns_tool,
     make_merge_tool,
 )
+
 import json
 from src.multi_agent_analyst.prompts.react_agents.data_agent import DATA_AGENT_PROMPT
-from src.multi_agent_analyst.utils.utils import context, object_store
+from src.multi_agent_analyst.utils.utils import context, object_store, current_tables
 from src.multi_agent_analyst.schemas.data_agent_schema import ExternalAgentSchema
 from src.multi_agent_analyst.utils.utils import ExecutionLogEntry, execution_list
 openai_llm = ChatOpenAI(model="gpt-4.1-mini")
 
 #were good to use a specifc sql-based model for that
 
-
 @tool
 def data_agent(data_agent_query: str, current_plan_step: str):
     """High-level DataAgent using SQL, selection, and merge tools."""
     print('DATA AGENT IS HIT')
-
+    print('CURRENT TABLES:')
+    print(current_tables.values())
     tools = [
         make_sql_query_tool(),
         make_select_columns_tool(),
@@ -33,7 +34,7 @@ def data_agent(data_agent_query: str, current_plan_step: str):
     agent = create_agent(
         openai_llm,
         tools=tools,
-        system_prompt=DATA_AGENT_PROMPT,
+        system_prompt=DATA_AGENT_PROMPT.format(tables=list(current_tables.values())),
         response_format=ExternalAgentSchema,
     )
 

@@ -4,9 +4,10 @@ from langchain_ollama import ChatOllama
 from langchain_openai import ChatOpenAI
 from PIL import Image
 import io
+from src.multi_agent_analyst.db.loaders import load_user_tables
 import base64
 from src.multi_agent_analyst.react_agents.controller_agent import controller_agent
-from src.multi_agent_analyst.utils.utils import object_store, execution_list
+from src.multi_agent_analyst.utils.utils import object_store, execution_list, current_tables
 from src.multi_agent_analyst.graph.states import GraphState, CriticStucturalResponse, Plan, RevisionState, IntentSchema, ContextSchema
 from src.multi_agent_analyst.prompts.graph.planner import  GLOBAL_PLANNER_PROMPT
 from src.multi_agent_analyst.prompts.graph.critic import CRITIC_PROMPT
@@ -58,6 +59,8 @@ def revision_node(state:GraphState):
 
 
 def router_node(state: GraphState):
+    current_tables.setdefault(state.thread_id, load_user_tables(state.thread_id))
+    print(current_tables)
     result = controller_agent.invoke({
         'messages': [
             {'role':'user', 'content': str(state.plan)}

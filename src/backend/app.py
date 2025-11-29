@@ -17,8 +17,16 @@ import psycopg2
 import bcrypt
 from src.multi_agent_analyst.db.db2 import conn 
 from fastapi import Form
+from src.multi_agent_analyst.db.loaders import load_user_tables
+from fastapi.responses import HTMLResponse, FileResponse
 
 app = FastAPI()
+
+from fastapi.responses import RedirectResponse
+
+@app.get("/", response_class=HTMLResponse)
+async def root():
+    return FileResponse("src/frontend/register.html")
 
 # Allow frontend JS to call backend
 app.add_middleware(
@@ -76,6 +84,14 @@ async def upload_data(
     file: UploadFile = File(...),    
 ):
     print("Received thread_id:", thread_id)
+    print('SAMPLES AND TABLES:')
+    print(' ')
+    tables=(load_user_tables(thread_id))
+    print(tables)
+    print(' ')
+
+
+
     if not thread_id:
         raise HTTPException(status_code=400, detail="thread_id missing")
 

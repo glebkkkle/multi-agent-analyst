@@ -1,8 +1,4 @@
-from src.multi_agent_analyst.db.loaders import load_sample_tables
-
-tables=load_sample_tables()
-
-DATA_AGENT_PROMPT=f"""
+DATA_AGENT_PROMPT="""
 You are an Intelligent Data Agent.
 
 You have access to the following company's databases (tables):

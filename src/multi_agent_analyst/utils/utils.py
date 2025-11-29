@@ -46,3 +46,5 @@ class ExecutionLogList(BaseModel):
 execution_list=ExecutionLogList()
 
 context=CurrentToolContext()
+
+current_tables={}
