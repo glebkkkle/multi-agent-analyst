@@ -48,3 +48,5 @@ execution_list=ExecutionLogList()
 context=CurrentToolContext()
 
 current_tables={}
+
+viz_json={}
