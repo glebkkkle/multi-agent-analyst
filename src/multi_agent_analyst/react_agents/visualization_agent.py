@@ -38,7 +38,7 @@ def visualization_agent(visualizer_query: str, current_plan_step: str, data_id: 
     )
 
     result = agent.invoke({"messages": [{"role": "user", "content": visualizer_query}]})
-    print(result)
+
     last_msg = [m for m in result["messages"] if isinstance(m, AIMessage)][-1].content
 
     msg=json.loads(last_msg)
@@ -46,12 +46,8 @@ def visualization_agent(visualizer_query: str, current_plan_step: str, data_id: 
 
     context.set("VisualizationAgent", current_plan_step, final_obj_id)
     log=ExecutionLogEntry(id=current_plan_step, agent='VisualizationAgent', sub_query=visualizer_query, status='success', output_object_id=final_obj_id)
-    print(' ')
-    print('VIZ AGENT LOG')
-    print(log)
-    print(' ')
+
 
     execution_list.execution_log_list.setdefault(current_plan_step, log)
-    print('EX LIST')
-    print(execution_list.execution_log_list)
+
     return last_msg

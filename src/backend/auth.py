@@ -6,7 +6,7 @@ from fastapi import Depends, HTTPException, status, Request
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 from pydantic import BaseModel
-from src.multi_agent_analyst.db.db2 import conn  # your existing psycopg2 connection
+from src.multi_agent_analyst.db.db_core import conn  # your existing psycopg2 connection
 
 # ==========================
 # JWT CONFIG

@@ -1,7 +1,7 @@
 import psycopg2
 import bcrypt
 import uuid
-from src.multi_agent_analyst.db.db2 import conn 
+from src.multi_agent_analyst.db.db_core import conn 
 
 
 def register_user(email: str, password: str):

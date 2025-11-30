@@ -1,19 +1,41 @@
 import psycopg2
-import psycopg2.extras
 import io
 from datetime import datetime
 
-DB_CONFIG = {
-    "dbname": "multi_analyst",
-    "user": "glebkle",
-    "password": "123",
-    "host": "localhost",
-    "port": 5432
-}
 
+def get_thread_conn(thread_id):
+    conn = psycopg2.connect(
+    dbname="multi_analyst",
+    user="glebkle",
+    password="123",
+    host="localhost",
+    port=5432
+)
+    cur = conn.cursor()
+
+    if thread_id is not None:
+        cur.execute(f"SET search_path TO {thread_id}, public;")
+
+    return conn
+
+
+conn = psycopg2.connect(
+    dbname="multi_analyst",
+    user="glebkle",
+    password="123",
+    host="localhost",
+    port=5432
+)
 
 def get_conn():
-    return psycopg2.connect(**DB_CONFIG)
+    conn = psycopg2.connect(
+    dbname="multi_analyst",
+    user="glebkle",
+    password="123",
+    host="localhost",
+    port=5432
+)
+    return conn 
 
 def create_table(schema_name, table_name, columns):
     cols = ", ".join([f'"{col}" {dtype}' for col, dtype in columns.items()])

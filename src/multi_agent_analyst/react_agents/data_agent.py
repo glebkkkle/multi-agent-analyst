@@ -2,7 +2,6 @@
 from langchain.agents import create_agent
 from langchain_core.messages import AIMessage
 from langchain.tools import tool
-from langchain_ollama import ChatOllama
 from langchain_openai import ChatOpenAI
 from src.multi_agent_analyst.tools.data_agent_tools import (
     make_sql_query_tool,
@@ -12,9 +11,8 @@ from src.multi_agent_analyst.tools.data_agent_tools import (
 
 import json
 from src.multi_agent_analyst.prompts.react_agents.data_agent import DATA_AGENT_PROMPT
-from src.multi_agent_analyst.utils.utils import context, object_store, current_tables
+from src.multi_agent_analyst.utils.utils import context, current_tables,ExecutionLogEntry, execution_list
 from src.multi_agent_analyst.schemas.data_agent_schema import ExternalAgentSchema
-from src.multi_agent_analyst.utils.utils import ExecutionLogEntry, execution_list
 openai_llm = ChatOpenAI(model="gpt-4.1-mini")
 
 #were good to use a specifc sql-based model for that
@@ -22,9 +20,7 @@ openai_llm = ChatOpenAI(model="gpt-4.1-mini")
 @tool
 def data_agent(data_agent_query: str, current_plan_step: str):
     """High-level DataAgent using SQL, selection, and merge tools."""
-    print('DATA AGENT IS HIT')
-    print('CURRENT TABLES:')
-    print(current_tables.values())
+
     tools = [
         make_sql_query_tool(),
         make_select_columns_tool(),
@@ -40,28 +36,18 @@ def data_agent(data_agent_query: str, current_plan_step: str):
 
     result = agent.invoke({"messages": [{"role": "user", "content": data_agent_query}]})
 
-    print(result)
-
-    print('CONTINUING EXECUTION')
     last_msg = [m for m in result["messages"] if isinstance(m, AIMessage)][-1].content
 
     msg=json.loads(last_msg)
     final_obj_id =msg['object_id']
     exception=msg['exception']
-    print(exception)
-    print(type(exception))
-    print(final_obj_id)
-    
+
     log=ExecutionLogEntry(id=current_plan_step, agent='DataAgent', sub_query=data_agent_query, status='success' if exception is None else exception, output_object_id=final_obj_id, error_message=exception if exception is not None else None)
     execution_list.execution_log_list.setdefault(current_plan_step, log)
 
-    print(' ')
-    print('DATA AGENT LOG')
-    print(log)
-    print(' ')
+
     context.set("DataAgent", current_plan_step, final_obj_id)
-    print(last_msg)
-    print(execution_list.execution_log_list)
+
     return last_msg
 
 
