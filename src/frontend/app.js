@@ -1,8 +1,22 @@
 const API_BASE = "http://localhost:8000/api";
-const user = JSON.parse(localStorage.getItem("user"));
-let threadId = user?.thread_id;
-
 let waitingForClarification = false;
+
+const PUBLIC_PAGES = [
+    "/frontend/index.html",
+    "/frontend/login.html",
+    "/frontend/register.html"
+];
+
+const current = window.location.pathname;
+
+if (PUBLIC_PAGES.includes(current)) {
+    console.log("Public page loaded:", current);
+} else {
+    const token = localStorage.getItem("access_token");
+    if (!token) {
+        window.location.href = "/frontend/index.html";
+    }
+}
 
 const messagesDiv = document.getElementById("messages");
 const input = document.getElementById("chat-input");
@@ -12,6 +26,33 @@ let dataFileInput;
 let dataUploadBtn;
 let dataUploadStatus;
 let dataSourceList;
+
+function getToken() {
+    return localStorage.getItem("access_token");
+}
+
+async function authorizedFetch(url, options = {}) {
+    const token = getToken();
+    if (!token) {
+        window.location.href = "/frontend/register.html";
+        return;
+    }
+
+    if (!options.headers) {
+        options.headers = {};
+    }
+
+    // ONLY add Authorization, do NOT override FormData headers
+    options.headers["Authorization"] = `Bearer ${token}`;
+
+    return fetch(url, options);
+}
+
+if (window.location.pathname.includes("app.html")) {
+    if (!localStorage.getItem("access_token")) {
+        window.location.href = "/frontend/index.html";
+    }
+}
 
 document.addEventListener("click", function (e) {
     const target = e.target.closest("#data-upload-btn");
@@ -286,7 +327,7 @@ function removeLoadingIndicator() {
 
 async function fetchObjectData(objId) {
     try {
-        const resp = await fetch(`${API_BASE}/object/${objId}`);
+        const resp = await authorizedFetch(`${API_BASE}/object/${objId}`);
         if (!resp.ok) {
             console.error(`Failed to fetch object ${objId}`);
             return null;
@@ -319,10 +360,10 @@ async function sendMessage() {
     try {
         const endpoint = waitingForClarification ? "/clarify" : "/message";
         const payload = waitingForClarification
-            ? { thread_id: threadId, clarification: msg }
-            : { thread_id: threadId, message: msg };
+            ? { clarification: msg }
+            : { message: msg };
 
-        const resp = await fetch(`${API_BASE}${endpoint}`, {
+        const resp = await authorizedFetch(`${API_BASE}${endpoint}`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(payload)
@@ -415,60 +456,43 @@ async function sendMessage() {
 }
 
 async function uploadDataFile() {
-    if (!dataFileInput) {
-        console.error("dataFileInput element not found!");
-        return;
-    }
-
     const file = dataFileInput.files[0];
     if (!file) {
-        if (dataUploadStatus) {
-            dataUploadStatus.textContent = "❌ Please select a file.";
-        }
+        dataUploadStatus.textContent = "❌ Please select a file.";
         return;
     }
 
-    if (dataUploadBtn) dataUploadBtn.disabled = true;
-    if (dataUploadStatus) dataUploadStatus.textContent = "⏳ Uploading...";
+    dataUploadBtn.disabled = true;
+    dataUploadStatus.textContent = "⏳ Uploading...";
 
     const formData = new FormData();
     formData.append("file", file);
-    const user = JSON.parse(localStorage.getItem("user"));
-    formData.append("thread_id", user.thread_id);
-    
+
     try {
-        const resp = await fetch(`${API_BASE}/upload_data`, {
+        const resp = await authorizedFetch(`${API_BASE}/upload_data`, {
             method: "POST",
             body: formData
         });
 
         if (!resp.ok) {
             const errorText = await resp.text();
-            console.error("Upload failed:", errorText);
-            if (dataUploadStatus) {
-                dataUploadStatus.textContent = "❌ Error: " + errorText;
-            }
+            dataUploadStatus.textContent = "❌ Error: " + errorText;
             return;
         }
 
         const result = await resp.json();
 
-        if (dataUploadStatus) {
-            dataUploadStatus.textContent = `✅ Imported table '${result.table_name}' with ${result.rows} rows.`;
-        }
+        dataUploadStatus.textContent =
+            `✅ Imported '${result.table_name}' — ${result.rows} rows`;
 
-        if (dataSourceList) {
-            const el = document.createElement("div");
-            el.textContent = `📄 ${result.table_name} — ${result.rows} rows`;
-            dataSourceList.appendChild(el);
-        }
+        const el = document.createElement("div");
+        el.textContent = `📄 ${result.table_name} — ${result.rows} rows`;
+        dataSourceList.appendChild(el);
+
     } catch (err) {
-        console.error("Upload error:", err);
-        if (dataUploadStatus) {
-            dataUploadStatus.textContent = "❌ Error occurred: " + err.message;
-        }
+        dataUploadStatus.textContent = "❌ Error occurred: " + err.message;
     } finally {
-        if (dataUploadBtn) dataUploadBtn.disabled = false;
+        dataUploadBtn.disabled = false;
     }
 }
 
