@@ -43,7 +43,7 @@ async function login() {
         await new Promise(resolve => setTimeout(resolve, 500));
 
         // Redirect to secured app
-        window.location.href = "/frontend/app.html";
+        window.location.href = "/app";
 
     } catch (err) {
         showError("Server error. Try again later.");

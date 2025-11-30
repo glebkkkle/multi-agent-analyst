@@ -43,14 +43,20 @@ app.add_middleware(
 # app.mount("/frontend", StaticFiles(directory="src/frontend", html=True), name="frontend")
 # app.mount("/", StaticFiles(directory="src/frontend", html=True), name="frontend")
 
-app.mount("/frontend", StaticFiles(directory="src/frontend"), name="frontend")
+# app.mount("/frontend", StaticFiles(directory="src/frontend"), name="static")
+app.mount("/static", StaticFiles(directory="src/frontend/static"), name="static")
+
 
 @app.post("/api/message")
 async def handle_message(payload: dict, user: CurrentUser = Depends(get_current_user)):
+
     thread_id = user.thread_id
     message = payload["message"]
     return run_initial_graph(thread_id, message)
 
+@app.get("/app", response_class=HTMLResponse)
+async def app_page():
+    return FileResponse("src/frontend/app.html")
 
 @app.post("/api/clarify")
 async def handle_clarify(payload: dict, user: CurrentUser = Depends(get_current_user)):

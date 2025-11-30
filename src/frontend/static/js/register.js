@@ -35,7 +35,7 @@ async function registerUser() {
         btnText.innerHTML = '✓ Success!';
         await new Promise(r => setTimeout(r, 600));
 
-        window.location.href = "/frontend/app.html";
+        window.location.href = "/app";
 
     } catch (err) {
         showError("Server error.");
