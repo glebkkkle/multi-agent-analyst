@@ -7,7 +7,7 @@ from src.multi_agent_analyst.schemas.data_agent_schema import (
     MergeTablesSchema,
 )
 
-from src.multi_agent_analyst.db.db2 import get_conn
+from src.multi_agent_analyst.db.db_core import get_thread_conn
 
 from src.multi_agent_analyst.utils.utils import object_store, current_tables
 
@@ -17,15 +17,13 @@ from src.multi_agent_analyst.utils.utils import object_store, current_tables
 
 def make_sql_query_tool():
     """Factory: returns a SQL query execution tool."""
-    print(list(current_tables.keys())[0])
-    conn=get_conn(list(current_tables.keys())[0])
+    conn=get_thread_conn(list(current_tables.keys())[0])
     
     def sql_query(query: str):
         print(query)
         try:
             df = pd.read_sql_query(query, conn)
             conn.close()
-            print(df)
 
         except Exception as e:
             print(f'{e} was hit')
@@ -34,7 +32,7 @@ def make_sql_query_tool():
 
             }
         return object_store.save(df)
-    print('EXECUTED CORRECTLY')
+
     return StructuredTool.from_function(
         func=sql_query,
         name="sql_query",

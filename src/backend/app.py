@@ -15,7 +15,7 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 import psycopg2
 import bcrypt
-from src.multi_agent_analyst.db.db2 import conn 
+from src.multi_agent_analyst.db.db_core import conn 
 from fastapi import Form
 from src.multi_agent_analyst.db.loaders import load_user_tables
 from fastapi.responses import HTMLResponse, FileResponse
@@ -25,7 +25,7 @@ from src.backend.auth import get_current_user, CurrentUser
 from fastapi import Depends
 app = FastAPI()
 
-from fastapi.responses import RedirectResponse
+
 
 @app.get("/", response_class=HTMLResponse)
 async def root():
