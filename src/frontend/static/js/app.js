@@ -1,10 +1,15 @@
+const token = localStorage.getItem("access_token");
+if (!localStorage.getItem("access_token")) {
+    window.location.href = "/";
+}
+
 const API_BASE = "http://localhost:8000/api";
 let waitingForClarification = false;
 
 const PUBLIC_PAGES = [
-    "/frontend/index.html",
-    "/frontend/login.html",
-    "/frontend/register.html"
+    "/",
+    "/login.html",
+    "/register.html"
 ];
 
 const current = window.location.pathname;
@@ -14,7 +19,7 @@ if (PUBLIC_PAGES.includes(current)) {
 } else {
     const token = localStorage.getItem("access_token");
     if (!token) {
-        window.location.href = "/frontend/index.html";
+        window.location.href = "/";
     }
 }
 
@@ -34,7 +39,7 @@ function getToken() {
 async function authorizedFetch(url, options = {}) {
     const token = getToken();
     if (!token) {
-        window.location.href = "/frontend/register.html";
+        window.location.href = "/login.html";
         return;
     }
 
@@ -48,11 +53,8 @@ async function authorizedFetch(url, options = {}) {
     return fetch(url, options);
 }
 
-if (window.location.pathname.includes("app.html")) {
-    if (!localStorage.getItem("access_token")) {
-        window.location.href = "/frontend/index.html";
-    }
-}
+
+
 
 document.addEventListener("click", function (e) {
     const target = e.target.closest("#data-upload-btn");
