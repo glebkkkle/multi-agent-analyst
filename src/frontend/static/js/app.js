@@ -349,7 +349,121 @@ function addImage(base64OrBlob) {
     messagesDiv.appendChild(wrapper);
     messagesDiv.scrollTop = messagesDiv.scrollHeight;
 }
+function renderVisualization(vis) {
+    console.log("VIS RECEIVED:", vis);
 
+    // vis from backend is already the spec:
+    // { type: "visualization", plot_type: "scatter", x: [...], y: [...], ... }
+    const spec = vis;
+
+    const wrapper = document.createElement("div");
+    wrapper.classList.add("message", "bot", "viz-message");
+
+    const avatar = document.createElement("div");
+    avatar.classList.add("message-avatar");
+    avatar.textContent = "📊";
+
+    const content = document.createElement("div");
+    content.classList.add("message-content");
+
+    const container = document.createElement("div");
+    container.classList.add("viz-container");
+    container.style.width = "100%";
+    container.style.height = "550px";
+    container.style.marginTop = "12px";
+
+    content.appendChild(container);
+    wrapper.appendChild(avatar);
+    wrapper.appendChild(content);
+    messagesDiv.appendChild(wrapper);
+    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+
+    // ---------- DYNAMIC TRACE BUILDING ----------
+    let plotData = [];
+
+    switch (spec.plot_type) {
+        case "scatter":
+            plotData = [{
+                x: spec.x,
+                y: spec.y,
+                type: "scatter",
+                mode: "markers",
+                marker: {
+                    size: 10,
+                    color: "#38bdf8"
+                }
+            }];
+            break;
+
+        case "line_plot":
+            plotData = [{
+                x: spec.x,
+                y: spec.y,
+                type: "scatter",
+                mode: "lines",
+                line: {
+                    width: 3,
+                    color: "#38bdf8"
+                }
+            }];
+            break;
+
+        case "bar":
+            plotData = [{
+                x: spec.x,
+                y: spec.y,
+                type: "bar",
+                marker: {
+                    color: "#38bdf8"
+                }
+            }];
+            break;
+
+        default:
+            console.warn("Unknown plot_type, falling back to scatter:", spec.plot_type);
+            plotData = [{
+                x: spec.x,
+                y: spec.y,
+                type: "scatter",
+                mode: "markers",
+                marker: {
+                    size: 10,
+                    color: "#38bdf8"
+                }
+            }];
+    }
+
+    // ---------- LAYOUT (dark, frameless, bigger) ----------
+    const layout = {
+        title: {
+            text: spec.title,
+            font: { size: 20, color: "#e8e8f0" },
+            x: 0.5
+        },
+        xaxis: {
+            title: spec.labels?.x,
+            color: "#c8c8d8",
+            gridcolor: "rgba(255,255,255,0.06)",
+            zeroline: false,
+            showline: false,
+            ticks: "outside"
+        },
+        yaxis: {
+            title: spec.labels?.y,
+            color: "#c8c8d8",
+            gridcolor: "rgba(255,255,255,0.06)",
+            zeroline: false,
+            showline: false,
+            ticks: "outside"
+        },
+        plot_bgcolor: "#0f0f12",
+        paper_bgcolor: "rgba(0,0,0,0)",
+        margin: { l: 60, r: 40, t: 60, b: 60 }
+    };
+
+    // IMPORTANT: use plotData here, not "data"
+    Plotly.newPlot(container, plotData, layout);
+}
 function addLoadingIndicator() {
     const wrapper = document.createElement("div");
     wrapper.classList.add("message", "bot", "loading");
@@ -384,13 +498,24 @@ async function fetchObjectData(objId) {
         }
 
         const contentType = resp.headers.get("content-type");
+
+        // Case 1: Image
         if (contentType && contentType.includes("image")) {
             const blob = await resp.blob();
             return { type: "image", data: blob };
         }
 
-        const data = await resp.json();
-        return { type: "data", data: data };
+        // Case 2: JSON (dataframe OR visualization OR raw object)
+        const json = await resp.json();
+
+        // Visualization JSON
+        if (json.type === "visualization") {
+            return { type: "visualization", data: json };
+        }
+
+        // Otherwise raw data table or raw python object
+        return { type: "data", data: json };
+
     } catch (error) {
         console.error(`Error fetching object ${objId}:`, error);
         return null;
@@ -476,13 +601,16 @@ async function sendMessage() {
         if (finalResponse) {
             addMessage(finalResponse, "bot");
         }
-
         if (objId) {
             const objectResult = await fetchObjectData(objId);
 
             if (objectResult) {
                 if (objectResult.type === "image") {
                     addImage(objectResult.data);
+
+                } else if (objectResult.type === "visualization") {
+                    renderVisualization(objectResult.data);
+
                 } else if (objectResult.type === "data") {
                     addDataTable(objectResult.data);
                 }

@@ -23,6 +23,8 @@ from src.backend.auth import create_access_token, Token
 from datetime import timedelta
 from src.backend.auth import get_current_user, CurrentUser
 from fastapi import Depends
+from src.multi_agent_analyst.utils.utils import viz_json
+
 app = FastAPI()
 
 
@@ -70,7 +72,7 @@ from src.multi_agent_analyst.utils.utils import object_store
 @app.get("/api/object/{object_id}")
 async def get_object(object_id: str):
     obj = object_store.get(object_id)
-
+    print(obj)
     # Case 1: BytesIO buffer → image
     if hasattr(obj, "read"):
         obj.seek(0)

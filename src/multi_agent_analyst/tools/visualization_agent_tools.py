@@ -10,7 +10,7 @@ from src.multi_agent_analyst.schemas.visualization_agent_schema import (
     TableVisualizationSchema,
 )
 
-from src.multi_agent_analyst.utils.utils import object_store
+from src.multi_agent_analyst.utils.utils import object_store, viz_json
 
 plt.rcParams.update({
     "figure.facecolor": "#050508",
@@ -111,6 +111,16 @@ def make_scatter_plot_tool(df):
         cbar.outline.set_edgecolor(COLORS['primary'])
         cbar.outline.set_linewidth(1.5)
         cbar.outline.set_alpha(0.3)
+        vis_json = {
+            "type": "visualization",
+            "plot_type": "scatter",
+            "x": df[x_col].tolist(),
+            "y": df[y_col].tolist(),
+            "labels": {"x": x_col, "y": y_col},
+            "title": f"{y_col} vs {x_col}"
+        }
+        
+
         
         # Set labels with title
         ax.set_xlabel(x_col, fontsize=12, weight='bold')
@@ -141,7 +151,7 @@ def make_scatter_plot_tool(df):
         buf.seek(0)
         plt.close()
 
-        return object_store.save(buf)
+        return object_store.save(vis_json)
 
     return StructuredTool.from_function(
         func=scatter_plot,
@@ -174,72 +184,88 @@ def make_line_plot_tool(df):
             y_col = numeric_cols[0]
 
             # Create figure
-            fig, ax = plt.subplots(figsize=(14, 7), dpi=100)
+            # fig, ax = plt.subplots(figsize=(14, 7), dpi=100)
             
             # Plot line with gradient effect
             x_data = range(len(df))
             y_data = df[y_col].values
             
-            # Main line
-            line = ax.plot(x_data, y_data, 
-                          color=COLORS['primary'],
-                          linewidth=3,
-                          label=y_col,
-                          zorder=3)
+            # print(x_data)
+            # print(y_col)
+            # # Main line
+            # line = ax.plot(x_data, y_data, 
+            #               color=COLORS['primary'],
+            #               linewidth=3,
+            #               label=y_col,
+            #               zorder=3)
             
-            # Add markers
-            ax.scatter(x_data, y_data,
-                      color=COLORS['accent'],
-                      s=100,
-                      alpha=0.9,
-                      edgecolors='white',
-                      linewidth=2,
-                      zorder=4)
+            # # Add markers
+            # ax.scatter(x_data, y_data,
+            #           color=COLORS['accent'],
+            #           s=100,
+            #           alpha=0.9,
+            #           edgecolors='white',
+            #           linewidth=2,
+            #           zorder=4)
             
-            ax.fill_between(
-                x_data,
-                y_data,
-                color=COLORS['primary'],
-                alpha=0.12
-            )
+            # ax.fill_between(
+            #     x_data,
+            #     y_data,
+            #     color=COLORS['primary'],
+            #     alpha=0.12
+            # )
             
-            # Set labels
-            ax.set_xlabel('Date', fontsize=12, weight='bold')
-            ax.set_ylabel(y_col, fontsize=12, weight='bold')
-            ax.set_title(f'{y_col} Over Time', 
-                        fontsize=16, 
-                        weight='bold', 
-                        color='#e8e8f0',
-                        pad=20)
+            # # Set labels
+            # ax.set_xlabel('Date', fontsize=12, weight='bold')
+            # ax.set_ylabel(y_col, fontsize=12, weight='bold')
+            # ax.set_title(f'{y_col} Over Time', 
+            #             fontsize=16, 
+            #             weight='bold', 
+            #             color='#e8e8f0',
+            #             pad=20)
             
-            # Format x-axis with dates
-            ax.set_xticks(x_data[::max(1, len(x_data)//10)])
-            ax.set_xticklabels(df[date_col].iloc[::max(1, len(df)//10)], 
-                              rotation=45, 
-                              ha='right')
+            # # Format x-axis with dates
+            # ax.set_xticks(x_data[::max(1, len(x_data)//10)])
+            # ax.set_xticklabels(df[date_col].iloc[::max(1, len(df)//10)], 
+            #                   rotation=45, 
+            #                   ha='right')
             
-            # Apply modern styling
-            setup_plot_style(fig, ax)
+            # # Apply modern styling
+            # setup_plot_style(fig, ax)
             
-            # Add legend
-            ax.legend(loc='upper left', 
-                     framealpha=0.9,
-                     facecolor='#1a1625',
-                     edgecolor=COLORS['primary'],
-                     fontsize=10,
-                     labelcolor='#e8e8f0')
-            
-            plt.tight_layout()
+            # # Add legend
+            # ax.legend(loc='upper left', 
+            #          framealpha=0.9,
+            #          facecolor='#1a1625',
+            #          edgecolor=COLORS['primary'],
+            #          fontsize=10,
+            #          labelcolor='#e8e8f0')
+            print(x_data)
+            print(y_data)
+            x_data = list(range(len(df)))                     # Convert range → list
+            y_data = df[y_col].astype(float).tolist()  
+            vis_json = {
+                "type": "visualization",
+                "plot_type": "line_plot",
+                "x": x_data,
+                "y": y_data,
+                "labels": {"x": date_col, "y": y_col},
+                "title": "LINE PLOT"
+            }
 
-            buf = io.BytesIO()
-            plt.savefig(buf, format="png", bbox_inches='tight', facecolor=COLORS['background'], dpi=100)
-            buf.seek(0)
-            plt.close()
+
+
+            # plt.tight_layout()
+
+            # buf = io.BytesIO()
+            # plt.savefig(buf, format="png", bbox_inches='tight', facecolor=COLORS['background'], dpi=100)
+            # buf.seek(0)
+            # plt.close()
             
         except Exception as e:
             return {'exception': e}
             
-        return object_store.save(buf)
+        return object_store.save(vis_json)
 
     return StructuredTool.from_function(
         func=line_plot,
