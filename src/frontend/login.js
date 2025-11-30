@@ -1,4 +1,5 @@
 async function login() {
+    console.log("LOGIN JS EXECUTED");
     const email = document.getElementById("email").value.trim();
     const password = document.getElementById("password").value.trim();
     const errorDiv = document.getElementById("error");
@@ -32,11 +33,16 @@ async function login() {
             return;
         }
 
+        // -----------------------
+        // ⭐ IMPORTANT FIX ⭐
+        // Save JWT token
+        // -----------------------
+        localStorage.setItem("access_token", data.access_token);
+
         btnText.innerHTML = '✓ Success!';
         await new Promise(resolve => setTimeout(resolve, 500));
 
-        localStorage.setItem("user", JSON.stringify(data));
-
+        // Redirect to secured app
         window.location.href = "/frontend/app.html";
 
     } catch (err) {

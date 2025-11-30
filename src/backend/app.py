@@ -19,14 +19,17 @@ from src.multi_agent_analyst.db.db2 import conn
 from fastapi import Form
 from src.multi_agent_analyst.db.loaders import load_user_tables
 from fastapi.responses import HTMLResponse, FileResponse
-
+from src.backend.auth import create_access_token, Token
+from datetime import timedelta
+from src.backend.auth import get_current_user, CurrentUser
+from fastapi import Depends
 app = FastAPI()
 
 from fastapi.responses import RedirectResponse
 
 @app.get("/", response_class=HTMLResponse)
 async def root():
-    return FileResponse("src/frontend/register.html")
+    return FileResponse("src/frontend/index.html")
 
 # Allow frontend JS to call backend
 app.add_middleware(
@@ -43,15 +46,15 @@ app.add_middleware(
 app.mount("/frontend", StaticFiles(directory="src/frontend"), name="frontend")
 
 @app.post("/api/message")
-async def handle_message(payload: dict):
-    thread_id = payload["thread_id"]
+async def handle_message(payload: dict, user: CurrentUser = Depends(get_current_user)):
+    thread_id = user.thread_id
     message = payload["message"]
     return run_initial_graph(thread_id, message)
 
 
 @app.post("/api/clarify")
-async def handle_clarify(payload: dict):
-    thread_id = payload["thread_id"]
+async def handle_clarify(payload: dict, user: CurrentUser = Depends(get_current_user)):
+    thread_id = user.thread_id
     clarification = payload["clarification"]
     return resume_graph(thread_id, clarification)
 
@@ -80,17 +83,17 @@ async def get_object(object_id: str):
 
 @app.post("/api/upload_data")
 async def upload_data(
-    thread_id: str = Form(...),
     file: UploadFile = File(...),    
+    user: CurrentUser = Depends(get_current_user),
 ):
+    thread_id=user.thread_id
+
     print("Received thread_id:", thread_id)
     print('SAMPLES AND TABLES:')
     print(' ')
     tables=(load_user_tables(thread_id))
     print(tables)
     print(' ')
-
-
 
     if not thread_id:
         raise HTTPException(status_code=400, detail="thread_id missing")
@@ -134,7 +137,7 @@ class LoginRequest(BaseModel):
     email: str
     password: str
 
-@router.post("/login_raw")
+@router.post("/login_raw", response_model=Token)
 def login_raw(data: LoginRequest):
     cur = conn.cursor()
     
@@ -155,14 +158,15 @@ def login_raw(data: LoginRequest):
         raise HTTPException(401, "Invalid email or password")
     
     # success
-    return {
-        "user_id": user_id,
-        "email": email,
-        "thread_id": thread_id
-    }
+    access_token = create_access_token(
+        data={"user_id": user_id, "thread_id": thread_id},
+        expires_delta=timedelta(minutes=60 * 24),
+    )
+    print("SENDING TOKEN:", access_token)
 
+    return Token(access_token=access_token)
 
-@router.post("/register_raw")
+@router.post("/register_raw", response_model=Token)
 def register_raw(data: LoginRequest):
     email = data.email.strip().lower()
     password = data.password.strip()
@@ -177,6 +181,7 @@ def register_raw(data: LoginRequest):
     exists = cur.fetchone()
 
     if exists:
+        cur.close()
         raise HTTPException(400, "Email already registered")
 
     # Hash pw
@@ -201,12 +206,14 @@ def register_raw(data: LoginRequest):
     cur.execute(f"CREATE SCHEMA IF NOT EXISTS {thread_id}")
 
     conn.commit()
+    cur.close()
 
-    return {
-        "user_id": user_id,
-        "email": email,
-        "thread_id": thread_id
-    }
+    # ✅ Auto-login: issue JWT
+    access_token = create_access_token(
+        data={"user_id": user_id, "thread_id": thread_id},
+        expires_delta=timedelta(minutes=60 * 24),
+    )
 
+    return Token(access_token=access_token)
 
 app.include_router(router)

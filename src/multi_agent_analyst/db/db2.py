@@ -17,7 +17,6 @@ def get_conn(thread_id):
     host="localhost",
     port=5432
 )
-
     cur = conn.cursor()
 
     if thread_id is not None:
