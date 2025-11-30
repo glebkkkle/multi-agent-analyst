@@ -86,6 +86,53 @@ function initDataPageListeners() {
         dataUploadBtn.style.zIndex = "9999";
     }
 }
+async function loadDataSources() {
+    if (!dataSourceList) return;
+
+    dataSourceList.innerHTML = "";
+
+    try {
+        const resp = await authorizedFetch(`${API_BASE}/data_sources`);
+        if (!resp.ok) {
+            dataSourceList.innerHTML = "<div class='empty'>Failed to load sources</div>";
+            return;
+        }
+
+        const data = await resp.json();
+        const sources = data.sources || [];
+
+        if (sources.length === 0) {
+            dataSourceList.innerHTML = "<div class='empty'>No data sources</div>";
+            return;
+        }
+
+        sources.forEach(src => {
+            const el = document.createElement("div");
+            el.classList.add("data-source-item");
+
+            el.innerHTML = `
+                <div class="data-source-info">
+                    <div class="data-source-icon">📄</div>
+                    <div>
+                        <div class="data-source-title">${src.table_name}</div>
+                        <div class="data-source-meta">${src.filename || ""}</div>
+                    </div>
+                </div>
+
+                <div class="data-source-meta">
+                    ${src.uploaded_at ? new Date(src.uploaded_at).toLocaleString() : ""}
+                </div>
+            `;
+
+            dataSourceList.appendChild(el);
+        });
+
+    } catch (err) {
+        console.error("Failed to load data sources:", err);
+        dataSourceList.innerHTML = "<div class='empty'>Error loading sources</div>";
+    }
+}
+
 
 const navItems = document.querySelectorAll(".nav-item");
 const pages = document.querySelectorAll(".page");
@@ -110,6 +157,7 @@ navItems.forEach(item => {
         if (pageName === "data") {
             setTimeout(() => {
                 initDataPageListeners();
+                loadDataSources(); 
             }, 100);
         }
     });
@@ -510,4 +558,5 @@ window.addEventListener("load", () => {
     input.focus();
     showChatEmptyState();
     initDataPageListeners();
+    loadDataSources(); 
 });

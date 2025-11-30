@@ -1689,3 +1689,52 @@ body {
     }
 }
 
+/* Data Source List */
+.data-source-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 10px;
+}
+
+/* Individual card */
+.data-source-item {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    padding: 12px 16px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    transition: all 0.25s ease;
+    cursor: pointer;
+}
+
+/* Hover effect */
+.data-source-item:hover {
+    background: rgba(255, 255, 255, 0.07);
+    transform: translateY(-2px);
+    border-color: rgba(255, 255, 255, 0.15);
+    box-shadow: 0 6px 18px rgba(0,0,0,0.35);
+}
+
+/* File info */
+.data-source-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: #e2e8f0;
+    font-weight: 500;
+}
+
+.data-source-icon {
+    font-size: 20px;
+    opacity: 0.8;
+}
+
+/* Metadata */
+.data-source-meta {
+    font-size: 13px;
+    color: #a8b3c7;
+    opacity: 0.8;
+}

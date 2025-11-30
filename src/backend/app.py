@@ -92,23 +92,18 @@ async def upload_data(
     file: UploadFile = File(...),    
     user: CurrentUser = Depends(get_current_user),
 ):
-    thread_id=user.thread_id
-
-    print("Received thread_id:", thread_id)
-    print('SAMPLES AND TABLES:')
-    print(' ')
-    tables=(load_user_tables(thread_id))
-    print(tables)
-    print(' ')
+    thread_id = user.thread_id
 
     if not thread_id:
         raise HTTPException(status_code=400, detail="thread_id missing")
 
     filename = file.filename.lower()
 
+    # Validate extension
     if not (filename.endswith(".csv") or filename.endswith(".xlsx")):
         raise HTTPException(status_code=400, detail="Only CSV and XLSX accepted")
 
+    # Read file bytes
     raw = await file.read()
     buffer = io.BytesIO(raw)
 
@@ -118,6 +113,44 @@ async def upload_data(
 
     schema_dict = infer_schema(df)
     table_name = filename.split(".")[0]
+
+
+    with conn.cursor() as cur:
+        cur.execute("""
+            SELECT 1
+            FROM data_sources
+            WHERE thread_id = %s
+            AND original_filename = %s
+            LIMIT 1;
+        """, (thread_id, filename))
+        file_exists = cur.fetchone()
+
+    if file_exists:
+        raise HTTPException(
+            status_code=400,
+            detail=f"File '{filename}' was already uploaded earlier."
+        )
+
+
+    # ------------------------------------
+    # 🔥 Duplicate TABLE check (schema-level)
+    # ------------------------------------
+    with conn.cursor() as cur:
+        cur.execute("""
+            SELECT EXISTS (
+                SELECT 1
+                FROM information_schema.tables
+                WHERE table_schema = %s
+                AND table_name = %s
+            );
+        """, (thread_id, table_name))
+        table_exists = cur.fetchone()[0]
+
+    if table_exists:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Table '{table_name}' already exists."
+        )
 
     ensure_schema(thread_id)
     create_table(thread_id, table_name, schema_dict)
@@ -221,5 +254,54 @@ def register_raw(data: LoginRequest):
     )
 
     return Token(access_token=access_token)
+
+@app.get("/api/data_sources")
+def list_data_sources(user: CurrentUser = Depends(get_current_user)):
+
+    thread_id = user.thread_id
+
+    with conn.cursor() as cur:
+
+        # 1. Load all table names inside the user's Postgres schema
+        cur.execute("""
+            SELECT table_name
+            FROM information_schema.tables
+            WHERE table_schema = %s
+            ORDER BY table_name;
+        """, (thread_id,))
+        tables = [row[0] for row in cur.fetchall()]
+
+        # 2. Load metadata from data_sources table filtered by thread_id
+        cur.execute("""
+            SELECT table_name, original_filename, uploaded_at
+            FROM data_sources
+            WHERE thread_id = %s
+            ORDER BY uploaded_at DESC;
+        """, (thread_id,))
+        meta = cur.fetchall()
+
+    # Convert metadata rows into dict for fast lookup
+    meta_dict = {
+        m[0]: {
+            "filename": m[1],
+            "uploaded_at": m[2]
+        }
+        for m in meta
+    }
+
+    # Build frontend response
+    response = []
+    for tbl in tables:
+        print(meta_dict.get(tbl, {}).get('filename'), tbl)
+
+        response.append({
+            "table_name": tbl,
+            "filename": meta_dict.get(tbl, {}).get("filename", tbl),
+        })
+
+    return {"sources": response}
+
+
+
 
 app.include_router(router)

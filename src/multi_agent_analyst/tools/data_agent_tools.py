@@ -14,7 +14,6 @@ from src.multi_agent_analyst.utils.utils import object_store, current_tables
 
 #need to make sure executes from the correct thread_id tables
 
-
 def make_sql_query_tool():
     """Factory: returns a SQL query execution tool."""
     conn=get_thread_conn(list(current_tables.keys())[0])

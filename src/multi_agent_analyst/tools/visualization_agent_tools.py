@@ -6,8 +6,6 @@ import numpy as np
 from langchain_core.tools import StructuredTool
 
 from src.multi_agent_analyst.schemas.visualization_agent_schema import (
-    LinePlotSchema,
-    ScatterPlotSchema,
     PieChartSchema,
     TableVisualizationSchema,
 )
@@ -138,6 +136,8 @@ def make_scatter_plot_tool(df):
         
         buf = io.BytesIO()
         plt.savefig(buf, format="png", bbox_inches='tight', facecolor=COLORS['background'], dpi=100)
+        # svg=buf.getvalue()
+        # print(svg)
         buf.seek(0)
         plt.close()
 
@@ -322,7 +322,7 @@ def make_pie_chart_tool(df):
 
 def make_bar_chart_tool(df):
     """Beautiful bar chart with gradients and modern styling."""
-    
+
     def bar_chart():
         try:
             # Get first categorical and first numeric column
