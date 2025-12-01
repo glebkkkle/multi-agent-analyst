@@ -378,42 +378,6 @@ function renderVisualization(vis) {
     messagesDiv.appendChild(wrapper);
     messagesDiv.scrollTop = messagesDiv.scrollHeight;
 
-    // Add CSS animations if not already added - PURE CSS ONLY
-    if (!document.getElementById('viz-animations')) {
-        const style = document.createElement('style');
-        style.id = 'viz-animations';
-        style.textContent = `
-            .viz-container {
-                border-radius: 16px !important;
-                background: linear-gradient(135deg, rgba(15, 23, 42, 0.6) 0%, rgba(30, 41, 59, 0.6) 100%) !important;
-                padding: 20px !important;
-                box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(96, 165, 250, 0.1) !important;
-                backdrop-filter: blur(10px) !important;
-                animation: slideInUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) !important;
-                position: relative;
-                overflow: visible !important;
-                transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
-            }
-            
-            @keyframes slideInUp {
-                from {
-                    opacity: 0;
-                    transform: translateY(30px) scale(0.95);
-                }
-                to {
-                    opacity: 1;
-                    transform: translateY(0) scale(1);
-                }
-            }
-            
-            .viz-container:hover {
-                box-shadow: 0 25px 70px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(96, 165, 250, 0.3) !important;
-                transform: translateY(-2px) !important;
-            }
-        `;
-        document.head.appendChild(style);
-    }
-
     // ---------- DYNAMIC TRACE BUILDING ----------
     let plotData = [];
 
@@ -499,7 +463,7 @@ function renderVisualization(vis) {
                 weight: 600
             },
             x: 0.5,
-            y: 0.98,
+            y: 0.95,
             xanchor: "center",
             yanchor: "top"
         },
@@ -511,11 +475,11 @@ function renderVisualization(vis) {
                     color: "#cbd5e1",
                     family: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
                 },
-                standoff: 10
+                standoff: 15
             },
             color: "#94a3b8",
-            gridcolor: "rgba(0, 0, 0, 0)",
-            gridwidth: 0,
+            gridcolor: "rgba(148, 163, 184, 0.15)",
+            gridwidth: 1,
             zeroline: false,
             showline: true,
             linecolor: "rgba(148, 163, 184, 0.3)",
@@ -535,11 +499,11 @@ function renderVisualization(vis) {
                     color: "#cbd5e1",
                     family: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
                 },
-                standoff: 10
+                standoff: 15
             },
             color: "#94a3b8",
-            gridcolor: "rgba(0, 0, 0, 0)",
-            gridwidth: 0,
+            gridcolor: "rgba(148, 163, 184, 0.15)",
+            gridwidth: 1,
             zeroline: false,
             showline: true,
             linecolor: "rgba(148, 163, 184, 0.3)",
@@ -553,7 +517,7 @@ function renderVisualization(vis) {
         },
         plot_bgcolor: "#0f172a",
         paper_bgcolor: "rgba(0,0,0,0)",
-        margin: { l: 60, r: 30, t: 60, b: 50 },
+        margin: { l: 80, r: 50, t: 80, b: 70 },
         hovermode: "closest",
         hoverlabel: {
             bgcolor: "#1e293b",
