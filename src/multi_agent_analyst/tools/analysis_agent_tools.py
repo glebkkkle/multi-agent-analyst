@@ -35,19 +35,25 @@ def make_anomaly_tool(df):
     def anomaly():
         try:
             numeric = df.select_dtypes(include=["int", "float"])
+            print('DETECTING')
             # if column:
             #     numeric = numeric[[column]]
-
+            print(numeric)
             q1 = numeric.quantile(0.25)
             q3 = numeric.quantile(0.75)
             iqr = q3 - q1
 
-            outliers = numeric[(numeric < q1 - 1.5 * iqr) | (numeric > q3 + 1.5 * iqr)]
+            mask = (numeric < (q1 - 1.5 * iqr)) | (numeric > (q3 + 1.5 * iqr))
+            print(mask)
+            outliers = numeric[mask]
+            print(outliers)
         except Exception as e:
+            print(e)
             return {
+
                 'exception': e
             }
-        return object_store.save(outliers)
+        return object_store.save(mask)
 
     return StructuredTool.from_function(
         func=anomaly,
@@ -55,6 +61,8 @@ def make_anomaly_tool(df):
         description="Detect outliers using IQR rule.",
         args_schema=AnomalySchema,
     )
+
+#perhaps make the resolver agent-specific helper 
 
 
 def make_periodic_tool(df):

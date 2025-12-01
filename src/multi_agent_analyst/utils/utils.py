@@ -18,7 +18,6 @@ class ObjectStore:
 
 object_store = ObjectStore()
 
-
 class CurrentToolContext:
     def __init__(self):
         self.dict={'DataAgent':{}, 'AnalysisAgent':{}, 'VisualizationAgent':{}}
@@ -33,11 +32,11 @@ class ExecutionLogEntry(BaseModel):
     id: str
     agent: str
     sub_query: str
-    inputs:List[str]=[]
-    outputs:List[str]=[]
-    status: str  # "success" | "error"
+    inputs:Optional[List[str]]=None
+    outputs:Optional[List[str]]=None
+    status: Optional[str]=None  # "success" | "error"
     output_object_id: Optional[str] = None
-    error_message: str | None = None
+    error_message: Optional[str] = None
 
 class ExecutionLogList(BaseModel):
     execution_log_list:Dict[str, ExecutionLogEntry]={}

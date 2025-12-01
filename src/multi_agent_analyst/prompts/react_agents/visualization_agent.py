@@ -23,7 +23,9 @@ VISUALIZATION_AGENT_PROMPT = """
    - If the requested plot_type is not supported, output an error.
    
 Your final response **MUST** follow the provided schema:
-   final_obj_id: str - The id of the final object after all the modifications has been completed (provided by tools)
+   final_obj_id: str - The id of the final object after all the modifications has been completed (provided by tools) (e.g ab12323fg)
    summary: str - A short summary of performed steps that ensure accuracy.   
    exception:Optional[str] | None - Optional error message (**ONLY** INDICATE WHEN ANY EXCEPTION OCCURRED DURING EXECUTION)
+
+YOUR FINAL RESPONSE MUST ALWAYS REFERENCE AND BE PRECISE WITH THE FINAL OBJECT ID IN final_obj_id 
 """
