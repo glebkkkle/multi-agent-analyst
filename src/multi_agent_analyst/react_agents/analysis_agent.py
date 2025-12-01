@@ -12,6 +12,7 @@ from src.multi_agent_analyst.tools.analysis_agent_tools import (
     make_periodic_tool,
     make_summary_tool,
 )
+from pydantic import BaseModel
 from src.multi_agent_analyst.prompts.react_agents.analysis_agent import ANALYST_AGENT_PROMPT
 from src.multi_agent_analyst.schemas.analysis_agent_schema import ExternalAgentSchema
 from src.multi_agent_analyst.utils.utils import context, object_store
@@ -19,10 +20,18 @@ from src.multi_agent_analyst.utils.utils import execution_list, ExecutionLogEntr
 openai_llm = ChatOpenAI(model="gpt-4.1-mini")
 
 
-@tool
+class AnalysisAgentArgs(BaseModel):
+    analysis_query: str
+    current_plan_step: str
+    data_id: str
+
+@tool(args_schema=AnalysisAgentArgs)
 def analysis_agent(analysis_query: str, current_plan_step: str, data_id: str):
     """Analysis Agent performing correlation, anomaly detection, periodicity, etc."""
 
+    # print(analysis_query, current_plan_step, data_id)
+    log=ExecutionLogEntry(id=current_plan_step, agent='AnalysisAgent', sub_query=analysis_query)
+    execution_list.execution_log_list.setdefault(current_plan_step, log)
     # 1) Load the data based on the ID
     df = object_store.get(data_id)
 
@@ -50,15 +59,17 @@ def analysis_agent(analysis_query: str, current_plan_step: str, data_id: str):
     msg=json.loads(last)
     final_obj_id=msg['object_id']
     # 5) Save final output ID
-
+    exception=msg['exception']
     context.set("AnalysisAgent", current_plan_step,final_obj_id)
 
-    log=ExecutionLogEntry(step_id=current_plan_step, agent='AnalysisAgent', sub_query=analysis_query, status='success', output_object_id=final_obj_id)
+    log.output_object_id=final_obj_id
+
+    log.status='success' if exception is None else 'error'
+    # # #move the log 
     
-    print(' ')
-    print('ANALYSIS AGENT LOG')
-    print(log)
-    print(' ')
-    execution_list.execution_log_list.setdefault(current_plan_step, log)
-    print(execution_list.execution_log_list)
+    # print(log)
+    # print(' ')
+    # execution_list.execution_log_list.setdefault(current_plan_step, log)
+    execution_list.execution_log_list[current_plan_step]=log
+
     return last

@@ -11,15 +11,20 @@ llm = ChatOpenAI(model="gpt-4.1-mini")
 def resolver_agent(failed_step:str):
     'Resolver Agent that can solve exceptions that occurred during execution'
     'Args:failed_step:str'
-
-    step_log=execution_list.execution_log_list[failed_step]
-
-    current_exception=step_log.error_message
+    print('CALLING RESOLVER')
+    
+    print(failed_step)
+    step_log=execution_list.execution_log_list.get(failed_step)
+    
+    print(step_log)
+    current_exception=step_log.error_message if step_log.error_message is not None else step_log.error_message
 
     @tool
     def context_lookup(agent_name:str):
+        print('CALLING WITH REPAIR')
+        print(agent_name)
         'A tool that can look up the context dictionary to inspect ids returned by the agents.'
-        results=context[agent_name]
+        results=context.get(agent_name)
         return results
 
     agent=create_agent(model=llm, tools=[context_lookup],response_format=ResolverOutput)
@@ -27,3 +32,6 @@ def resolver_agent(failed_step:str):
     result=agent.invoke({'messages':[{'role':'user', 'content':RESOLVER_AGENT_PROMPT.format(error_message=current_exception,failed_step=step_log, context=context, execution_log=execution_list.execution_log_list)}]})
 
     return result
+
+
+#'TypeError: 'CurrentToolContext' object is not subscriptable'

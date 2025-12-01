@@ -79,7 +79,8 @@ def router_node(state: GraphState):
 
     last = [m for m in result["messages"] if isinstance(m, AIMessage)][-1].content
     d = json.loads(last)
-
+    print(result)
+    
     return {
         "final_obj_id": d["object_id"],
         "summary": d["summary"]

@@ -9,12 +9,12 @@ from src.multi_agent_analyst.react_agents.analysis_agent import analysis_agent
 from src.multi_agent_analyst.react_agents.visualization_agent import visualization_agent
 from src.multi_agent_analyst.react_agents.resolver_agent import resolver_agent
 
-openai_llm = ChatOpenAI(model="gpt-4.1-mini")
+openai_llm = ChatOpenAI(model="gpt-5-mini")
 llm = ChatOllama(model="gpt-oss:20b", temperature=0)
 
 controller_agent = create_agent(
     model=openai_llm,
-    tools=[data_agent, analysis_agent, visualization_agent, resolver_agent],
+    tools=[data_agent, analysis_agent, visualization_agent],
     system_prompt=CONTROLLER_AGENT_PROMPT,
     response_format=ExternalAgentSchema,
 )

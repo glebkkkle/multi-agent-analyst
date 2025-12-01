@@ -28,7 +28,12 @@ IMPORTANT RULES FOR WORKING WITH DATA:
 
 - The next tool must use obj_92bc33 as the input table.
 
+Your final response **MUST** follow the provided schema:
+   final_obj_id: str - The id of the final object after all the modifications has been completed (provided by tools) (e.g ab12323fg)
+   summary: str - A short summary of performed steps that ensure accuracy.   
+   exception:Optional[str] | None - Optional error message (**ONLY** INDICATE WHEN ANY EXCEPTION OCCURRED DURING EXECUTION)
 
 You must follow these rules EXACTLY.
+YOUR FINAL RESPONSE MUST ALWAYS REFERENCE AND BE PRECISE WITH THE FINAL OBJECT ID IN final_obj_id 
 """
 

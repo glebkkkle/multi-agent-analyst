@@ -14,8 +14,10 @@ RULES:
 ALL of the tools available already operate within a relevant table internally, so your task is to only coordinate correct order of execution, and specify appropriate (if any) arguments to tools.
 
 Your final response should follow the given schema :
-   final_obj_id: str - The id of the final object after all the modifications has been completed
+   final_obj_id: str - The id of the final object after all the modifications has been completed (E.G asbfdbv1223)
    summary: str - A short summary of performed steps that ensure accuracy.   
    exception:Optional[str] | None - Optional error message (**ONLY** INDICATE WHEN ANY EXCEPTION OCCURRED DURING EXECUTION)
-Begin.
+
+YOUR FINAL RESPONSE MUST ALWAYS REFERENCE AND BE PRECISE WITH THE FINAL OBJECT ID IN final_obj_id 
+
 """

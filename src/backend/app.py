@@ -54,6 +54,11 @@ app.mount("/static", StaticFiles(directory="src/frontend/static"), name="static"
 
 
 
+#some issues with the database, more tools are needed, prettier visualization, more concise summary
+
+#redis, rag later
+
+
 @app.post("/api/message")
 async def handle_message(payload: dict, user: CurrentUser = Depends(get_current_user)):
 

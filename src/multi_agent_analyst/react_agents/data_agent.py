@@ -45,7 +45,7 @@ def data_agent(data_agent_query: str, current_plan_step: str):
     log=ExecutionLogEntry(id=current_plan_step, agent='DataAgent', sub_query=data_agent_query, status='success' if exception is None else exception, output_object_id=final_obj_id, error_message=exception if exception is not None else None)
     execution_list.execution_log_list.setdefault(current_plan_step, log)
 
-
+    print(result)
     context.set("DataAgent", current_plan_step, final_obj_id)
 
     return last_msg
