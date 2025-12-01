@@ -31,6 +31,10 @@ app = FastAPI()
 
 @app.get("/", response_class=HTMLResponse)
 async def root():
+    return FileResponse("src/frontend/register.html")
+
+@app.get("/login", response_class=HTMLResponse)
+def login_page():
     return FileResponse("src/frontend/index.html")
 
 # Allow frontend JS to call backend
@@ -47,6 +51,7 @@ app.add_middleware(
 
 # app.mount("/frontend", StaticFiles(directory="src/frontend"), name="static")
 app.mount("/static", StaticFiles(directory="src/frontend/static"), name="static")
+
 
 
 @app.post("/api/message")

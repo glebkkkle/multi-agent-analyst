@@ -8,7 +8,7 @@ let waitingForClarification = false;
 
 const PUBLIC_PAGES = [
     "/",
-    "/login.html",
+    "/index.html",
     "/register.html"
 ];
 
@@ -19,7 +19,7 @@ if (PUBLIC_PAGES.includes(current)) {
 } else {
     const token = localStorage.getItem("access_token");
     if (!token) {
-        window.location.href = "/";
+        window.location.href = "/index.html";
     }
 }
 
@@ -39,7 +39,7 @@ function getToken() {
 async function authorizedFetch(url, options = {}) {
     const token = getToken();
     if (!token) {
-        window.location.href = "/login.html";
+        window.location.href = "/index.html";
         return;
     }
 
