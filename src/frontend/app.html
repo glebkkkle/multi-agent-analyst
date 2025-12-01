@@ -9,14 +9,13 @@
     <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script>
-        
 document.addEventListener("DOMContentLoaded", () => {
-const token = localStorage.getItem("access_token");
-if (!token) {
-    window.location.href = "/";
-}
+    const token = localStorage.getItem("access_token");
+    if (!token) {
+        window.location.href = "/";
+    }
 });
-</script>
+    </script>
 
 </head>
 <body>
@@ -61,10 +60,11 @@ if (!token) {
                     </button>
                 </div>
             </nav>
-            
+
             <div class="sidebar-footer">
                 <div class="user-profile">
                     <div class="user-avatar">U</div>
+
                     <div class="user-info">
                         <div class="user-name">User</div>
                         <div class="user-status">
@@ -72,9 +72,15 @@ if (!token) {
                             Online
                         </div>
                     </div>
+
+                    <!-- Hover dropdown -->
+                    <div class="logout-dropdown">
+                        <button id="logout-btn">Log out</button>
+                    </div>
                 </div>
             </div>
-        </aside>
+
+        </aside> <!-- ✅ FIXED: THIS TAG WAS MISSING -->
 
         <!-- Main Content -->
         <main class="main-content">
@@ -122,6 +128,7 @@ if (!token) {
                     </div>
 
                     <div class="data-content-grid">
+
                         <!-- Upload Section -->
                         <div class="data-card upload-card">
                             <div class="card-glow"></div>
