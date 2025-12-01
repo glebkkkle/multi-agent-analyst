@@ -378,6 +378,42 @@ function renderVisualization(vis) {
     messagesDiv.appendChild(wrapper);
     messagesDiv.scrollTop = messagesDiv.scrollHeight;
 
+    // Add CSS animations if not already added - PURE CSS ONLY
+    if (!document.getElementById('viz-animations')) {
+        const style = document.createElement('style');
+        style.id = 'viz-animations';
+        style.textContent = `
+            .viz-container {
+                border-radius: 16px !important;
+                background: linear-gradient(135deg, rgba(15, 23, 42, 0.6) 0%, rgba(30, 41, 59, 0.6) 100%) !important;
+                padding: 20px !important;
+                box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(96, 165, 250, 0.1) !important;
+                backdrop-filter: blur(10px) !important;
+                animation: slideInUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) !important;
+                position: relative;
+                overflow: visible !important;
+                transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
+            }
+            
+            @keyframes slideInUp {
+                from {
+                    opacity: 0;
+                    transform: translateY(30px) scale(0.95);
+                }
+                to {
+                    opacity: 1;
+                    transform: translateY(0) scale(1);
+                }
+            }
+            
+            .viz-container:hover {
+                box-shadow: 0 25px 70px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(96, 165, 250, 0.3) !important;
+                transform: translateY(-2px) !important;
+            }
+        `;
+        document.head.appendChild(style);
+    }
+
     // ---------- DYNAMIC TRACE BUILDING ----------
     let plotData = [];
 
@@ -389,8 +425,13 @@ function renderVisualization(vis) {
                 type: "scatter",
                 mode: "markers",
                 marker: {
-                    size: 10,
-                    color: "#38bdf8"
+                    size: 12,
+                    color: "#60a5fa",
+                    line: {
+                        color: "#3b82f6",
+                        width: 2
+                    },
+                    opacity: 0.85
                 }
             }];
             break;
@@ -402,9 +443,13 @@ function renderVisualization(vis) {
                 type: "scatter",
                 mode: "lines",
                 line: {
-                    width: 3,
-                    color: "#38bdf8"
-                }
+                    width: 4,
+                    color: "#60a5fa",
+                    shape: "spline",
+                    smoothing: 0.3
+                },
+                fill: "tozeroy",
+                fillcolor: "rgba(96, 165, 250, 0.1)"
             }];
             break;
 
@@ -414,7 +459,12 @@ function renderVisualization(vis) {
                 y: spec.y,
                 type: "bar",
                 marker: {
-                    color: "#38bdf8"
+                    color: "#60a5fa",
+                    line: {
+                        color: "#3b82f6",
+                        width: 1.5
+                    },
+                    opacity: 0.9
                 }
             }];
             break;
@@ -427,42 +477,108 @@ function renderVisualization(vis) {
                 type: "scatter",
                 mode: "markers",
                 marker: {
-                    size: 10,
-                    color: "#38bdf8"
+                    size: 12,
+                    color: "#60a5fa",
+                    line: {
+                        color: "#3b82f6",
+                        width: 2
+                    },
+                    opacity: 0.85
                 }
             }];
     }
 
-    // ---------- LAYOUT (dark, frameless, bigger) ----------
+    // ---------- LAYOUT (enhanced dark theme with beautiful styling) ----------
     const layout = {
         title: {
             text: spec.title,
-            font: { size: 20, color: "#e8e8f0" },
-            x: 0.5
+            font: { 
+                size: 24, 
+                color: "#f1f5f9",
+                family: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+                weight: 600
+            },
+            x: 0.5,
+            y: 0.98,
+            xanchor: "center",
+            yanchor: "top"
         },
         xaxis: {
-            title: spec.labels?.x,
-            color: "#c8c8d8",
-            gridcolor: "rgba(255,255,255,0.06)",
+            title: {
+                text: spec.labels?.x,
+                font: { 
+                    size: 14, 
+                    color: "#cbd5e1",
+                    family: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
+                },
+                standoff: 10
+            },
+            color: "#94a3b8",
+            gridcolor: "rgba(0, 0, 0, 0)",
+            gridwidth: 0,
             zeroline: false,
-            showline: false,
-            ticks: "outside"
+            showline: true,
+            linecolor: "rgba(148, 163, 184, 0.3)",
+            linewidth: 2,
+            ticks: "outside",
+            tickcolor: "rgba(148, 163, 184, 0.3)",
+            tickfont: { 
+                size: 12, 
+                color: "#94a3b8" 
+            }
         },
         yaxis: {
-            title: spec.labels?.y,
-            color: "#c8c8d8",
-            gridcolor: "rgba(255,255,255,0.06)",
+            title: {
+                text: spec.labels?.y,
+                font: { 
+                    size: 14, 
+                    color: "#cbd5e1",
+                    family: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
+                },
+                standoff: 10
+            },
+            color: "#94a3b8",
+            gridcolor: "rgba(0, 0, 0, 0)",
+            gridwidth: 0,
             zeroline: false,
-            showline: false,
-            ticks: "outside"
+            showline: true,
+            linecolor: "rgba(148, 163, 184, 0.3)",
+            linewidth: 2,
+            ticks: "outside",
+            tickcolor: "rgba(148, 163, 184, 0.3)",
+            tickfont: { 
+                size: 12, 
+                color: "#94a3b8" 
+            }
         },
-        plot_bgcolor: "#0f0f12",
+        plot_bgcolor: "#0f172a",
         paper_bgcolor: "rgba(0,0,0,0)",
-        margin: { l: 60, r: 40, t: 60, b: 60 }
+        margin: { l: 60, r: 30, t: 60, b: 50 },
+        hovermode: "closest",
+        hoverlabel: {
+            bgcolor: "#1e293b",
+            bordercolor: "#60a5fa",
+            font: { 
+                size: 13, 
+                color: "#f1f5f9",
+                family: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
+            }
+        },
+        font: {
+            family: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
+        }
+    };
+
+    // Enhanced config for better interactivity
+    const config = {
+        responsive: true,
+        displayModeBar: true,
+        displaylogo: false,
+        modeBarButtonsToRemove: ['lasso2d', 'select2d']
     };
 
     // IMPORTANT: use plotData here, not "data"
-    Plotly.newPlot(container, plotData, layout);
+    Plotly.newPlot(container, plotData, layout, config);
 }
 function addLoadingIndicator() {
     const wrapper = document.createElement("div");
