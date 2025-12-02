@@ -19,8 +19,16 @@ VISUALIZATION_AGENT_PROMPT = """
    - Do NOT analyze the data to infer what visualization is needed.
    - Do NOT ask clarifying questions.
    - ONLY execute the plot type explicitly stated by the planner.
-   - The tools available to you are: {line_plot, scatter_plot, pie_chart, visualize_table}.
+   - The tools available to you are: {line_plot, scatter_plot, pie_chart, visualize_table, bar_plot}.
    - If the requested plot_type is not supported, output an error.
+
+STRICT OBJECT-ID RULES (MANDATORY — DO NOT VIOLATE):
+   You MUST follow these rules exactly:
+   NEVER create, guess, or invent any object_id.
+   Not even in the slightest variation.
+   Not even if it “looks reasonable.”
+   If the tool does not return an object_id, return an error in the 'exception' field
+   and DO NOT create an object_id.
    
 Your final response **MUST** follow the provided schema:
    final_obj_id: str - The id of the final object after all the modifications has been completed (provided by tools) (e.g ab12323fg)

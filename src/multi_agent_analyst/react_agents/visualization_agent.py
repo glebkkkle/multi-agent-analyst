@@ -5,6 +5,7 @@ from langchain.tools import tool
 from langchain_core.messages import AIMessage
 from langchain_ollama import ChatOllama
 import json
+from langchain_openai import ChatOpenAI
 from src.multi_agent_analyst.prompts.react_agents.visualization_agent import VISUALIZATION_AGENT_PROMPT
 from src.multi_agent_analyst.schemas.visualization_agent_schema import ExternalAgentSchema
 from src.multi_agent_analyst.tools.visualization_agent_tools import (
@@ -12,11 +13,12 @@ from src.multi_agent_analyst.tools.visualization_agent_tools import (
     make_scatter_plot_tool,
     make_pie_chart_tool,
     make_table_visualization_tool,
+    make_bar_chart_tool
 )
 from src.multi_agent_analyst.utils.utils import context, object_store, execution_list, ExecutionLogEntry
 
 tool_llm = ChatOllama(model="gpt-oss:20b", temperature=0)
-
+openai_llm = ChatOpenAI(model="gpt-4.1-mini")
 
 @tool(description="Visualization agent returning images/tables based on query.")
 def visualization_agent(visualizer_query: str, current_plan_step: str, data_id: str):
@@ -28,10 +30,11 @@ def visualization_agent(visualizer_query: str, current_plan_step: str, data_id: 
         make_scatter_plot_tool(df),
         make_pie_chart_tool(df),
         make_table_visualization_tool(df),
+        make_bar_chart_tool(df)
     ]
 
     agent = create_agent(
-        tool_llm,
+        openai_llm,
         tools=tools,
         system_prompt=VISUALIZATION_AGENT_PROMPT,
         response_format=ExternalAgentSchema,

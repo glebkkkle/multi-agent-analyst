@@ -14,11 +14,13 @@ from src.multi_agent_analyst.prompts.graph.revision import PLAN_REVISION_PROMPT
 from src.multi_agent_analyst.prompts.graph.summarizer import SUMMARIZER_PROMPT
 from src.multi_agent_analyst.prompts.chat.intent_classifier import CHAT_INTENT_PROMPT
 from src.multi_agent_analyst.prompts.chat.context_agent import CONTEXT_AGENT_PROMPT
+from src.multi_agent_analyst.prompts.chat.chat_reply_prompt import CHAT_REPLY_PROMPT
 
 ollama_llm=ChatOllama(model='gpt-oss:20b', temperature=0)
 llm=ChatOpenAI(model='gpt-4.1-mini')
 
 def planner_node(state: GraphState):
+    #perhaps fix the planner so outputs are [smth.example_obj_id]
     print("\nPLAN RECEIVED\n")
 
     query = state.clean_query or state.query
@@ -87,28 +89,32 @@ def router_node(state: GraphState):
     }
 
 def summarizer_node(state: GraphState):
-    obj = object_store.get(state.final_obj_id)
+    if state.desicion == 'chat':
+        return {'final_response':state.final_response, "image_base64":None, 'final_obj_id':None}
 
-    image_base64 = None
-    if isinstance(obj, io.BytesIO):
-        image_base64 = base64.b64encode(obj.getvalue()).decode()
+    elif state.desicion == 'planner':
+        obj = object_store.get(state.final_obj_id)
 
-    model = ChatOllama(model="gpt-oss:20b", temperature=0)
-    final_text = model.invoke(
-        SUMMARIZER_PROMPT.format(
-            user_query=state.query,
-            obj=obj,
-            summary=state.summary
-        )
-    ).content
+        image_base64 = None
+        if isinstance(obj, io.BytesIO):
+            image_base64 = base64.b64encode(obj.getvalue()).decode()
 
-    execution_list.execution_log_list.clear()
+        model = ChatOllama(model="gpt-oss:20b", temperature=0)
+        final_text = model.invoke(
+            SUMMARIZER_PROMPT.format(
+                user_query=state.query,
+                obj=obj,
+                summary=state.summary
+            )
+        ).content
 
-    return {
-        "final_response": final_text,
-        "image_base64": image_base64,
-        "final_obj_id": state.final_obj_id
-    }
+        execution_list.execution_log_list.clear()
+
+        return {
+            "final_response": final_text,
+            "image_base64": image_base64,
+            "final_obj_id": state.final_obj_id
+        }
 
 def revision_router(state: GraphState):
     if state.valid:
@@ -153,7 +159,9 @@ def clarification_node(state: GraphState):
 
 def chat_node(state: GraphState):
     user_msg = state.query
-
+    current_tables.setdefault(state.thread_id, load_user_tables(state.thread_id))
+    print(current_tables)
+    print(type(current_tables))
     new_history = state.conversation_history + [
         {"role": "user", "content": user_msg}
     ]
@@ -171,11 +179,8 @@ def chat_node(state: GraphState):
     return {"conversation_history": new_history}
 
 def chat_reply(state: GraphState):
-    reply = llm.invoke(
-        f"You are a helpful assistant. Respond naturally to: {state.query}"
-    ).content
-
-    return {"final_response": reply}
+    reply = llm.invoke(CHAT_REPLY_PROMPT.format(user_query=state.query, conversation_history=state.conversation_history, data_list=state.data_samples))
+    return {"final_response": reply.content}
 #refactor react agents (architecture/tools)
 
 def context_node(state: GraphState):
@@ -187,3 +192,7 @@ def context_node(state: GraphState):
     ).clean_query
 
     return {"clean_query": clean, "desicion": state.desicion}
+
+
+#TIGHTEN THE PROMPTING for everything
+
