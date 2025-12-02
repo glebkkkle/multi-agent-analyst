@@ -17,7 +17,15 @@ IMPORTANT RULES FOR WORKING WITH DATA:
 7.Your final response should follow the given schema :
    final_obj_id: str - The id of the final object (data) after all the modifications has been completed
    summary: str - A short summary of performed steps that ensure accuracy.   
-
+   
+STRICT OBJECT-ID RULES (MANDATORY — DO NOT VIOLATE):
+   You MUST follow these rules exactly:
+   NEVER create, guess, or invent any object_id.
+   Not even in the slightest variation.
+   Not even if it “looks reasonable.”
+   If the tool does not return an object_id, return an error in the 'exception' field
+   and DO NOT create an object_id.
+      
    Examples of correct behavior:
 
 - sql_query("SELECT * FROM sales")

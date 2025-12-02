@@ -8,6 +8,7 @@ from langchain_core.tools import StructuredTool
 from src.multi_agent_analyst.schemas.visualization_agent_schema import (
     PieChartSchema,
     TableVisualizationSchema,
+    BarPlotSchema
 )
 
 from src.multi_agent_analyst.utils.utils import object_store, viz_json
@@ -274,77 +275,113 @@ def make_line_plot_tool(df):
         args_schema=TableVisualizationSchema,
     )
 
+#fix pie chart
+#tighten the prompting to the react, so that always return object ids!!!!
+#fix the simple chatting node 
+
 
 def make_pie_chart_tool(df):
-    """Modern pie chart with beautiful gradients and styling."""
+    """Modern pie chart with beautiful gradients and styling, no params needed."""
 
-    def pie_chart(column_names: list):
+    def pie_chart():
         try:
-            values = df.iloc[0].tolist() if len(df) > 0 else []
-            
+            # Ensure dataframe has data
+            if df.empty:
+                raise ValueError("Dataframe is empty, cannot create pie chart.")
+
+            num_df=df.select_dtypes(include=['float', 'int'])
+
+            # Column names are the labels
+            labels = num_df.columns.tolist()
+
+            # First row values are used for the pie chart
+            values = num_df.iloc[0].tolist()
+
+            print(labels)
+            print(values)
+            vis_json = {
+                "type": "visualization",
+                "plot_type": "pie_chart",
+                "labels": labels,
+                'values':values,
+                "title": "PIE CHART"
+            }
+
+            return object_store.save(vis_json)
+            # return object_store.save(df)
+            # for v in values:
+            #     try:
+            #         numeric_values.append(float(v))
+            #     except:
+            #         raise ValueError("All values in the first row must be numeric for pie chart.")
+
             # Create figure
-            fig, ax = plt.subplots(figsize=(10, 10), dpi=100)
-            fig.patch.set_facecolor(COLORS['background'])
-            ax.set_facecolor(COLORS['background'])
-            
-            # Create gradient colors
-            colors_list = [COLORS['gradient'][i % len(COLORS['gradient'])] for i in range(len(values))]
-            
-            # Create pie chart with explosion effect
-            explode = [0.05] * len(values)  # Slightly separate all slices
-            
-            wedges, texts, autotexts = ax.pie(
-                values,
-                labels=column_names,
-                colors=colors_list,
-                explode=explode,
-                autopct='%1.1f%%',
-                startangle=90,
-                textprops={'color': '#e8e8f0', 'fontsize': 11, 'weight': 'bold'},
-                wedgeprops={'edgecolor': COLORS['background'], 'linewidth': 3, 'antialiased': True}
-            )
-            
-            # Style the percentage text
-            for autotext in autotexts:
-                autotext.set_color('white')
-                autotext.set_fontsize(12)
-                autotext.set_weight('bold')
-            
-            # Style the labels
-            for text in texts:
-                text.set_color('#e8e8f0')
-                text.set_fontsize(11)
-                text.set_weight('bold')
-            
-            # Add title
-            ax.set_title('Distribution', 
-                        fontsize=16, 
-                        weight='bold', 
-                        color='#e8e8f0',
-                        pad=20)
-            
-            # Equal aspect ratio ensures that pie is drawn as a circle
-            ax.axis('equal')
-            
-            plt.tight_layout()
-            
-            buf = io.BytesIO()
-            plt.savefig(buf, format="png", bbox_inches='tight', facecolor=COLORS['background'], dpi=100)
-            buf.seek(0)
-            plt.close()
-            
+            # fig, ax = plt.subplots(figsize=(10, 10), dpi=100)
+            # fig.patch.set_facecolor(COLORS['background'])
+            # ax.set_facecolor(COLORS['background'])
+
+            # # Colors
+            # colors_list = [COLORS['gradient'][i % len(COLORS['gradient'])] 
+            #                for i in range(len(labels))]
+
+            # explode = [0.05] * len(labels)
+
+            # wedges, texts, autotexts = ax.pie(
+            #     numeric_values,
+            #     labels=labels,
+            #     colors=colors_list,
+            #     explode=explode,
+            #     autopct='%1.1f%%',
+            #     startangle=90,
+            #     textprops={'color': '#e8e8f0', 'fontsize': 11, 'weight': 'bold'},
+            #     wedgeprops={'edgecolor': COLORS['background'], 'linewidth': 3, 'antialiased': True}
+            # )
+
+            # # Styling
+            # for autotext in autotexts:
+            #     autotext.set_color('white')
+            #     autotext.set_fontsize(12)
+            #     autotext.set_weight('bold')
+
+            # for text in texts:
+            #     text.set_color('#e8e8f0')
+            #     text.set_fontsize(11)
+            #     text.set_weight('bold')
+
+            # ax.set_title(
+            #     'Distribution',
+            #     fontsize=16,
+            #     weight='bold',
+            #     color='#e8e8f0',
+            #     pad=20
+            # )
+
+            # ax.axis('equal')
+
+            # plt.tight_layout()
+
+            # buf = io.BytesIO()
+            # plt.savefig(buf, format="png", 
+            #             bbox_inches='tight', 
+            #             facecolor=COLORS['background'], 
+            #             dpi=100)
+            # buf.seek(0)
+            # plt.close()
+
+
+
         except Exception as e:
-            return {'exception': e}
+            return {"exception": str(e)}
 
-        return object_store.save(buf)
+        return object_store.save()
 
+    # Tool wrapper
     return StructuredTool.from_function(
         func=pie_chart,
         name="pie_chart",
-        description="Modern pie chart with gradient colors and elegant styling.",
-        args_schema=PieChartSchema,
+        description="Generate a modern pie chart using all dataframe columns.",
+        args_schema=None   # IMPORTANT: no args
     )
-
 
 def make_bar_chart_tool(df):
     """Beautiful bar chart with gradients and modern styling."""
@@ -355,12 +392,25 @@ def make_bar_chart_tool(df):
             cat_cols = df.select_dtypes(include=['object', 'category']).columns
             num_cols = df.select_dtypes(include=['float', 'int']).columns
             
+
+            print(cat_cols)
+            print(num_cols)
+
             if len(cat_cols) == 0 or len(num_cols) == 0:
                 raise ValueError("Need at least one categorical and one numeric column")
             
             cat_col = cat_cols[0]
             num_col = num_cols[0]
-            
+
+            vis_json = {
+                "type": "visualization",
+                "plot_type": "bar",
+                "x": num_col,
+                'y':cat_col,
+                "title": "BAR PLOT"
+            }
+
+            return object_store.save(vis_json)
             # Create figure
             fig, ax = plt.subplots(figsize=(12, 7), dpi=100)
             
@@ -400,9 +450,9 @@ def make_bar_chart_tool(df):
             
             # Apply modern styling
             setup_plot_style(fig, ax)
-            
+            print(cat_col)
+            print(num_col)
             plt.tight_layout()
-            
             buf = io.BytesIO()
             plt.savefig(buf, format="png", bbox_inches='tight', facecolor=COLORS['background'], dpi=100)
             buf.seek(0)
@@ -431,7 +481,7 @@ def make_table_visualization_tool(df):
         func=table_visualization,
         name="table_visualization",
         description="Stores the DataFrame as an object and returns its ID.",
-        args_schema=TableVisualizationSchema,
+        args_schema=BarPlotSchema,
     )
 
 

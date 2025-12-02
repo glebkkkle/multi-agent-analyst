@@ -14,6 +14,9 @@ class PieChartSchema(BaseModel):
 class TableVisualizationSchema(BaseModel):
     pass
 
+class BarPlotSchema(BaseModel):
+    pass
+
 
 class ExternalAgentSchema(BaseModel):
     object_id:str=Field(..., description='A final ID of the object after all the modification completed.')

@@ -19,7 +19,7 @@ if (PUBLIC_PAGES.includes(current)) {
 } else {
     const token = localStorage.getItem("access_token");
     if (!token) {
-        window.location.href = "/index.html";
+        window.location.href = "/login";
     }
 }
 
@@ -39,7 +39,7 @@ function getToken() {
 async function authorizedFetch(url, options = {}) {
     const token = getToken();
     if (!token) {
-        window.location.href = "/index.html";
+        window.location.href = "/login";
         return;
     }
 
@@ -381,77 +381,93 @@ function renderVisualization(vis) {
     // ---------- DYNAMIC TRACE BUILDING ----------
     let plotData = [];
 
-    switch (spec.plot_type) {
-        case "scatter":
-            plotData = [{
-                x: spec.x,
-                y: spec.y,
-                type: "scatter",
-                mode: "markers",
-                marker: {
-                    size: 12,
-                    color: "#60a5fa",
-                    line: {
-                        color: "#3b82f6",
-                        width: 2
-                    },
-                    opacity: 0.85
-                }
-            }];
-            break;
-
-        case "line_plot":
-            plotData = [{
-                x: spec.x,
-                y: spec.y,
-                type: "scatter",
-                mode: "lines",
+switch (spec.plot_type) {
+    case "scatter":
+        plotData = [{
+            x: spec.x,
+            y: spec.y,
+            type: "scatter",
+            mode: "markers",
+            marker: {
+                size: 12,
+                color: "#60a5fa",
                 line: {
-                    width: 4,
-                    color: "#60a5fa",
-                    shape: "spline",
-                    smoothing: 0.3
+                    color: "#3b82f6",
+                    width: 2
                 },
-                fill: "tozeroy",
-                fillcolor: "rgba(96, 165, 250, 0.1)"
-            }];
-            break;
+                opacity: 0.85
+            }
+        }];
+        break;
 
-        case "bar":
-            plotData = [{
-                x: spec.x,
-                y: spec.y,
-                type: "bar",
-                marker: {
-                    color: "#60a5fa",
-                    line: {
-                        color: "#3b82f6",
-                        width: 1.5
-                    },
-                    opacity: 0.9
+    case "line_plot":
+        plotData = [{
+            x: spec.x,
+            y: spec.y,
+            type: "scatter",
+            mode: "lines",
+            line: {
+                width: 4,
+                color: "#60a5fa",
+                shape: "spline",
+                smoothing: 0.3
+            },
+            fill: "tozeroy",
+            fillcolor: "rgba(96, 165, 250, 0.1)"
+        }];
+        break;
+
+    case "bar":
+        plotData = [{
+            x: spec.x,
+            y: spec.y,
+            type: "bar",
+            marker: {
+                color: "#60a5fa",
+                line: {
+                    color: "#3b82f6",
+                    width: 1.5
+                },
+                opacity: 0.9
+            }
+        }];
+        break;
+
+    case "pie_chart":
+        plotData = [{
+            labels: spec.labels,
+            values: spec.values,
+            type: "pie",
+            textinfo: "label+percent",
+            textposition: "outside",
+            automargin: true,
+            marker: {
+                line: {
+                    color: "#0f172a",
+                    width: 2
                 }
-            }];
-            break;
+            }
+        }];
+        break;
 
-        default:
-            console.warn("Unknown plot_type, falling back to scatter:", spec.plot_type);
-            plotData = [{
-                x: spec.x,
-                y: spec.y,
-                type: "scatter",
-                mode: "markers",
-                marker: {
-                    size: 12,
-                    color: "#60a5fa",
-                    line: {
-                        color: "#3b82f6",
-                        width: 2
-                    },
-                    opacity: 0.85
-                }
-            }];
-    }
-
+    default:
+        console.warn("Unknown plot_type, falling back to scatter:", spec.plot_type);
+        plotData = [{
+            x: spec.x,
+            y: spec.y,
+            type: "scatter",
+            mode: "markers",
+            marker: {
+                size: 12,
+                color: "#60a5fa",
+                line: {
+                    color: "#3b82f6",
+                    width: 2
+                },
+                opacity: 0.85
+            }
+        }];
+}
     // ---------- LAYOUT (enhanced dark theme with beautiful styling) ----------
     const layout = {
         title: {

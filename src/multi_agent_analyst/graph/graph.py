@@ -22,6 +22,7 @@ graph.add_node('context_node', context_node)
 graph.set_entry_point('chat_node')
 graph.add_edge('chat_node', 'context_node')
 graph.add_conditional_edges('context_node', routing, {'chat':'chat_reply', 'planner': 'planner'})
+graph.add_edge('chat_reply', 'summarizer_node')
 
 graph.add_edge('planner', 'critic')
 graph.add_edge('critic', 'revision_node')

@@ -12,6 +12,8 @@ from src.multi_agent_analyst.schemas.analysis_agent_schema import (
 from src.multi_agent_analyst.utils.utils import object_store
 
 
+#no improvisations, strict execution of the plan 
+
 def make_correlation_tool(df):
     def correlation():
         try:
@@ -66,14 +68,25 @@ def make_anomaly_tool(df):
 
 
 def make_periodic_tool(df):
+    print('PERFORMING PERIODIC ANALYSIS')
+
     def periodic(frequency: int):
         try:
             dfc = df.copy()
             dfc["date"] = pd.to_datetime(dfc["date"])
             dfc = dfc.sort_values("date")
 
-            series = dfc.select_dtypes(include=["float", "int"]).values
-            series -= np.mean(series)
+            # Ensure exactly one numeric column is used
+            numeric_cols = dfc.select_dtypes(include=["float", "int"]).columns
+
+            if len(numeric_cols) == 0:
+                raise ValueError("No numeric columns available for periodic analysis.")
+
+            if len(numeric_cols) > 1:
+                print(f"[WARNING] Multiple numeric columns found. Using: {numeric_cols[0]}")
+
+            series = dfc[numeric_cols[0]].values.astype(float)  # 1D array
+            series = series - np.mean(series)
 
             stl = STL(series, period=frequency, robust=True).fit()
 
@@ -81,11 +94,12 @@ def make_periodic_tool(df):
                 "trend": stl.trend.tolist(),
                 "seasonal": stl.seasonal.tolist(),
                 "residual": stl.resid.tolist(),
+                "column_used": numeric_cols[0]
             }
 
         except Exception as e:
             return {
-                'exception': e
+                'exception': str(e)
             }
 
         return object_store.save(decomposition)
@@ -93,10 +107,9 @@ def make_periodic_tool(df):
     return StructuredTool.from_function(
         func=periodic,
         name="periodic_analysis",
-        description="Perform STL periodic decomposition.",
+        description="Perform STL periodic decomposition on a single numeric time-series.",
         args_schema=PeriodicSchema,
     )
-
 
 def make_summary_tool(df):
     def summary():

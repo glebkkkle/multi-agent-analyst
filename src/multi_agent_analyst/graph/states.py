@@ -62,6 +62,7 @@ class GraphState(BaseModel):
     summary: Optional[str] = None
     final_response: Optional[str] = None
 
+    data_samples:Optional[Dict]=None
     # THREAD
     thread_id: Optional[str] = None
 
