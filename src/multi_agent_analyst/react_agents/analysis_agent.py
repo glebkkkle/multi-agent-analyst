@@ -1,7 +1,7 @@
 # src/multi_agent_analyst/agents/analysis_agent.py
 
 from langchain.agents import create_agent
-from langchain_core.messages import AIMessage
+from langchain_core.messages import AIMessage, ToolMessage
 from langchain_openai import ChatOpenAI
 from langchain.tools import tool
 import json
@@ -17,7 +17,7 @@ from src.multi_agent_analyst.prompts.react_agents.analysis_agent import ANALYST_
 from src.multi_agent_analyst.schemas.analysis_agent_schema import ExternalAgentSchema
 from src.multi_agent_analyst.utils.utils import context, object_store
 from src.multi_agent_analyst.utils.utils import execution_list, ExecutionLogEntry
-openai_llm = ChatOpenAI(model="gpt-4.1-mini")
+openai_llm = ChatOpenAI(model="gpt-5-mini")
 
 
 class AnalysisAgentArgs(BaseModel):
@@ -53,8 +53,11 @@ def analysis_agent(analysis_query: str, current_plan_step: str, data_id: str):
 
     # 4) Execute LLM agent
     result = agent.invoke({"messages": [{"role": "user", "content": analysis_query}]})
-
+    
+    print(result)
     last = [m for m in result["messages"] if isinstance(m, AIMessage)][-1].content
+    tool_obj_id=[m for m in result['messages'] if isinstance(m, ToolMessage)][-1].content
+
 
     msg=json.loads(last)
     final_obj_id=msg['object_id']
@@ -72,4 +75,11 @@ def analysis_agent(analysis_query: str, current_plan_step: str, data_id: str):
     # execution_list.execution_log_list.setdefault(current_plan_step, log)
     execution_list.execution_log_list[current_plan_step]=log
 
-    return last
+    msg['object_id']=tool_obj_id
+    print(msg)
+    return msg
+
+#issue with returning correct object id!! 
+#copy the id from the output of the tool and pass it to the json manually
+
+#fix the issue with logs 
