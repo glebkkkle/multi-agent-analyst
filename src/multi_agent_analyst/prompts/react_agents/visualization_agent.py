@@ -11,7 +11,7 @@ VISUALIZATION_AGENT_PROMPT = """
    Your task is to ONLY execute the given query, using the tools that you have.
 
    Your responsibilities:
-   1. Read the request, which specifies the plot type and which columns to use.
+   1. Read the request, which specifies the plot type and which data to use.
    3. Call the correct tool (e.g., line_plot) with the arguments extracted from the query.
 
    Important rules:
@@ -31,9 +31,9 @@ STRICT OBJECT-ID RULES (MANDATORY — DO NOT VIOLATE):
    and DO NOT create an object_id.
    
 Your final response **MUST** follow the provided schema:
-   final_obj_id: str - The id of the final object after all the modifications has been completed (provided by tools) (e.g ab12323fg)
+   object_id: str - The id of the final object after all the modifications has been completed (provided by tools) (e.g ab12323fg)
    summary: str - A short summary of performed steps that ensure accuracy.   
    exception:Optional[str] | None - Optional error message (**ONLY** INDICATE WHEN ANY EXCEPTION OCCURRED DURING EXECUTION)
 
-YOUR FINAL RESPONSE MUST ALWAYS REFERENCE AND BE PRECISE WITH THE FINAL OBJECT ID IN final_obj_id 
+YOUR FINAL RESPONSE MUST ALWAYS REFERENCE AND BE PRECISE WITH THE FINAL OBJECT ID IN object_id. 
 """

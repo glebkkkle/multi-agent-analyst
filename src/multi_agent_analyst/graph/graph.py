@@ -38,5 +38,3 @@ graph.add_edge('summarizer_node', END)
 g = graph.compile(checkpointer=InMemorySaver())
 
 #FIX CHAT NODES
-
-#chat node - accept the incoming query - classify it and send to respective agents 

@@ -21,17 +21,17 @@ def resolver_agent(failed_step:str):
 
     @tool
     def context_lookup(agent_name:str):
-        print('CALLING WITH REPAIR')
-        print(agent_name)
         'A tool that can look up the context dictionary to inspect ids returned by the agents.'
-        results=context.get(agent_name)
-        return results
+        print('CALLING WITH REPAIR')
+        print(agent_name)        
+        return context.dict
 
     agent=create_agent(model=llm, tools=[context_lookup],response_format=ResolverOutput)
 
     result=agent.invoke({'messages':[{'role':'user', 'content':RESOLVER_AGENT_PROMPT.format(error_message=current_exception,failed_step=step_log, context=context, execution_log=execution_list.execution_log_list)}]})
+    print(result)
 
     return result
 
 
-#'TypeError: 'CurrentToolContext' object is not subscriptable'
+#add a tool that allows for the controller to re-run the plan, if something went wrong and cannot be fixed easily

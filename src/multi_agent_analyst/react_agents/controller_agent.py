@@ -14,7 +14,7 @@ llm = ChatOllama(model="gpt-oss:20b", temperature=0)
 
 controller_agent = create_agent(
     model=openai_llm,
-    tools=[data_agent, analysis_agent, visualization_agent],
+    tools=[data_agent, analysis_agent, visualization_agent, resolver_agent],
     system_prompt=CONTROLLER_AGENT_PROMPT,
     response_format=ExternalAgentSchema,
 )

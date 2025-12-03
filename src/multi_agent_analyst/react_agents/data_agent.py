@@ -1,6 +1,6 @@
 # src/multi_agent_analyst/agents/data_agent.py
 from langchain.agents import create_agent
-from langchain_core.messages import AIMessage
+from langchain_core.messages import AIMessage, ToolMessage
 from langchain.tools import tool
 from langchain_openai import ChatOpenAI
 from src.multi_agent_analyst.tools.data_agent_tools import (
@@ -37,17 +37,22 @@ def data_agent(data_agent_query: str, current_plan_step: str):
     result = agent.invoke({"messages": [{"role": "user", "content": data_agent_query}]})
 
     last_msg = [m for m in result["messages"] if isinstance(m, AIMessage)][-1].content
+    tool_obj_id=[m for m in result['messages'] if isinstance(m, ToolMessage)][-1].content
+
 
     msg=json.loads(last_msg)
     final_obj_id =msg['object_id']
     exception=msg['exception']
 
+
     log=ExecutionLogEntry(id=current_plan_step, agent='DataAgent', sub_query=data_agent_query, status='success' if exception is None else exception, output_object_id=final_obj_id, error_message=exception if exception is not None else None)
     execution_list.execution_log_list.setdefault(current_plan_step, log)
 
-    print(result)
-    context.set("DataAgent", current_plan_step, final_obj_id)
+    msg['object_id']=tool_obj_id
 
-    return last_msg
+    context.set("DataAgent", current_plan_step, final_obj_id)
+    print(msg)
+    print(execution_list.execution_log_list)
+    return msg 
 
 

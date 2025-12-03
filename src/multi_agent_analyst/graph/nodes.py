@@ -19,6 +19,10 @@ from src.multi_agent_analyst.prompts.chat.chat_reply_prompt import CHAT_REPLY_PR
 ollama_llm=ChatOllama(model='gpt-oss:20b', temperature=0)
 llm=ChatOpenAI(model='gpt-4.1-mini')
 
+#maybe use sql tool to only identify the appropriate database, and use select columns to format the db appropriately for later use
+#might have to fix the planner 
+
+
 def planner_node(state: GraphState):
     #perhaps fix the planner so outputs are [smth.example_obj_id]
     print("\nPLAN RECEIVED\n")
@@ -92,7 +96,7 @@ def summarizer_node(state: GraphState):
     if state.desicion == 'chat':
         return {'final_response':state.final_response, "image_base64":None, 'final_obj_id':None}
 
-    elif state.desicion == 'planner':
+    else:
         obj = object_store.get(state.final_obj_id)
 
         image_base64 = None
@@ -108,8 +112,11 @@ def summarizer_node(state: GraphState):
             )
         ).content
 
-        execution_list.execution_log_list.clear()
 
+        execution_list.execution_log_list.clear()
+        print(' ')
+        print(' ')
+        print(final_text)
         return {
             "final_response": final_text,
             "image_base64": image_base64,
