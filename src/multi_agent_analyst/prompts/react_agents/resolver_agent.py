@@ -28,6 +28,7 @@ Common failure types:
 - Wrong column names
 - Wrong or incomplete sub_query
 - Agent mismatch (e.g., visualization agent trying to run a SQL query)
+-Wrong or incomplete dataframe, table (returned by the DataAgent)
 
 ─────────────────────────────────────────
 ### 2. You have access to a TOOL:
@@ -52,7 +53,7 @@ You may ONLY:
 
 You MUST NOT:
 - Invent new steps
-- Modify unrelated steps
+- Modify highly unrelated steps
 - Change the meaning of the entire plan
 - Assume missing data that does not exist in the context
 

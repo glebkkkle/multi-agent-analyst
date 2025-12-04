@@ -29,7 +29,7 @@ CRITICAL EXECUTION RULES
    (E.G line plot usually requeries date column even if its not mentioned specifically, along with the target column, while other visualization might not need it if not clearly stated.)
 
    Example:
-     Step 1: Use sql_query to fetch the full table.
+     Step 1: Use sql_query to fetch the full table needed for the execution.
      Step 2: Use select_columns to extract requested columns.
      Step 3: Output the object_id returned by select_columns.
 
