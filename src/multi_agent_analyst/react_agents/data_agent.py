@@ -20,7 +20,9 @@ openai_llm = ChatOpenAI(model="gpt-4.1-mini")
 @tool
 def data_agent(data_agent_query: str, current_plan_step: str):
     """High-level DataAgent using SQL, selection, and merge tools."""
-
+    print(' ')
+    print('CALLING DATA AGENT')
+    print(' ')
     tools = [
         make_sql_query_tool(),
         make_select_columns_tool(),
@@ -44,7 +46,6 @@ def data_agent(data_agent_query: str, current_plan_step: str):
     final_obj_id =msg['object_id']
     exception=msg['exception']
 
-
     log=ExecutionLogEntry(id=current_plan_step, agent='DataAgent', sub_query=data_agent_query, status='success' if exception is None else exception, output_object_id=final_obj_id, error_message=exception if exception is not None else None)
     execution_list.execution_log_list.setdefault(current_plan_step, log)
 
@@ -56,3 +57,5 @@ def data_agent(data_agent_query: str, current_plan_step: str):
     return msg 
 
 
+#fix so the resolver identifies CORRECT AGENT THAT CAUSED THE FAILURE
+#fix the prompting to the controller about what when to run, ensuring correct object ids are passed after correction has been completed.

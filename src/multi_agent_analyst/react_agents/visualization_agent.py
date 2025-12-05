@@ -21,7 +21,8 @@ tool_llm = ChatOllama(model="gpt-oss:20b", temperature=0)
 openai_llm = ChatOpenAI(model="gpt-5-mini")
 @tool(description="Visualization agent returning images/tables based on query.")
 def visualization_agent(visualizer_query: str, current_plan_step: str, data_id: str):
-
+    print(' ')
+    print('CALLING VISUALIZATION AGENT')
     df = object_store.get(data_id)
 
     tools = [
