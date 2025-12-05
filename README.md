@@ -1,5 +1,3 @@
-\<div align="center"\>
-
 # **🧠 Multi-Agent Analyst**
 
 ### **Autonomous Data Analysis & Orchestration System**
