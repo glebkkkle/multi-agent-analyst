@@ -23,11 +23,11 @@ The system's defining feature is its **Self-Healing Execution Loop**. If a step 
 ## 📸 Interface
 
 <div align="center">  
-  <img src="./docs/dashboard_main.png" alt="Main Dashboard" width="100%" />
+  <img src="./imgs/d.jpg" alt="Main Dashboard" width="100%" />
 
   <div style="display: flex; justify-content: center; gap: 10px; margin-top: 10px;">
-    <img src="./docs/agent_trace.png" alt="Agent Execution Trace" width="48%" />
-    <img src="./docs/visualization_example.png" alt="Generated Visualization" width="48%" />
+    <img src="./imgs/l.jpg" alt="Agent Execution Trace" width="48%" />
+    <img src="./imgs/p.jpg" alt="Generated Visualization" width="48%" />
   </div>
 </div>
 
