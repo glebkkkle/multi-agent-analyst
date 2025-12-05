@@ -20,14 +20,16 @@ The system's defining feature is its **Self-Healing Execution Loop**. If a step 
 * **Event-Driven Architecture:** Built on a non-blocking asyncio event loop with FastAPI, utilizing WebSockets for real-time agent thought streaming to the frontend.  
 * **Sandboxed Execution:** Each analysis session runs in an isolated PostgreSQL schema container, preventing data leakage and ensuring thread-safe operations.
 
-## **📸 Interface**
+## 📸 Interface
 
-\<\!-- REPLACE THESE LINKS WITH YOUR ACTUAL IMAGE PATHS OR HOSTED URLS \--\>
+<div align="center">  
+  <img src="./docs/dashboard_main.png" alt="Main Dashboard" width="100%" />
 
-<img src="./imgs/d.jpg" alt="Main Dashboard" width="100%" />
-<img src="./imgs/l.jpg" alt="Agent Execution Trace" width="48%" />
-<img src="./imgs/p.jpg" alt="Generated Visualization" width="48%" />
-
+  <div style="display: flex; justify-content: center; gap: 10px; margin-top: 10px;">
+    <img src="./docs/agent_trace.png" alt="Agent Execution Trace" width="48%" />
+    <img src="./docs/visualization_example.png" alt="Generated Visualization" width="48%" />
+  </div>
+</div>
 
 ## **✨ Key Capabilities**
 
