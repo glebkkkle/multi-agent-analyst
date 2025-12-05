@@ -22,7 +22,7 @@ openai_llm = ChatOpenAI(model="gpt-5-mini")
 @tool(description="Visualization agent returning images/tables based on query.")
 def visualization_agent(visualizer_query: str, current_plan_step: str, data_id: str):
     print(' ')
-    print('CALLING VISUALIZATION AGENT')
+    print('CALLING VISUALIZATION AGENT🎨')
     df = object_store.get(data_id)
 
     tools = [
@@ -56,5 +56,4 @@ def visualization_agent(visualizer_query: str, current_plan_step: str, data_id: 
 
     execution_list.execution_log_list.setdefault(current_plan_step, log)
     print(msg)
-    print(execution_list.execution_log_list)
     return msg

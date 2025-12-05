@@ -25,8 +25,8 @@ llm=ChatOpenAI(model='gpt-4.1-mini')
 
 def planner_node(state: GraphState):
     #perhaps fix the planner so outputs are [smth.example_obj_id]
-    print("\nPLAN RECEIVED\n")
-
+    print('🧠CREATING EXECUTION PLAN: ')
+    print(' ')
     query = state.clean_query or state.query
     plan = llm.with_structured_output(Plan).invoke(
         GLOBAL_PLANNER_PROMPT.format(query=query)
@@ -36,7 +36,7 @@ def planner_node(state: GraphState):
     return {"plan": plan}
 
 def critic(state: GraphState):
-    print("\nCRITIC RECEIVED PLAN\n")
+    print("\n🧠CRITIC RECEIVED PLAN\n")
 
     response = llm.with_structured_output(CriticStucturalResponse).invoke(
         CRITIC_PROMPT.format(
@@ -45,7 +45,6 @@ def critic(state: GraphState):
         )
     )
 
-    print(response)
 
     return {
         "critic_output": response,
@@ -55,7 +54,7 @@ def critic(state: GraphState):
     }
 
 def revision_node(state: GraphState):
-    print("\nREVISION RECEIVED PLAN\n")
+    print("🧠REVISOR RECEIVED PLAN\n")
 
     response = llm.with_structured_output(RevisionState).invoke(
         PLAN_REVISION_PROMPT.format(
@@ -64,8 +63,6 @@ def revision_node(state: GraphState):
             user_query=state.clean_query
         )
     )
-
-    print(response)
 
     return {
         "plan": response.fixed_plan,
@@ -85,7 +82,6 @@ def router_node(state: GraphState):
 
     last = [m for m in result["messages"] if isinstance(m, AIMessage)][-1].content
     d = json.loads(last)
-    print(result)
     
     return {
         "final_obj_id": d["object_id"],
@@ -115,6 +111,7 @@ def summarizer_node(state: GraphState):
 
         execution_list.execution_log_list.clear()
         print(' ')
+        print('RESPONSE TO THE USER:')
         print(' ')
         print(final_text)
         return {
@@ -167,8 +164,7 @@ def clarification_node(state: GraphState):
 def chat_node(state: GraphState):
     user_msg = state.query
     current_tables.setdefault(state.thread_id, load_user_tables(state.thread_id))
-    print(current_tables)
-    print(type(current_tables))
+
     new_history = state.conversation_history + [
         {"role": "user", "content": user_msg}
     ]

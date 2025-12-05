@@ -2,6 +2,8 @@ import psycopg2
 import io
 from datetime import datetime
 
+import warnings
+warnings.filterwarnings("ignore", message="pandas only supports SQLAlchemy")
 
 def get_thread_conn(thread_id):
     conn = psycopg2.connect(

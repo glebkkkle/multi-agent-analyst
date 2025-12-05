@@ -39,15 +39,15 @@ def make_anomaly_tool(df):
             print('DETECTING')
             # if column:
             #     numeric = numeric[[column]]
-            print(numeric)
+
             q1 = numeric.quantile(0.25)
             q3 = numeric.quantile(0.75)
             iqr = q3 - q1
 
             mask = (numeric < (q1 - 1.5 * iqr)) | (numeric > (q3 + 1.5 * iqr))
-            print(mask)
+
             outliers = numeric[mask]
-            print(outliers)
+
             lower = (q1 - 1.5 * iqr).to_dict()
             upper = (q3 + 1.5 * iqr).to_dict()
 
@@ -69,7 +69,7 @@ def make_anomaly_tool(df):
                 },
         
         except Exception as e:
-            print(e)
+
             return {
 
                 'exception': e
@@ -85,9 +85,8 @@ def make_anomaly_tool(df):
 
 #perhaps make the resolver agent-specific helper 
 
-
 def make_periodic_tool(df):
-    print('PERFORMING PERIODIC ANALYSIS')
+
 
     def periodic(frequency: int):
         try:

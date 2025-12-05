@@ -28,7 +28,9 @@ class AnalysisAgentArgs(BaseModel):
 @tool(args_schema=AnalysisAgentArgs)
 def analysis_agent(analysis_query: str, current_plan_step: str, data_id: str):
     """Analysis Agent performing correlation, anomaly detection, periodicity, etc."""
-
+    print(' ')
+    print('CALLING ANALYSIS AGENT')
+    print(' ')
     # print(analysis_query, current_plan_step, data_id)
     log=ExecutionLogEntry(id=current_plan_step, agent='AnalysisAgent', sub_query=analysis_query)
     execution_list.execution_log_list.setdefault(current_plan_step, log)
@@ -54,7 +56,7 @@ def analysis_agent(analysis_query: str, current_plan_step: str, data_id: str):
     # 4) Execute LLM agent
     result = agent.invoke({"messages": [{"role": "user", "content": analysis_query}]})
     
-    print(result)
+
     last = [m for m in result["messages"] if isinstance(m, AIMessage)][-1].content
     tool_obj_id=[m for m in result['messages'] if isinstance(m, ToolMessage)][-1].content
 
@@ -76,7 +78,7 @@ def analysis_agent(analysis_query: str, current_plan_step: str, data_id: str):
     execution_list.execution_log_list[current_plan_step]=log
 
     msg['object_id']=tool_obj_id
-    print(msg)
+
     return msg
 
 #issue with returning correct object id!! 
