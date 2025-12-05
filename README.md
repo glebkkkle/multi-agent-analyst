@@ -24,13 +24,10 @@ The system's defining feature is its **Self-Healing Execution Loop**. If a step 
 
 \<\!-- REPLACE THESE LINKS WITH YOUR ACTUAL IMAGE PATHS OR HOSTED URLS \--\>
 
-\<div align="center"\>  
 <img src="./imgs/d.jpg" alt="Main Dashboard" width="100%" />
-\<div style="display: flex; justify-content: center; gap: 10px; margin-top: 10px;"\>  
 <img src="./imgs/l.jpg" alt="Agent Execution Trace" width="48%" />
 <img src="./imgs/p.jpg" alt="Generated Visualization" width="48%" />
-\</div\>  
-\</div\>
+
 
 ## **✨ Key Capabilities**
 
