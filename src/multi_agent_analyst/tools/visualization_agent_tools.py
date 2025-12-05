@@ -175,6 +175,9 @@ def make_line_plot_tool(df):
                     break
 
             if date_col is None:
+                print(' ')
+                print('❌CURRENT EXCEPTION:')
+                print("Line plot requires a date column.")
                 raise ValueError("Line plot requires a date column.")
 
             # Choose first numeric column
@@ -241,8 +244,7 @@ def make_line_plot_tool(df):
             #          edgecolor=COLORS['primary'],
             #          fontsize=10,
             #          labelcolor='#e8e8f0')
-            print(x_data)
-            print(y_data)
+
             x_data = list(range(len(df)))                     # Convert range → list
             y_data = df[y_col].astype(float).tolist()  
             vis_json = {
@@ -251,7 +253,7 @@ def make_line_plot_tool(df):
                 "x": x_data,
                 "y": y_data,
                 "labels": {"x": date_col, "y": y_col},
-                "title": "LINE PLOT"
+                "title": ' '
             }
 
 
@@ -297,14 +299,12 @@ def make_pie_chart_tool(df):
             # First row values are used for the pie chart
             values = num_df.iloc[0].tolist()
 
-            print(labels)
-            print(values)
             vis_json = {
                 "type": "visualization",
                 "plot_type": "pie_chart",
                 "labels": labels,
                 'values':values,
-                "title": "PIE CHART"
+                "title": " "
             }
 
             return object_store.save(vis_json)
@@ -392,9 +392,6 @@ def make_bar_chart_tool(df):
             cat_cols = df.select_dtypes(include=['object', 'category']).columns
             num_cols = df.select_dtypes(include=['float', 'int']).columns
             
-
-            print(cat_cols)
-            print(num_cols)
 
             if len(cat_cols) == 0 or len(num_cols) == 0:
                 raise ValueError("Need at least one categorical and one numeric column")

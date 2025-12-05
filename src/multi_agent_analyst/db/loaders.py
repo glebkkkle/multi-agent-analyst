@@ -2,6 +2,8 @@
 import pandas as pd
 # from src.multi_agent_analyst.db.db2 import conn
 from src.multi_agent_analyst.db.db_core import get_conn
+import warnings
+warnings.filterwarnings("ignore", message="pandas only supports SQLAlchemy")
 
 def load_user_tables(thread_id: str):
     """

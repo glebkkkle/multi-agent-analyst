@@ -21,7 +21,7 @@ openai_llm = ChatOpenAI(model="gpt-4.1-mini")
 def data_agent(data_agent_query: str, current_plan_step: str):
     """High-level DataAgent using SQL, selection, and merge tools."""
     print(' ')
-    print('CALLING DATA AGENT')
+    print('CALLING DATA AGENT📊')
     print(' ')
     tools = [
         make_sql_query_tool(),
@@ -53,7 +53,6 @@ def data_agent(data_agent_query: str, current_plan_step: str):
 
     context.set("DataAgent", current_plan_step, final_obj_id)
     print(msg)
-    print(execution_list.execution_log_list)
     return msg 
 
 

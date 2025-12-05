@@ -19,16 +19,14 @@ def make_sql_query_tool():
     conn=get_thread_conn(list(current_tables.keys())[0])
     
     def sql_query(query: str):
-        print(query)
+
         try:
             df = pd.read_sql_query(query, conn)
             conn.close()
 
-        except Exception as e:
-            print(f'{e} was hit')
+        except Exception as e:  
             return {
                 'error_message':e, 
-
             }
         return object_store.save(df)
 
