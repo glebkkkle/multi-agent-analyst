@@ -7,13 +7,19 @@ warnings.filterwarnings("ignore", message="pandas only supports SQLAlchemy")
 
 def load_user_tables(thread_id: str):
     """
-    Dynamically load all tables inside the user's schema
-    and return a dict containing sample rows + descriptions.
-    """
-    conn=get_conn()
+    Load metadata for all tables in the user's schema.
+    Returns ONLY:
+        - table name
+        - list of columns
+        - list of types
 
+    NO data samples are returned.
+    """
+
+    conn = get_conn()
     schema = thread_id
-    
+
+    # 1. Get all table names
     query_tables = f"""
         SELECT tablename
         FROM pg_catalog.pg_tables
@@ -26,21 +32,28 @@ def load_user_tables(thread_id: str):
 
     for table in table_names:
         try:
-            # 2. Load sample rows (first 5)
-            df = pd.read_sql(f'SELECT * FROM "{schema}"."{table}" LIMIT 5', conn)
+            # 2. Fetch column metadata for each table
+            query_columns = f"""
+                SELECT column_name
+                FROM information_schema.columns
+                WHERE table_schema = '{schema}'
+                AND table_name = '{table}';
+            """
+
+            column_info = pd.read_sql(query_columns, conn)
+
+            columns = column_info['column_name'].tolist()
 
             output[table] = {
                 "description": f"User table '{table}'",
-                "sample": df
+                "columns": columns,
             }
 
         except Exception as e:
             output[table] = {
-                "schema": schema,
-                "description": f"Error reading table '{table}'",
+                "description": f"Could not load metadata for table '{table}'",
                 "error": str(e),
-                "sample": None
+                "columns": None,
             }
-    # conn.close()
-    return output
 
+    return output

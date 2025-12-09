@@ -1,6 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import List, Optional
-
+from typing import List, Optional, Dict, Any
 
 class LinePlotSchema(BaseModel):
     pass
@@ -18,7 +17,14 @@ class BarPlotSchema(BaseModel):
     pass
 
 
+class ObservationState(BaseModel):
+    agent:str
+    tools_used:List[str]
+    summary:str
+    details:Dict[str, Any]
+
 class ExternalAgentSchema(BaseModel):
     object_id:str=Field(..., description='A final ID of the object after all the modification completed.')
-    summary:str=Field(..., description='A short summary of steps peformed and final result')
+    observation:ObservationState=Field(..., description='An observation of performed actions')
     exception: Optional[str]=Field(..., description='placeholder for exception message')
+

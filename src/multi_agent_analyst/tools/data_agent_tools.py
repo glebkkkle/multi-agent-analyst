@@ -16,45 +16,66 @@ from src.multi_agent_analyst.utils.utils import object_store, current_tables
 
 def make_sql_query_tool():
     """Factory: returns a SQL query execution tool."""
-    conn=get_thread_conn(list(current_tables.keys())[0])
-    
     def sql_query(query: str):
+        conn = get_thread_conn('thread_13')
 
         try:
             df = pd.read_sql_query(query, conn)
             conn.close()
+            print(query)
+            obj_id = object_store.save(df)
 
-        except Exception as e:  
             return {
-                'error_message':e, 
+                "object_id": obj_id,
+                "details": {
+                        "row_count": len(df),
+                        "column_count": len(df.columns),
+                        "columns": list(df.columns)[:20],
+                    },
             }
-        return object_store.save(df)
+
+        except Exception as e:
+            print(e)
+            return {
+                'exception':e
+            }
 
     return StructuredTool.from_function(
         func=sql_query,
         name="sql_query",
-        description="Executes an SQL query on company_data.db and returns the result.",
+        description="Executes an SQL query and returns both the result object_id and a structured observation.",
         args_schema=SQLQuerySchema,
     )
 
 
 def make_select_columns_tool():
-    """Factory: returns a column-selection tool."""
 
     def select_columns(table_id: str, columns: list):
         try:
             df = object_store.get(table_id)
             result = df[columns]
+            obj_id = object_store.save(result)
+
+            return {
+                "object_id": obj_id,
+                "details": {
+                    "input_table_id": table_id,
+                    "selected_columns": columns,
+                    "output_rows": len(result),
+                    "output_cols": len(columns),
+                    },
+
+                }
+
         except Exception as e:
             return {
-                'exception': e
+                'exception':e
             }
-        return object_store.save(result)
 
     return StructuredTool.from_function(
         func=select_columns,
         name="select_columns",
-        description="Select specific columns from a table referenced by ID.",
+        description="Select specific columns and return object ID + structured observation.",
         args_schema=SelectColumnsSchema,
     )
 
@@ -88,3 +109,4 @@ __all__ = [
     "make_select_columns_tool",
     "make_merge_tool",
 ]
+

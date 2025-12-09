@@ -44,8 +44,6 @@ def critic(state: GraphState):
             plan=state.plan
         )
     )
-
-
     return {
         "critic_output": response,
         "message_to_user": response.message_to_user,
@@ -74,18 +72,28 @@ def revision_node(state: GraphState):
 def router_node(state: GraphState):
     current_tables.setdefault(state.thread_id, load_user_tables(state.thread_id))
 
+    query=state.clean_query
     result = controller_agent.invoke({
         "messages": [
-            {"role": "user", "content": str(state.plan)}
+            {"role": "user", "content": query}
         ]
     })
+    r=result['structured_response']
+    print(r)
+    exception=r.exception
+    summary=r.summary
+    obj_id=r.object_id
+    # print(r['observation'])
 
-    last = [m for m in result["messages"] if isinstance(m, AIMessage)][-1].content
-    d = json.loads(last)
-    
+    if exception is not None:
+        print(True)
+    else:
+        print(False)
+        
     return {
-        "final_obj_id": d["object_id"],
-        "summary": d["summary"]
+        'exception':exception,
+        "final_obj_id": obj_id,
+        "summary": summary
     }
 
 def summarizer_node(state: GraphState):

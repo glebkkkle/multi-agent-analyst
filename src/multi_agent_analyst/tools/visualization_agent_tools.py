@@ -152,8 +152,16 @@ def make_scatter_plot_tool(df):
         buf.seek(0)
         plt.close()
 
-        return object_store.save(vis_json)
+        obj_id=object_store.save(vis_json)
 
+        return{
+                'object_id':obj_id, 
+                'details':{
+                    'plot_type':'scatter plot',
+                    'x':x_col,
+                    'y':y_col
+                }
+            }
     return StructuredTool.from_function(
         func=scatter_plot,
         name="scatter_plot",
@@ -265,10 +273,19 @@ def make_line_plot_tool(df):
             # buf.seek(0)
             # plt.close()
             
+            obj_id=object_store.save(vis_json)
+
         except Exception as e:
             return {'exception': e}
-            
-        return object_store.save(vis_json)
+        
+        return{
+                'object_id':obj_id, 
+                'details':{
+                    'plot_type':'line_plot',
+                    'x':date_col,
+                    'y':y_col
+                }
+            }
 
     return StructuredTool.from_function(
         func=line_plot,
@@ -307,7 +324,8 @@ def make_pie_chart_tool(df):
                 "title": " "
             }
 
-            return object_store.save(vis_json)
+            obj_id=object_store.save(vis_json)
+
             # return object_store.save(df)
             # for v in values:
             #     try:
@@ -373,7 +391,14 @@ def make_pie_chart_tool(df):
         except Exception as e:
             return {"exception": str(e)}
 
-        return object_store.save()
+        return {
+                'object_id':obj_id, 
+                'details':{
+                    'plot_type':'pie_chat',
+                    'columns':labels,
+                }
+            }
+
 
     # Tool wrapper
     return StructuredTool.from_function(
@@ -407,8 +432,15 @@ def make_bar_chart_tool(df):
                 "title": "BAR PLOT"
             }
 
-            return object_store.save(vis_json)
-            # Create figure
+            obj_id=object_store.save(vis_json)
+            return{
+                    'object_id':obj_id, 
+                    'details':{
+                        'plot_type':'bar plot',
+                        'x':num_col,
+                        'y':cat_col
+                    }
+                }            # Create figure
             fig, ax = plt.subplots(figsize=(12, 7), dpi=100)
             
             # Create gradient colors

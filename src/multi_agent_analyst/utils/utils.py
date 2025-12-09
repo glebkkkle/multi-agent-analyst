@@ -46,3 +46,5 @@ context=CurrentToolContext()
 current_tables={}
 
 viz_json={}
+
+agent_logs=[]
