@@ -7,8 +7,8 @@ from src.multi_agent_analyst.db.loaders import load_user_tables
 import base64
 from src.multi_agent_analyst.react_agents.controller_agent import controller_agent
 from src.multi_agent_analyst.utils.utils import object_store, execution_list, current_tables
-from src.multi_agent_analyst.graph.states import GraphState, CriticStucturalResponse, Plan, RevisionState, IntentSchema, ContextSchema
-from src.multi_agent_analyst.prompts.graph.planner import  GLOBAL_PLANNER_PROMPT
+from src.multi_agent_analyst.graph.states import GraphState, CriticStucturalResponse, DAGPlan,RevisionState, IntentSchema, ContextSchema
+from src.multi_agent_analyst.prompts.graph.planner import PLANNER_PROMPT
 from src.multi_agent_analyst.prompts.graph.critic import CRITIC_PROMPT
 from src.multi_agent_analyst.prompts.graph.revision import PLAN_REVISION_PROMPT
 from src.multi_agent_analyst.prompts.graph.summarizer import SUMMARIZER_PROMPT
@@ -28,8 +28,8 @@ def planner_node(state: GraphState):
     print('🧠CREATING EXECUTION PLAN: ')
     print(' ')
     query = state.clean_query or state.query
-    plan = llm.with_structured_output(Plan).invoke(
-        GLOBAL_PLANNER_PROMPT.format(query=query)
+    plan = llm.with_structured_output(DAGPlan).invoke(
+        PLANNER_PROMPT.format(query=query)
     )
 
     print(plan, "\n")

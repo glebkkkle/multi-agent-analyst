@@ -24,9 +24,7 @@ def visualization_agent(visualizer_query: str, current_plan_step: str, data_id: 
     print(' ')
     print('CALLING VISUALIZATION AGENT🎨')
     df = object_store.get(data_id)
-    print(df)
-    print(type(df))
-    return {'exception':'Not valid dataId or not valid dataframe provided!'}
+
     
     tools = [
         make_line_plot_tool(df),

@@ -21,9 +21,27 @@ class Step(BaseModel):
 class Plan(BaseModel):
     plan:List[Step]
 
+class DAGNode(BaseModel):
+    id: str                     # "S1", "S2", ...
+    agent: str                 # "DataAgent", "AnalysisAgent", etc.
+    sub_query: str             # instruction for the agent
+    inputs: List[str] = []     # placeholder input object IDs
+    outputs: List[str] = []    # ["<output_of_S1>"]
+
+class DAGEdge(BaseModel):
+    from_node: str             # "S1"
+    to_node: str               # "S2"
+    condition: Optional[str] = None   # e.g. "outlier_count > 0"
+
+class DAGPlan(BaseModel):
+    nodes: List[DAGNode]
+    edges: List[DAGEdge]
+
+
+
 #FIX FROM REVISOR
 class RevisionState(BaseModel):
-    fixed_plan:Plan
+    fixed_plan:DAGPlan
     fixed_manually: bool
 
 #CLASSIFY USER'S INTENT
@@ -45,7 +63,7 @@ class GraphState(BaseModel):
     conversation_history: List[Dict[str, str]] = Field(default_factory=list)
 
     # PLANNING
-    plan: Optional[Plan] = None
+    plan: Optional[DAGPlan] = None
     critic_output: Optional[CriticStucturalResponse] = None
     fixed_manually: Optional[bool] = None
     valid: Optional[bool] = None

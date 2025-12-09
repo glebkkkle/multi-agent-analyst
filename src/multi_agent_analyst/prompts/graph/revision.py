@@ -38,11 +38,11 @@ PLAN_REVISION_PROMPT = """
     General rules:
     - Preserve correct data flow between steps.
     - Ensure each step uses tools belonging to its agent.
-    - Maintain Step(...) formatting exactly.
+    - Maintain formatting exactly.
 
     Output:
         Return only in the following format:
-            fixed_plan:Plan[Step] (**ONLY** insert the plan after the fix has been performed. If clarification from user is needed or the plan is valid, leave the fixed_plan empty.)
+            fixed_plan: (**ONLY** insert the plan after the fix has been performed. If clarification from user is needed or the plan is valid, leave the fixed_plan empty.)
             fixed_manually : bool (**ONLY** specify as True if the plan was fixed by you (not via user clarification), by fixing some syntax inconistancies)
 
 
