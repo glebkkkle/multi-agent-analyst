@@ -66,7 +66,7 @@ def make_anomaly_tool(df):
                 "outlier_rows": outlier_rows_display if len(outlier_rows_display) > 0 else 'No outliers detected',
                 "columns_checked": list(numeric.columns),
                 "iqr_bounds": ", ".join(f"{k}: {v}" for k, v in iqr_bounds.items())
-                },
+                }
         
         except Exception as e:
 
@@ -74,6 +74,9 @@ def make_anomaly_tool(df):
 
                 'exception': e
             }
+        print(result)
+        print(type(result))
+
         return object_store.save(result)
 
     return StructuredTool.from_function(

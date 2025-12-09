@@ -80,79 +80,83 @@ def make_scatter_plot_tool(df):
     """Beautiful scatter plot with gradient colors and styling."""
 
     def scatter_plot():
-        numeric_cols = df.select_dtypes(include=['float', 'int']).columns
+        try:
+            numeric_cols = df.select_dtypes(include=['float', 'int']).columns
 
-        if len(numeric_cols) < 2:
-            raise ValueError("Not enough numeric columns for scatter plot.")
+            if len(numeric_cols) < 2:
+                raise ValueError("Not enough numeric columns for scatter plot.")
 
-        x_col, y_col = numeric_cols[:2]
+            x_col, y_col = numeric_cols[:2]
 
-        # Create figure
-        fig, ax = plt.subplots(figsize=(12, 7), dpi=100)
-        
-        # Create gradient colors based on y values
-        colors = df[y_col]
-        
-        # Scatter plot with beautiful styling
-        scatter = ax.scatter(
-            df[x_col], 
-            df[y_col],
-            c=colors,
-            cmap='viridis',
-            s=150,  # Larger points
-            alpha=0.8,
-            edgecolors=COLORS['primary'],
-            linewidth=2
-        )
-        
-        # Add colorbar with styling
-        cbar = plt.colorbar(scatter, ax=ax)
-        cbar.ax.set_ylabel(y_col, rotation=270, labelpad=20, color='#e8e8f0', fontsize=11, weight='bold')
-        cbar.ax.tick_params(colors='#c8c8d8')
-        cbar.outline.set_edgecolor(COLORS['primary'])
-        cbar.outline.set_linewidth(1.5)
-        cbar.outline.set_alpha(0.3)
-        vis_json = {
-            "type": "visualization",
-            "plot_type": "scatter",
-            "x": df[x_col].tolist(),
-            "y": df[y_col].tolist(),
-            "labels": {"x": x_col, "y": y_col},
-            "title": f"{y_col} vs {x_col}"
-        }
-        
+            # Create figure
+            fig, ax = plt.subplots(figsize=(12, 7), dpi=100)
+            
+            # Create gradient colors based on y values
+            colors = df[y_col]
+            
+            # Scatter plot with beautiful styling
+            scatter = ax.scatter(
+                df[x_col], 
+                df[y_col],
+                c=colors,
+                cmap='viridis',
+                s=150,  # Larger points
+                alpha=0.8,
+                edgecolors=COLORS['primary'],
+                linewidth=2
+            )
+            
+            # Add colorbar with styling
+            cbar = plt.colorbar(scatter, ax=ax)
+            cbar.ax.set_ylabel(y_col, rotation=270, labelpad=20, color='#e8e8f0', fontsize=11, weight='bold')
+            cbar.ax.tick_params(colors='#c8c8d8')
+            cbar.outline.set_edgecolor(COLORS['primary'])
+            cbar.outline.set_linewidth(1.5)
+            cbar.outline.set_alpha(0.3)
+            vis_json = {
+                "type": "visualization",
+                "plot_type": "scatter",
+                "x": df[x_col].tolist(),
+                "y": df[y_col].tolist(),
+                "labels": {"x": x_col, "y": y_col},
+                "title": f"{y_col} vs {x_col}"
+            }
+            
 
-        
-        # Set labels with title
-        ax.set_xlabel(x_col, fontsize=12, weight='bold')
-        ax.set_ylabel(y_col, fontsize=12, weight='bold')
-        ax.set_title(f'{y_col} vs {x_col}', 
-                    fontsize=16, 
-                    weight='bold', 
-                    color='#e8e8f0',
-                    pad=20)
-        
-        # Apply modern styling
-        setup_plot_style(fig, ax)
-        
-        # Add subtle shadow effect
-        ax.add_patch(Rectangle((0, 0), 1, 1,
-                              transform=ax.transAxes,
-                              facecolor='none',
-                              edgecolor=COLORS['primary'],
-                              linewidth=2,
-                              alpha=0.2))
-        
-        plt.tight_layout()
-        
-        buf = io.BytesIO()
-        plt.savefig(buf, format="png", bbox_inches='tight', facecolor=COLORS['background'], dpi=100)
-        # svg=buf.getvalue()
-        # print(svg)
-        buf.seek(0)
-        plt.close()
+            
+            # Set labels with title
+            ax.set_xlabel(x_col, fontsize=12, weight='bold')
+            ax.set_ylabel(y_col, fontsize=12, weight='bold')
+            ax.set_title(f'{y_col} vs {x_col}', 
+                        fontsize=16, 
+                        weight='bold', 
+                        color='#e8e8f0',
+                        pad=20)
+            
+            # Apply modern styling
+            setup_plot_style(fig, ax)
+            
+            # Add subtle shadow effect
+            ax.add_patch(Rectangle((0, 0), 1, 1,
+                                transform=ax.transAxes,
+                                facecolor='none',
+                                edgecolor=COLORS['primary'],
+                                linewidth=2,
+                                alpha=0.2))
+            
+            plt.tight_layout()
+            
+            buf = io.BytesIO()
+            plt.savefig(buf, format="png", bbox_inches='tight', facecolor=COLORS['background'], dpi=100)
+            # svg=buf.getvalue()
+            # print(svg)
+            buf.seek(0)
+            plt.close()
 
-        return object_store.save(vis_json)
+            return object_store.save(vis_json)
+        
+        except Exception as e:
+            return {'exception':e}
 
     return StructuredTool.from_function(
         func=scatter_plot,
@@ -164,7 +168,7 @@ def make_scatter_plot_tool(df):
 
 def make_line_plot_tool(df):
     """Elegant line plot with smooth curves and beautiful styling."""
-    
+
     def line_plot():
         try:
             # Find date column
