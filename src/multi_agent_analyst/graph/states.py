@@ -84,6 +84,8 @@ class GraphState(BaseModel):
     # THREAD
     thread_id: Optional[str] = None
 
+    dataset_schemas:Optional[Dict[str, Any]] = None
+
     @staticmethod
     def reducers():
         return {

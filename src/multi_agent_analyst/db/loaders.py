@@ -6,41 +6,57 @@ import warnings
 warnings.filterwarnings("ignore", message="pandas only supports SQLAlchemy")
 
 def load_user_tables(thread_id: str):
-    """
-    Dynamically load all tables inside the user's schema
-    and return a dict containing sample rows + descriptions.
-    """
-    conn=get_conn()
-
+    conn = get_conn()
     schema = thread_id
-    
+
     query_tables = f"""
-        SELECT tablename
-        FROM pg_catalog.pg_tables
-        WHERE schemaname = '{schema}';
+        SELECT table_name
+        FROM information_schema.tables
+        WHERE table_schema = '{schema}';
     """
 
-    table_names = pd.read_sql(query_tables, conn)['tablename'].tolist()
+    tables = pd.read_sql(query_tables, conn)['table_name'].tolist()
 
     output = {}
 
-    for table in table_names:
+    for table in tables:
         try:
-            # 2. Load sample rows (first 5)
-            df = pd.read_sql(f'SELECT * FROM "{schema}"."{table}" LIMIT 5', conn)
+            # get column info
+            col_query = f"""
+                SELECT column_name, data_type
+                FROM information_schema.columns
+                WHERE table_schema = '{schema}'
+                AND table_name = '{table}';
+            """
+            col_df = pd.read_sql(col_query, conn)
+
+            column_map = {
+                str(row["column_name"]): str(row["data_type"])
+                for _, row in col_df.iterrows()
+            }
+
+            # get row count
+            row_count = pd.read_sql(
+                f'SELECT COUNT(*) FROM "{schema}"."{table}"',
+                conn
+            ).iloc[0, 0]
+
+            # force to python int
+            row_count = int(row_count)
 
             output[table] = {
                 "description": f"User table '{table}'",
-                "sample": df
+                "columns": column_map,
+                "row_count": row_count,
             }
 
         except Exception as e:
             output[table] = {
-                "schema": schema,
                 "description": f"Error reading table '{table}'",
-                "error": str(e),
-                "sample": None
+                "columns": {},
+                "row_count": None,
+                "error": str(e)
             }
-    # conn.close()
+
     return output
 

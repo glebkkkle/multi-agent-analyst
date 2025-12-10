@@ -27,25 +27,25 @@ def planner_node(state: GraphState):
     #perhaps fix the planner so outputs are [smth.example_obj_id]
     print('🧠CREATING EXECUTION PLAN: ')
     print(' ')
-    query = state.clean_query or state.query
+    print('QUERY')
+    print(state.query)
     plan = llm.with_structured_output(DAGPlan).invoke(
-        PLANNER_PROMPT.format(query=query)
+        PLANNER_PROMPT.format(schemas=state.dataset_schemas,query=state.query)
     )
+
 
     print(plan, "\n")
     return {"plan": plan}
 
 def critic(state: GraphState):
     print("\n🧠CRITIC RECEIVED PLAN\n")
-
+    print(state.plan)
     response = llm.with_structured_output(CriticStucturalResponse).invoke(
         CRITIC_PROMPT.format(
-            query=state.clean_query,
+            query=state.query,
             plan=state.plan
         )
     )
-
-
     return {
         "critic_output": response,
         "message_to_user": response.message_to_user,
@@ -137,6 +137,7 @@ def revision_router(state: GraphState):
 
 def ask_user_node(state: GraphState):
     print("SUSPENDING GRAPH FOR USER INPUT")
+    print(state.message_to_user)
 
     return {
         "message_to_user": state.message_to_user,
@@ -154,6 +155,7 @@ intent_llm = llm.with_structured_output(IntentSchema)
 
 def clarification_node(state: GraphState):
     new_query = (state.clean_query or "") + " " + state.clarification
+    print(new_query)
 
     return {
         "query": new_query.strip(),
@@ -163,10 +165,12 @@ def clarification_node(state: GraphState):
 
 def chat_node(state: GraphState):
     user_msg = state.query
-    current_tables.setdefault(state.thread_id, load_user_tables(state.thread_id))
+    schemas=load_user_tables(state.thread_id)
+    current_tables.setdefault(state.thread_id, schemas)
+    print(schemas)
 
     new_history = state.conversation_history + [
-        {"role": "user", "content": user_msg}
+        {"role": "user", "content": user_msg,}
     ]
 
     intent = intent_llm.invoke(
@@ -174,17 +178,17 @@ def chat_node(state: GraphState):
     )
 
     if intent.intent == "plan":
-        return {"desicion": "planner", "conversation_history": new_history}
+        return {"desicion": "planner", "conversation_history": new_history, 'dataset_schemas':schemas}
 
     if intent.intent == "chat":
-        return {"desicion": "chat", "conversation_history": new_history}
+        return {"desicion": "chat", "conversation_history": new_history, 'dataset_schemas':schemas}
 
-    return {"conversation_history": new_history}
+    return {"conversation_history": new_history, 'dataset_schemas':schemas}
 
 def chat_reply(state: GraphState):
     reply = llm.invoke(CHAT_REPLY_PROMPT.format(user_query=state.query, conversation_history=state.conversation_history, data_list=state.data_samples))
     return {"final_response": reply.content}
-#refactor react agents (architecture/tools)
+
 
 def context_node(state: GraphState):
     clean = llm.with_structured_output(ContextSchema).invoke(
@@ -197,5 +201,5 @@ def context_node(state: GraphState):
     return {"clean_query": clean, "desicion": state.desicion}
 
 
-#TIGHTEN THE PROMPTING for everything
+
 

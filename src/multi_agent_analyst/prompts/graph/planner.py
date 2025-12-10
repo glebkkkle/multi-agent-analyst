@@ -108,6 +108,24 @@ that are not directly implied by the user's query.
 Do NOT embed execution commands (like GROUP BY, SUM, JOIN) inside sub_query.
 
 ----------------------------------------------------------------------
+AVAILABLE DATASETS (CONTEXT ONLY)
+----------------------------------------------------------------------
+You are also given a lightweight description of the user's available tables:
+
+{schemas}
+
+This is ONLY a helper so you are not blind about the data.
+Use it to:
+- Check which tables and columns actually exist.
+- Match the user's referenced dataset name to a real table when possible.
+- Avoid referencing tables or columns that are not present in the schemas.
+
+Do NOT:
+- Describe these schemas back to the user.
+- Add steps just because a table/column exists.
+- Perform any analysis inside the planner; you only design the DAG.
+
+----------------------------------------------------------------------
 YOUR OBJECTIVE
 ----------------------------------------------------------------------
 Given a USER QUERY, produce a DAG plan with:
@@ -153,6 +171,7 @@ No real IDs. No semantic names.
 DAG FORMAT
 ----------------------------------------------------------------------
 You MUST return valid JSON:
+
   "nodes": [
     
       "id": "S1",
@@ -184,8 +203,7 @@ Produce a DAG where:
 - The number of nodes is minimal but sufficient.
 
 Return ONLY valid JSON.
+
 User Query:
 {query}
-
 """
-
