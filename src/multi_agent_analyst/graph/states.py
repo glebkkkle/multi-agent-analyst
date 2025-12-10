@@ -79,8 +79,6 @@ class GraphState(BaseModel):
     final_obj_id: Optional[str] = None
     summary: Optional[str] = None
     final_response: Optional[str] = None
-
-    data_samples:Optional[Dict]=None
     # THREAD
     thread_id: Optional[str] = None
 

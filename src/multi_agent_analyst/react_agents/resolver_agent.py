@@ -1,5 +1,5 @@
 from src.multi_agent_analyst.schemas.resolver_agent_schema import ResolverOutput
-from src.multi_agent_analyst.prompts.react_agents.resolver_agent import RESOLVER_AGENT_PROMPT
+from src.multi_agent_analyst.prompts.react_agents.resolver_agent import RESOLVER_AGENT_PROMPT, f
 from src.multi_agent_analyst.utils.utils import context, execution_list
 from langchain_openai import ChatOpenAI
 from langchain_core.tools import tool 
@@ -36,5 +36,6 @@ def resolver_agent():
     print(' ')
     print(repair_response)
     print(' ')
+    execution_list.execution_log_list.setdefault('resolver', repair_response)
     return repair_response
 

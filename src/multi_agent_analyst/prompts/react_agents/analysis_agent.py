@@ -61,7 +61,7 @@ ALL of the tools available already operate within a relevant table internally, s
 
 Your final response should follow the given schema :
    object_id: str - The id of the final object after all the modifications has been completed (E.G asbfdbv1223)
-   summary: str - A short summary of performed steps that ensure accuracy.   
+   summary: str - A short summary of performed steps and results explanation (details returned by the tools used should be explained) that ensure accuracy.   
    exception:Optional[str] | None - Optional error message (**ONLY** INDICATE WHEN ANY EXCEPTION OCCURRED DURING EXECUTION)
 
 YOUR FINAL RESPONSE MUST ALWAYS REFERENCE AND BE PRECISE WITH THE FINAL OBJECT ID IN object_id 

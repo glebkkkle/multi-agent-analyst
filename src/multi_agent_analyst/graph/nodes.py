@@ -33,7 +33,6 @@ def planner_node(state: GraphState):
         PLANNER_PROMPT.format(schemas=state.dataset_schemas,query=state.query)
     )
 
-
     print(plan, "\n")
     return {"plan": plan}
 
@@ -42,6 +41,7 @@ def critic(state: GraphState):
     print(state.plan)
     response = llm.with_structured_output(CriticStucturalResponse).invoke(
         CRITIC_PROMPT.format(
+            schemas=state.dataset_schemas,
             query=state.query,
             plan=state.plan
         )

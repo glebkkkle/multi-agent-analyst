@@ -28,7 +28,15 @@ def make_sql_query_tool():
             return {
                 'error_message':e, 
             }
-        return object_store.save(df)
+        obj_id=object_store.save(df)
+        return {
+                "object_id": obj_id,
+                "details": {
+                        "row_count": len(df),
+                        "column_count": len(df.columns),
+                        "columns": list(df.columns)[:20],
+                    },
+            }
 
     return StructuredTool.from_function(
         func=sql_query,
@@ -49,8 +57,19 @@ def make_select_columns_tool():
             return {
                 'exception': e
             }
-        return object_store.save(result)
+        
+        obj_id = object_store.save(result)
 
+        return {
+                "object_id": obj_id,
+                "details": {
+                    "input_table_id": table_id,
+                    "selected_columns": columns,
+                    "output_rows": len(result),
+                    "output_cols": len(columns),
+                    },
+
+                }
     return StructuredTool.from_function(
         func=select_columns,
         name="select_columns",

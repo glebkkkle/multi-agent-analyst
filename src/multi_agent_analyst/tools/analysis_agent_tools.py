@@ -11,18 +11,20 @@ from src.multi_agent_analyst.schemas.analysis_agent_schema import (
 )
 from src.multi_agent_analyst.utils.utils import object_store
 
-#no improvisations, strict execution of the plan 
-
 def make_correlation_tool(df):
     def correlation():
         try:
             result = df.corr(numeric_only=True)
+            print(type(result))
         #format exception flag properly for the controller
         except Exception as e:
             return {
                 'exception': e
-            }
-        return object_store.save(result)
+            }        
+        obj_id=object_store.save(result)
+        
+        return {'object_id':obj_id, 
+                'details':'correlation matrix is executed'}
 
     return StructuredTool.from_function(
         func=correlation,
@@ -31,22 +33,17 @@ def make_correlation_tool(df):
         args_schema=CorrelationSchema,
     )
 
-
 def make_anomaly_tool(df):
     def anomaly():
         try:
             numeric = df.select_dtypes(include=["int", "float"])
             print('DETECTING')
-            # if column:
-            #     numeric = numeric[[column]]
 
             q1 = numeric.quantile(0.25)
             q3 = numeric.quantile(0.75)
             iqr = q3 - q1
 
             mask = (numeric < (q1 - 1.5 * iqr)) | (numeric > (q3 + 1.5 * iqr))
-
-            outliers = numeric[mask]
 
             lower = (q1 - 1.5 * iqr).to_dict()
             upper = (q3 + 1.5 * iqr).to_dict()
@@ -58,26 +55,37 @@ def make_anomaly_tool(df):
                 f"{col}_upper": round(upper[col], 2)
                 for col in numeric.columns
             }
+
             outlier_rows = numeric[mask.any(axis=1)]
             outlier_rows_display = outlier_rows.to_dict(orient="records")
             outlier_count = len(outlier_rows)
-            result = {
+
+            annotated_df = df.copy()
+            annotated_df["outlier"] = mask.any(axis=1)
+
+            obj_id = object_store.save(annotated_df)
+
+            details = {
                 "outlier_count": outlier_count,
                 "outlier_rows": outlier_rows_display if len(outlier_rows_display) > 0 else 'No outliers detected',
                 "columns_checked": list(numeric.columns),
                 "iqr_bounds": ", ".join(f"{k}: {v}" for k, v in iqr_bounds.items())
+                }            
+            # object_id=object_store.save(details)
+
+            result = {
+                'object_id':obj_id,
+                'details':details
                 }
-        
+            
+            print(result)
+
         except Exception as e:
-
             return {
-
                 'exception': e
             }
-        print(result)
-        print(type(result))
-
-        return object_store.save(result)
+        
+        return result
 
     return StructuredTool.from_function(
         func=anomaly,
@@ -89,8 +97,6 @@ def make_anomaly_tool(df):
 #perhaps make the resolver agent-specific helper 
 
 def make_periodic_tool(df):
-
-
     def periodic(frequency: int):
         try:
             dfc = df.copy()
@@ -121,7 +127,7 @@ def make_periodic_tool(df):
             seasonal = stl.seasonal.tolist()
             resid = stl.resid.tolist()
             
-            result = {
+            details = {
                 "trend_preview": trend[:10],
                 "seasonal_preview": seasonal[:10],
                 "residual_stats": {
@@ -134,13 +140,18 @@ def make_periodic_tool(df):
                     "seasonal": seasonal,
                     "residual": resid,
                 }}
-            
+            obj_id=object_store.save(details)
+
+            result={'object_id': obj_id,
+                    'details':details
+                }
+
         except Exception as e:
             return {
                 'exception': str(e)
             }
 
-        return object_store.save(result)
+        return result
 
     return StructuredTool.from_function(
         func=periodic,
@@ -157,7 +168,12 @@ def make_summary_tool(df):
             return {
                 'exception': e
             }
-        return object_store.save(stats)
+        obj_id=object_store.save(stats)
+        
+        result={'object_id':obj_id, 
+                'details':stats}
+        
+        return result
 
     return StructuredTool.from_function(
         func=summary,
@@ -165,3 +181,8 @@ def make_summary_tool(df):
         description="Compute descriptive statistics.",
         args_schema=SummarySchema,
     )
+
+
+#might wanna add the previous exceptions/repairs along to the resolver agent, so he doesnt try the same fix twice but rethink its approach if failing, along with limits 
+
+#making consistent format for tool outputs (always returning dataframe, but modified for example)

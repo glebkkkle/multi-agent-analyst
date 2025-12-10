@@ -39,17 +39,23 @@ def data_agent(data_agent_query: str, current_plan_step: str):
     result = agent.invoke({"messages": [{"role": "user", "content": data_agent_query}]})
 
     last_msg = [m for m in result["messages"] if isinstance(m, AIMessage)][-1].content
-    tool_obj_id=[m for m in result['messages'] if isinstance(m, ToolMessage)][-1].content
+    last_tool_output=[m for m in result['messages'] if isinstance(m, ToolMessage)][-1].content
+
 
 
     msg=json.loads(last_msg)
+    tool_json=json.loads(last_tool_output)
+
+
+    object_id=tool_json['object_id']
+
     final_obj_id =msg['object_id']
     exception=msg['exception']
 
     log=ExecutionLogEntry(id=current_plan_step, agent='DataAgent', sub_query=data_agent_query, status='success' if exception is None else exception, output_object_id=final_obj_id, error_message=exception if exception is not None else None)
     execution_list.execution_log_list.setdefault(current_plan_step, log)
 
-    msg['object_id']=tool_obj_id
+    msg['object_id']=object_id
 
     context.set("DataAgent", current_plan_step, final_obj_id)
     print(msg)

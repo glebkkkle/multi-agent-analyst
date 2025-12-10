@@ -18,6 +18,3 @@ controller_agent = create_agent(
     system_prompt=CONTROLLER_AGENT_PROMPT,
     response_format=ExternalAgentSchema,
 )
-
-#could potentially pass all the previous logs, for safety
-#maybe catch some errors in the controller output and loop again with resolver, as with planning 

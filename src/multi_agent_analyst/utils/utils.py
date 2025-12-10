@@ -1,5 +1,5 @@
 import uuid
-from typing import List, Optional, Dict
+from typing import List, Optional, Dict, Any
 from pydantic import BaseModel
 
 class ObjectStore:
@@ -37,7 +37,7 @@ class ExecutionLogEntry(BaseModel):
     error_message: Optional[str] = None
 
 class ExecutionLogList(BaseModel):
-    execution_log_list:Dict[str, ExecutionLogEntry]={}
+    execution_log_list:Dict[str, Any]={}
 
 execution_list=ExecutionLogList()
 

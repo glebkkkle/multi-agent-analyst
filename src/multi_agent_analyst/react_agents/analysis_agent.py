@@ -60,28 +60,24 @@ def analysis_agent(analysis_query: str, current_plan_step: str, data_id: str):
     last = [m for m in result["messages"] if isinstance(m, AIMessage)][-1].content
     tool_obj_id=[m for m in result['messages'] if isinstance(m, ToolMessage)][-1].content
 
-
     msg=json.loads(last)
-    final_obj_id=msg['object_id']
+    tool_output=json.loads(tool_obj_id)
+    obj_id=tool_output['object_id']
+    
+
     # 5) Save final output ID
     exception=msg['exception']
-    context.set("AnalysisAgent", current_plan_step,final_obj_id)
+    context.set("AnalysisAgent", current_plan_step,obj_id)
 
-    log.output_object_id=final_obj_id
+    log.output_object_id=obj_id
 
     log.status='success' if exception is None else 'error'
-    # # #move the log 
-    
+    # # #move the log     
     # print(log)
     # print(' ')
     # execution_list.execution_log_list.setdefault(current_plan_step, log)
     execution_list.execution_log_list[current_plan_step]=log
+    msg['object_id']=obj_id
 
-    msg['object_id']=tool_obj_id
-
+    print(msg)
     return msg
-
-#issue with returning correct object id!! 
-#copy the id from the output of the tool and pass it to the json manually
-
-#fix the issue with logs 

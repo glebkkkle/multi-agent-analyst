@@ -56,7 +56,7 @@ Examples of correct behavior:
 
 Your final response **MUST** follow the provided schema:
    object_id: str - The id of the final object after all the modifications has been completed (provided by tools) (e.g ab12323fg)
-   summary: str - A short summary of performed steps that ensure accuracy.   
+   summary: str - A short summary of performed steps and short results explanations that ensure accuracy.   
    exception:Optional[str] | None - Optional error message (**ONLY** INDICATE WHEN ANY EXCEPTION OCCURRED DURING EXECUTION)
 
 You must follow these rules EXACTLY.

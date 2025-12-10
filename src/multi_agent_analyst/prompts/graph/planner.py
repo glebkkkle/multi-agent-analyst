@@ -145,6 +145,10 @@ IMPORTANT:
 - A sub_query must NEVER reference a specific tool name or tool syntax.  
   Only describe the *intent*, not the command.
 
+- All conditional edges MUST use simple boolean expressions referring to metadata fields 
+  (e.g., "outlier_count > 0", "outlier_count == 0"). 
+  Do NOT use natural language conditions.
+
 **Do NOT introduce additional analysis or preprocessing steps unless the user explicitly requests them.  
 If the answer can be produced from directly retrieved data, do NOT add extra nodes.  
 Only use conditional branching when the user’s request logically depends on analysis results.**
@@ -207,3 +211,6 @@ Return ONLY valid JSON.
 User Query:
 {query}
 """
+
+#might wanna add tables to the critic as well, so doesnt suspend when not needed 
+
