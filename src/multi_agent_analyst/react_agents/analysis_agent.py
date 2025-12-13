@@ -34,8 +34,6 @@ def analysis_agent(analysis_query: str, current_plan_step: str, data_id: str):
     print('CALLING ANALYSIS AGENT')
     print(' ')
     # print(analysis_query, current_plan_step, data_id)
-    log=ExecutionLogEntry(id=current_plan_step, agent='AnalysisAgent', sub_query=analysis_query)
-    execution_list.execution_log_list.setdefault(current_plan_step, log)
     # 1) Load the data based on the ID
     df = object_store.get(data_id)
 
@@ -73,12 +71,11 @@ def analysis_agent(analysis_query: str, current_plan_step: str, data_id: str):
     exception=msg['exception']
     context.set("AnalysisAgent", current_plan_step,obj_id)
 
-    log.output_object_id=obj_id
 
-    log.status='success' if exception is None else 'error'
 
-    execution_list.execution_log_list.setdefault(current_plan_step, []).append(log)
+    log=ExecutionLogEntry(id=current_plan_step, agent='AnalysisAgent', sub_query=analysis_query, status='success' if exception is None else exception, output_object_id=obj_id, error_message=exception if exception is not None else None)
     msg['object_id']=obj_id
+    execution_list.execution_log_list.setdefault(current_plan_step, []).append(log)
     print(execution_list.execution_log_list)
     print(msg)
     return msg

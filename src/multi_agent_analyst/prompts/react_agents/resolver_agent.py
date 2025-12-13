@@ -8,9 +8,6 @@
 #Also adjustments to schema for resolver 
 #also apply limits on the amount of repairs, so to not end up in the infinte loop of repairs 
 
-
-
-
 RESOLVER_AGENT_PROMPT="""
 You are the Resolver Agent in a multi-step execution system.
 One step in the plan has FAILED. 
@@ -79,7 +76,8 @@ Your corrected_step MUST be:
 Return action="abort" ONLY when:
    - The missing information cannot be recovered from context
    - The step cannot be repaired reliably
-
+   - The user provided not enough information in the request. 
+   
 ────────────────────────────────────────
 ### OUTPUT FORMAT (JSON ONLY)
 

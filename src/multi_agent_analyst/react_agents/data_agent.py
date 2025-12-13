@@ -56,11 +56,11 @@ def data_agent(data_agent_query: str, current_plan_step: str):
     context.set("DataAgent", current_plan_step, final_obj_id)
     print(msg)
     execution_list.execution_log_list.setdefault(current_plan_step, []).append(log)
-    
-    print(execution_list.execution_log_list)
-    return msg 
-#some bugs in return format from the tools (FIX)
 
+    print(execution_list.execution_log_list)
+    return msg
+ 
+#some bugs in return format from the tools (FIX)
 
 #fix so the resolver identifies CORRECT AGENT THAT CAUSED THE FAILURE
 #fix the prompting to the controller about what when to run, ensuring correct object ids are passed after correction has been completed.

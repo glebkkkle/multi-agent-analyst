@@ -84,7 +84,11 @@ def make_scatter_plot_tool(df):
             numeric_cols = df.select_dtypes(include=['float', 'int']).columns
 
             if len(numeric_cols) < 2:
-                raise ValueError("Not enough numeric columns for scatter plot.")
+                return {'object_id':None, 
+                        'details':'Failed',
+                        'plot_type':'scatter plot',
+                        'exception': str(ValueError('Not enough nummerical column provided for the scatter plot.'))        
+                    }
 
             x_col, y_col = numeric_cols[:2]
 
@@ -116,7 +120,7 @@ def make_scatter_plot_tool(df):
                     'plot_type':'scatter plot',
                     'x':x_col,
                     'y':y_col,
-                    'exception':e               
+                    'exception':str(e)               
                 }
     return StructuredTool.from_function(
         func=scatter_plot,
@@ -226,7 +230,7 @@ def make_pie_chart_tool(df):
                     'details':'Failed',
                     'plot_type':'pie chart',
                     'columns':labels,
-                    'exception':e               
+                    'exception':str(e)               
                 }
 
         obj_id=object_store.save(vis_json)

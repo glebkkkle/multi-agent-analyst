@@ -12,7 +12,7 @@ from src.multi_agent_analyst.prompts.graph.planner import PLANNER_PROMPT
 from src.multi_agent_analyst.prompts.graph.critic import CRITIC_PROMPT
 from src.multi_agent_analyst.prompts.graph.revision import PLAN_REVISION_PROMPT
 from src.multi_agent_analyst.prompts.graph.summarizer import SUMMARIZER_PROMPT
-from src.multi_agent_analyst.prompts.chat.intent_classifier import CHAT_INTENT_PROMPT
+from src.multi_agent_analyst.prompts.chat.intent_classifier import INTENT_CLASSIFIER_PROMPT, Output
 from src.multi_agent_analyst.prompts.chat.context_agent import CONTEXT_AGENT_PROMPT
 from src.multi_agent_analyst.prompts.chat.chat_reply_prompt import CHAT_REPLY_PROMPT
 
@@ -151,7 +151,7 @@ def routing(state:GraphState):
 def allow_execution(state:GraphState):
     return state
 
-intent_llm = llm.with_structured_output(IntentSchema)
+intent_llm = llm.with_structured_output(Output)
 
 def clarification_node(state: GraphState):
     new_query = (state.clean_query or "") + " " + state.clarification
@@ -174,9 +174,13 @@ def chat_node(state: GraphState):
     ]
 
     intent = intent_llm.invoke(
-        CHAT_INTENT_PROMPT.format(user_query=user_msg)
+        INTENT_CLASSIFIER_PROMPT.format(data_schemas=current_tables, user_query=user_msg)
     )
 
+    print(intent)
+    if intent.is_sufficient == False:
+        print('FALSE')
+        return {'desicion':'clarify', 'message_to_user':intent.missing_info}
     if intent.intent == "plan":
         return {"desicion": "planner", "conversation_history": new_history, 'dataset_schemas':schemas}
 
@@ -184,6 +188,7 @@ def chat_node(state: GraphState):
         return {"desicion": "chat", "conversation_history": new_history, 'dataset_schemas':schemas}
 
     return {"conversation_history": new_history, 'dataset_schemas':schemas}
+
 
 def chat_reply(state: GraphState):
     reply = llm.invoke(CHAT_REPLY_PROMPT.format(user_query=state.query, conversation_history=state.conversation_history, data_list=state.data_samples))
