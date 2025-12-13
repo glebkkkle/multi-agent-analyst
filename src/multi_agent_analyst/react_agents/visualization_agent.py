@@ -46,6 +46,8 @@ def visualization_agent(visualizer_query: str, current_plan_step: str, data_id: 
     last_msg = [m for m in result["messages"] if isinstance(m, AIMessage)][-1].content
     last_tool_output=[m for m in result['messages'] if isinstance(m, ToolMessage)][-1].content
 
+    print(last_tool_output)
+    print(type(last_tool_output))
     tool_json=json.loads(last_tool_output)
 
     object_id=tool_json['object_id']
@@ -58,7 +60,8 @@ def visualization_agent(visualizer_query: str, current_plan_step: str, data_id: 
     log=ExecutionLogEntry(id=current_plan_step, agent='VisualizationAgent', sub_query=visualizer_query, status='success' if exception is None else 'error', output_object_id=final_obj_id, error_message=exception)
 
     msg['object_id']=object_id
+    execution_list.execution_log_list.setdefault(current_plan_step, []).append(log)
 
-    execution_list.execution_log_list.setdefault(current_plan_step, log)
     print(msg)
+    print(execution_list.execution_log_list)
     return msg

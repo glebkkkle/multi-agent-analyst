@@ -37,7 +37,7 @@ class ExecutionLogEntry(BaseModel):
     error_message: Optional[str] = None
 
 class ExecutionLogList(BaseModel):
-    execution_log_list:Dict[str, Any]={}
+    execution_log_list: Dict[str, list[Any]] = {}
 
 execution_list=ExecutionLogList()
 

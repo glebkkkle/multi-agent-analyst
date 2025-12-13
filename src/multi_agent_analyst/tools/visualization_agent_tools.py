@@ -88,31 +88,8 @@ def make_scatter_plot_tool(df):
 
             x_col, y_col = numeric_cols[:2]
 
-            # Create figure
-            fig, ax = plt.subplots(figsize=(12, 7), dpi=100)
+            # Create figur
             
-            # Create gradient colors based on y values
-            colors = df[y_col]
-            
-            # Scatter plot with beautiful styling
-            scatter = ax.scatter(
-                df[x_col], 
-                df[y_col],
-                c=colors,
-                cmap='viridis',
-                s=150,  # Larger points
-                alpha=0.8,
-                edgecolors=COLORS['primary'],
-                linewidth=2
-            )
-            
-            # Add colorbar with styling
-            cbar = plt.colorbar(scatter, ax=ax)
-            cbar.ax.set_ylabel(y_col, rotation=270, labelpad=20, color='#e8e8f0', fontsize=11, weight='bold')
-            cbar.ax.tick_params(colors='#c8c8d8')
-            cbar.outline.set_edgecolor(COLORS['primary'])
-            cbar.outline.set_linewidth(1.5)
-            cbar.outline.set_alpha(0.3)
             vis_json = {
                 "type": "visualization",
                 "plot_type": "scatter",
@@ -122,36 +99,6 @@ def make_scatter_plot_tool(df):
                 "title": f"{y_col} vs {x_col}"
             }
             
-
-            
-            # Set labels with title
-            ax.set_xlabel(x_col, fontsize=12, weight='bold')
-            ax.set_ylabel(y_col, fontsize=12, weight='bold')
-            ax.set_title(f'{y_col} vs {x_col}', 
-                        fontsize=16, 
-                        weight='bold', 
-                        color='#e8e8f0',
-                        pad=20)
-            
-            # Apply modern styling
-            setup_plot_style(fig, ax)
-            
-            # Add subtle shadow effect
-            ax.add_patch(Rectangle((0, 0), 1, 1,
-                                transform=ax.transAxes,
-                                facecolor='none',
-                                edgecolor=COLORS['primary'],
-                                linewidth=2,
-                                alpha=0.2))
-            
-            plt.tight_layout()
-            
-            buf = io.BytesIO()
-            plt.savefig(buf, format="png", bbox_inches='tight', facecolor=COLORS['background'], dpi=100)
-            # svg=buf.getvalue()
-            # print(svg)
-            buf.seek(0)
-            plt.close()
 
             obj_id=object_store.save(vis_json)
             return{
@@ -164,8 +111,13 @@ def make_scatter_plot_tool(df):
             }
         
         except Exception as e:
-            return {'exception':e}
-
+            return {'object_id':None, 
+                    'details':'Failed',
+                    'plot_type':'scatter plot',
+                    'x':x_col,
+                    'y':y_col,
+                    'exception':e               
+                }
     return StructuredTool.from_function(
         func=scatter_plot,
         name="scatter_plot",
@@ -199,65 +151,12 @@ def make_line_plot_tool(df):
 
             y_col = numeric_cols[0]
 
-            # Create figure
-            # fig, ax = plt.subplots(figsize=(14, 7), dpi=100)
-            
-            # Plot line with gradient effect
             x_data = range(len(df))
             y_data = df[y_col].values
             
-            # print(x_data)
-            # print(y_col)
-            # # Main line
-            # line = ax.plot(x_data, y_data, 
-            #               color=COLORS['primary'],
-            #               linewidth=3,
-            #               label=y_col,
-            #               zorder=3)
-            
-            # # Add markers
-            # ax.scatter(x_data, y_data,
-            #           color=COLORS['accent'],
-            #           s=100,
-            #           alpha=0.9,
-            #           edgecolors='white',
-            #           linewidth=2,
-            #           zorder=4)
-            
-            # ax.fill_between(
-            #     x_data,
-            #     y_data,
-            #     color=COLORS['primary'],
-            #     alpha=0.12
-            # )
-            
-            # # Set labels
-            # ax.set_xlabel('Date', fontsize=12, weight='bold')
-            # ax.set_ylabel(y_col, fontsize=12, weight='bold')
-            # ax.set_title(f'{y_col} Over Time', 
-            #             fontsize=16, 
-            #             weight='bold', 
-            #             color='#e8e8f0',
-            #             pad=20)
-            
-            # # Format x-axis with dates
-            # ax.set_xticks(x_data[::max(1, len(x_data)//10)])
-            # ax.set_xticklabels(df[date_col].iloc[::max(1, len(df)//10)], 
-            #                   rotation=45, 
-            #                   ha='right')
-            
-            # # Apply modern styling
-            # setup_plot_style(fig, ax)
-            
-            # # Add legend
-            # ax.legend(loc='upper left', 
-            #          framealpha=0.9,
-            #          facecolor='#1a1625',
-            #          edgecolor=COLORS['primary'],
-            #          fontsize=10,
-            #          labelcolor='#e8e8f0')
 
-            x_data = list(range(len(df)))                     # Convert range → list
+
+            x_data = list(range(len(df)))          
             y_data = df[y_col].astype(float).tolist()  
             vis_json = {
                 "type": "visualization",
@@ -268,18 +167,12 @@ def make_line_plot_tool(df):
                 "title": ' '
             }
 
-
-
-            # plt.tight_layout()
-
-            # buf = io.BytesIO()
-            # plt.savefig(buf, format="png", bbox_inches='tight', facecolor=COLORS['background'], dpi=100)
-            # buf.seek(0)
-            # plt.close()
-            
         except Exception as e:
-            return {'exception': e}
-        
+            return {'object_id':None, 
+                    'details':'Failed',
+                    'plot_type':'line plot',
+                    'exception':str(e)               
+                }
         obj_id=object_store.save(vis_json)
         return{
                 'object_id':obj_id, 
@@ -327,74 +220,17 @@ def make_pie_chart_tool(df):
                 "title": " "
             }
 
-
-            # return object_store.save(df)
-            # for v in values:
-            #     try:
-            #         numeric_values.append(float(v))
-            #     except:
-            #         raise ValueError("All values in the first row must be numeric for pie chart.")
-
-            # Create figure
-            # fig, ax = plt.subplots(figsize=(10, 10), dpi=100)
-            # fig.patch.set_facecolor(COLORS['background'])
-            # ax.set_facecolor(COLORS['background'])
-
-            # # Colors
-            # colors_list = [COLORS['gradient'][i % len(COLORS['gradient'])] 
-            #                for i in range(len(labels))]
-
-            # explode = [0.05] * len(labels)
-
-            # wedges, texts, autotexts = ax.pie(
-            #     numeric_values,
-            #     labels=labels,
-            #     colors=colors_list,
-            #     explode=explode,
-            #     autopct='%1.1f%%',
-            #     startangle=90,
-            #     textprops={'color': '#e8e8f0', 'fontsize': 11, 'weight': 'bold'},
-            #     wedgeprops={'edgecolor': COLORS['background'], 'linewidth': 3, 'antialiased': True}
-            # )
-
-            # # Styling
-            # for autotext in autotexts:
-            #     autotext.set_color('white')
-            #     autotext.set_fontsize(12)
-            #     autotext.set_weight('bold')
-
-            # for text in texts:
-            #     text.set_color('#e8e8f0')
-            #     text.set_fontsize(11)
-            #     text.set_weight('bold')
-
-            # ax.set_title(
-            #     'Distribution',
-            #     fontsize=16,
-            #     weight='bold',
-            #     color='#e8e8f0',
-            #     pad=20
-            # )
-
-            # ax.axis('equal')
-
-            # plt.tight_layout()
-
-            # buf = io.BytesIO()
-            # plt.savefig(buf, format="png", 
-            #             bbox_inches='tight', 
-            #             facecolor=COLORS['background'], 
-            #             dpi=100)
-            # buf.seek(0)
-            # plt.close()
-
-
-
         except Exception as e:
-            return {"exception": str(e)}
+            return{
+                 'object_id':None, 
+                    'details':'Failed',
+                    'plot_type':'pie chart',
+                    'columns':labels,
+                    'exception':e               
+                }
 
         obj_id=object_store.save(vis_json)
-  
+        
         return {
                 'object_id':obj_id, 
                 'details':{
@@ -436,57 +272,11 @@ def make_bar_chart_tool(df):
             }
 
            
-            # Create figure
-            fig, ax = plt.subplots(figsize=(12, 7), dpi=100)
-            
-            # Create gradient colors
-            n_bars = len(df)
-            colors_list = plt.cm.viridis(np.linspace(0.3, 0.9, n_bars))
-            
-            # Create bars
-            bars = ax.bar(range(len(df)), df[num_col], 
-                          color=colors_list,
-                          edgecolor=COLORS['primary'],
-                          linewidth=2,
-                          alpha=0.9)
-            
-            # Add value labels on top of bars
-            for i, (bar, value) in enumerate(zip(bars, df[num_col])):
-                height = bar.get_height()
-                ax.text(bar.get_x() + bar.get_width()/2., height,
-                       f'{value:.0f}',
-                       ha='center', va='bottom',
-                       color='#e8e8f0',
-                       fontsize=10,
-                       weight='bold')
-            
-            # Set labels
-            ax.set_xlabel(cat_col, fontsize=12, weight='bold')
-            ax.set_ylabel(num_col, fontsize=12, weight='bold')
-            ax.set_title(f'{num_col} by {cat_col}',
-                        fontsize=16,
-                        weight='bold',
-                        color='#e8e8f0',
-                        pad=20)
-            
-            # Set x-axis labels
-            ax.set_xticks(range(len(df)))
-            ax.set_xticklabels(df[cat_col], rotation=45, ha='right')
-            
-            # Apply modern styling
-            setup_plot_style(fig, ax)
-            print(cat_col)
-            print(num_col)
-            plt.tight_layout()
-            buf = io.BytesIO()
-            plt.savefig(buf, format="png", bbox_inches='tight', facecolor=COLORS['background'], dpi=100)
-            buf.seek(0)
-            plt.close()
             
         except Exception as e:
             return {'exception': e}
         
-        return object_store.save(buf)
+
     
     return StructuredTool.from_function(
         func=bar_chart,

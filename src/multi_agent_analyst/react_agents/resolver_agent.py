@@ -1,22 +1,61 @@
-from src.multi_agent_analyst.schemas.resolver_agent_schema import ResolverOutput
-from src.multi_agent_analyst.prompts.react_agents.resolver_agent import RESOLVER_AGENT_PROMPT, f
+from src.multi_agent_analyst.schemas.resolver_agent_schema import ResolverOutput, NewResolverOuput
+from src.multi_agent_analyst.prompts.react_agents.resolver_agent import RESOLVER_AGENT_PROMPT
 from src.multi_agent_analyst.utils.utils import context, execution_list
 from langchain_openai import ChatOpenAI
 from langchain_core.tools import tool 
 from langchain.agents import create_agent
 
 llm = ChatOpenAI(model="gpt-4.1-mini")
+MAX_RETRIES=3
 
+failing_node="""DAGNode(
+    id="S2",
+    agent="AnalysisAgent",
+    sub_query="Compute correlation between revenue and profit",
+    inputs=["obj_sales_df"],
+    outputs=["obj_corr"]
+)"""
+
+failed_log="""
+
+execution_log = [
+    ExecutionLogEntry(
+        id="S1",
+        agent="DataAgent",
+        sub_query="Load sales table with order_id, date, revenue",
+        status="success",
+        output_object_id="obj_sales_df",
+        error_message=None
+    ),
+    ExecutionLogEntry(
+        id="S2",
+        agent="AnalysisAgent",
+        sub_query="Compute correlation between revenue and profit",
+        status="error",
+        output_object_id=None,
+        error_message="KeyError: 'profit'"
+    )
+]
+
+"""
 
 @tool 
 def resolver_agent():
     'Resolver Agent that can solve exceptions that occurred during execution of agents'
 
-    
+    attempt = len(execution_list.execution_log_list.get("resolver_fix", [])) + 1
+    if attempt > MAX_RETRIES:
+        print('aborting')
+        return {
+            "action": "abort",
+            "reason": f"Retry limit exceeded ({MAX_RETRIES})"
+        }
+
     # print(failed_step)
     log=execution_list.execution_log_list
     print(' ')
     print(f'CALLING RESOLVER AGENT WITH EXCEPTION🛠️')
+    print(attempt)
     print(' ')
     # print(step_log)
     # current_exception=step_log.error_message if step_log.error_message is not None else step_log.error_message
@@ -36,6 +75,10 @@ def resolver_agent():
     print(' ')
     print(repair_response)
     print(' ')
-    execution_list.execution_log_list.setdefault('resolver', repair_response)
+    execution_list.execution_log_list.setdefault('resolver_fix', []).append(repair_response)
+    print(execution_list.execution_log_list)
     return repair_response
 
+
+
+# resolver_agent()

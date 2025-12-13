@@ -11,6 +11,8 @@ from src.multi_agent_analyst.tools.analysis_agent_tools import (
     make_anomaly_tool,
     make_periodic_tool,
     make_summary_tool,
+    make_groupby_tool, 
+    make_difference_tool
 )
 from pydantic import BaseModel
 from src.multi_agent_analyst.prompts.react_agents.analysis_agent import ANALYST_AGENT_PROMPT
@@ -42,11 +44,13 @@ def analysis_agent(analysis_query: str, current_plan_step: str, data_id: str):
     anomaly_tool = make_anomaly_tool(df)
     periodic_tool = make_periodic_tool(df)
     summary_tool = make_summary_tool(df)
+    groupby_tool=make_groupby_tool(df)
+    difference_analysis=make_difference_tool(df)
 
     # 3) Create agent *with the tools bound to this df*
     agent = create_agent(
         openai_llm,
-        tools=[correlation_tool, anomaly_tool, periodic_tool, summary_tool],
+        tools=[correlation_tool, anomaly_tool, periodic_tool, summary_tool, groupby_tool, difference_analysis],
         system_prompt=ANALYST_AGENT_PROMPT,
         response_format=ExternalAgentSchema,
     )
@@ -72,12 +76,9 @@ def analysis_agent(analysis_query: str, current_plan_step: str, data_id: str):
     log.output_object_id=obj_id
 
     log.status='success' if exception is None else 'error'
-    # # #move the log     
-    # print(log)
-    # print(' ')
-    # execution_list.execution_log_list.setdefault(current_plan_step, log)
-    execution_list.execution_log_list[current_plan_step]=log
-    msg['object_id']=obj_id
 
+    execution_list.execution_log_list.setdefault(current_plan_step, []).append(log)
+    msg['object_id']=obj_id
+    print(execution_list.execution_log_list)
     print(msg)
     return msg

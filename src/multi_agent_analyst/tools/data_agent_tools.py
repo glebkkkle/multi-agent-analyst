@@ -77,7 +77,6 @@ def make_select_columns_tool():
         args_schema=SelectColumnsSchema,
     )
 
-
 def make_merge_tool():
     """Factory: returns a dataframe merge tool."""
 
@@ -92,7 +91,17 @@ def make_merge_tool():
             return {
                 'exception': e
             }
-        return object_store.save(merged)
+        
+        obj_id = object_store.save(merged)
+        print(merged)
+        return {
+            "object_id": obj_id,
+            "details": {
+                "row_count": len(merged),
+                "columns": list(merged.columns),
+                "preview": merged.head(5).to_dict(orient="records")
+            }
+        }
 
     return StructuredTool.from_function(
         func=merge_tables,

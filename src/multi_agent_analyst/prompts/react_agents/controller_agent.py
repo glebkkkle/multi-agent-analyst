@@ -44,7 +44,7 @@ YOUR RESPONSIBILITIES
 
 2. **Error handling**
    If (and ONLY if) an agent returns an exception:
-   • Call the Resolver Agent tool with the failing step information.
+   • Call the Resolver Agent tool imediatelly.
    • Apply the resolver's instructions.
 
    You MUST NOT call the resolver if:
@@ -61,14 +61,6 @@ action = "retry_with_fixed_step"
 - Replace the previous version of that step in the plan.
 - Use the NEW object ID for downstream nodes.
 - Continue execution.
-
---------------------------------------------------------
-action = "revise_plan"
---------------------------------------------------------
-- Replace the affected steps.
-- Re-execute revised steps in order.
-- Propagate new output IDs to downstream nodes.
-- Continue through the DAG.
 
 --------------------------------------------------------
 action = "abort"

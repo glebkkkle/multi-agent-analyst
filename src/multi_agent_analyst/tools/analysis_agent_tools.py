@@ -8,6 +8,8 @@ from src.multi_agent_analyst.schemas.analysis_agent_schema import (
     AnomalySchema,
     PeriodicSchema,
     SummarySchema,
+    GroupBySchema,
+    DifferenceSchema
 )
 from src.multi_agent_analyst.utils.utils import object_store
 
@@ -182,6 +184,115 @@ def make_summary_tool(df):
         args_schema=SummarySchema,
     )
 
+
+def make_groupby_tool(df):
+    def groupby_aggregate(group_column: str, agg_column: str, agg_function: str):
+        try:
+            if group_column not in df.columns:
+                raise ValueError(f"Group column '{group_column}' does not exist in the dataframe.")
+
+            # Validate aggregation column
+            if agg_column not in df.columns:
+                raise ValueError(f"Aggregation column '{agg_column}' does not exist in the dataframe.")
+
+            # Validate aggregation function
+            allowed = ["mean", "sum", "count", "min", "max"]
+            if agg_function not in allowed:
+                raise ValueError(
+                    f"Aggregation function '{agg_function}' is not supported. "
+                    f"Allowed: {allowed}"
+                )
+
+            # Perform grouping
+            grouped = (
+                df.groupby(group_column)[agg_column]
+                .agg(agg_function)
+                .reset_index()
+            )
+
+            # Save result
+            obj_id = object_store.save(grouped)
+
+            # Build details
+            details = {
+                "group_column": group_column,
+                "agg_column": agg_column,
+                "agg_function": agg_function,
+                "row_count": len(grouped)
+            }
+
+            result = {
+                "object_id": obj_id,
+                "details": details
+            }
+            print(result)
+        except Exception as e:
+            return {"exception": str(e)}
+
+        return result
+
+    return StructuredTool.from_function(
+        func=groupby_aggregate,
+        name="groupby_aggregate",
+        description=(
+            "Group the table by `group_column` and compute an aggregation on `agg_column` "
+            "using one of the supported functions: mean, sum, count, min, max."
+        ),
+        args_schema=GroupBySchema,
+    )
+
+def make_difference_tool(df):
+    print('CALLING DIFF TOOL')
+    def difference_analysis(column: str, method: str = "absolute"):
+        try:
+            if column not in df.columns:
+                raise ValueError(f"Column '{column}' not found in dataframe.")
+
+            if method not in ["absolute", "percent"]:
+                raise ValueError("method must be either 'absolute' or 'percent'.")
+
+            if not pd.api.types.is_numeric_dtype(df[column]):
+                raise ValueError(f"Column '{column}' must be numeric.")
+
+            dfx = df.copy()
+
+            if method == "absolute":
+                dfx["difference"] = dfx[column].diff()
+                dfx = dfx.replace({np.nan: None, np.inf: None, -np.inf: None})
+            else:
+                dfx["difference"] = dfx[column].pct_change() * 100.0
+                dfx = dfx.replace({np.nan: None, np.inf: None, -np.inf: None})
+
+            obj_id = object_store.save(dfx)
+
+            details = {
+                "column": column,
+                "method": method,
+                "difference_stats": {
+                    "max": float(dfx["difference"].max(skipna=True)),
+                    "min": float(dfx["difference"].min(skipna=True)),
+                    "mean": float(dfx["difference"].mean(skipna=True)),
+                }
+            }
+            print(obj_id)
+            print(details)
+            return {
+                "object_id": obj_id,
+                "details": details
+            }
+
+        except Exception as e:
+            return {"exception": str(e)}
+
+    return StructuredTool.from_function(
+        func=difference_analysis,
+        name="difference_analysis",
+        description=(
+            "Calculate changes in a numeric column over the row index (time or order). "
+            "Supports absolute differences or percent changes. Optionally sort by the difference."
+        ),
+        args_schema=DifferenceSchema,
+    )
 
 #might wanna add the previous exceptions/repairs along to the resolver agent, so he doesnt try the same fix twice but rethink its approach if failing, along with limits 
 

@@ -79,7 +79,7 @@ def router_node(state: GraphState):
             {"role": "user", "content": str(state.plan)}
         ]
     })
-
+    print(result)
     last = [m for m in result["messages"] if isinstance(m, AIMessage)][-1].content
     d = json.loads(last)
     

@@ -17,6 +17,8 @@ You have access to the following tools:
 - anomaly_detection
 - correlation_analysis
 - periodic_analysis
+- groupby_aggregate
+- difference_analysis
 
 =====================================================================
 CRITICAL BEHAVIOR RULES

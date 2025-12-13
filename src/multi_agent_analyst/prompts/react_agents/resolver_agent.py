@@ -1,3 +1,16 @@
+#Suppose a step during execution fails. Tool retruned exception, and the agent retruned that issue to the controller. The resolver, based on the log and
+#previous fixes, should realize the issue and return the correction back to the controller.I think the corrected step should only include fixed subquery, respective agent and no edge fixes whatsoever. Controller should stay consistent with the original plan (if not aborted), but with a new fix. So essentially, reruning the plan from the specific failing point with the corrected information.
+#Must be carefull with the object ids though. Since rerun might happen not from the beginning, a specific id might be needed from prev step.
+
+
+
+#A new resolver behaivour, that UPDATES the DAG, instead of fixing a single step. Adjustments in prompts for controller and resolver are needed
+#Also adjustments to schema for resolver 
+#also apply limits on the amount of repairs, so to not end up in the infinte loop of repairs 
+
+
+
+
 RESOLVER_AGENT_PROMPT="""
 You are the Resolver Agent in a multi-step execution system.
 One step in the plan has FAILED. 
@@ -57,7 +70,7 @@ You may:
 
 ────────────────────────────────────────
 Your corrected_step MUST be:
-   - A complete and valid Step object
+   - A complete and valid DAGNode object
    - With rewritten sub_query if needed to clearly emphasize the fix
    - With corrected agent, input_object_ids, or object_id fixes
 
@@ -72,7 +85,7 @@ Return action="abort" ONLY when:
 
   "action": "retry_with_fixed_step" | "abort",
   'agent': <AgentName to rerun the corrected step>
-  "corrected_step": <Step object or null>,
+  "corrected_node": <Step object or null>,
   "object_id": <corrected id or null>,
   "reason": "<short explanation>"
 
@@ -83,90 +96,5 @@ Return action="abort" ONLY when:
 Do NOT output anything outside this JSON.
 
 Current Log:
-{log}
-"""
-
-
-f="""
-You are the Resolver Agent in a multi-step DAG execution system.
-A step has FAILED and the Controller has sent you:
-- the failing step
-- the exception message
-- the full execution_log (including previous resolver repairs)
-- the planner DAG structure
-
-Your job is to diagnose the root cause and produce a **corrected version of ONE step**.
-
-────────────────────────────────────────
-### HOW TO REASON
-You MUST internally examine:
-
-1. **The exception**
-   - What tool or agent failed?
-   - What missing field, missing column, wrong df shape, wrong type, or invalid input caused it?
-
-2. **Which step is actually responsible**
-   - If the failing step itself has incorrect parameters → fix it.
-   - If the failing step received invalid input → find the UPSTREAM step that produced that input and fix THAT step instead.
-
-   Example:
-     • Visualization failed because DataAgent didn't return "profit" column  
-     → Fix DataAgent, NOT VisualizationAgent.
-
-3. **Use the execution_log**
-   - Check what each step produced.
-   - If a previous repair DIDN’T solve the issue:
-       → Propose a *different* correction instead of repeating the same fix.
-       (Look at earlier resolver entries in the log for guidance.)
-
-4. **Never create new steps**
-   - Only modify an existing step.
-   - Choose the earliest responsible step in the chain.
-
-5. **Correct only what is wrong**
-   You may change:
-   - sub_query wording  
-   - agent (rarely, only when obviously wrong)  
-   - missing columns or wrong assumptions  
-
-   But do NOT:
-   - invent new data
-   - add new columns out of thin air
-   - reorder the DAG
-   - insert steps that don't exist
-
-────────────────────────────────────────
-### WHEN TO ABORT
-Return `"action": "abort"` ONLY if:
-
-- The missing information cannot be deduced from the log or context.
-- Multiple conflicting interpretations exist and correction risks making things worse.
-
-────────────────────────────────────────
-### OUTPUT FORMAT (JSON ONLY)
-
-{
-  "action": "retry_with_fixed_step" | "abort",
-  "agent": "<AgentName to re-run>",
-  "corrected_step": <Step object or null>,
-  "object_id": null,
-  "reason": "<short explanation>"
-}
-
-Rules:
-- Provide corrected_step when retrying.
-- object_id stays null (controller will fill it after executing the corrected step).
-
-────────────────────────────────────────
-### IMPORTANT BEHAVIOR
-- Use the resolver history in the execution_log.  
-  If the same fix was attempted before and the failure persists:
-      → produce a *different* fix.
-- Never loop: each fix should represent a meaningful progression.
-- Do not over-correct the plan; only adjust what is necessary.
-
-────────────────────────────────────────
-### CURRENT CONTEXT
-Execution Log:
 {log}
 """

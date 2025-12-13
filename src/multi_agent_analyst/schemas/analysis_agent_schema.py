@@ -24,3 +24,11 @@ class ExternalAgentSchema(BaseModel):
     summary:str=Field(..., description='A short summary of steps peformed and final result')
     exception: Optional[str]=Field(..., description='placeholder for exception message')
 
+class GroupBySchema(BaseModel):
+    group_column: str
+    agg_column: str
+    agg_function: str  # "mean", "sum", "count", "min", "max"
+
+class DifferenceSchema(BaseModel):
+    column: str
+    method: str = "absolute" 
