@@ -96,3 +96,7 @@ Do NOT output anything outside this JSON.
 Current Log:
 {log}
 """
+
+#perhaps prompt the planner better 
+#modify the resolver
+#add stable analysis tools

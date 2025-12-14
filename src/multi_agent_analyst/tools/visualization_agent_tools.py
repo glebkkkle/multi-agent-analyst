@@ -4,76 +4,12 @@ import seaborn as sns
 from matplotlib.patches import Rectangle
 import numpy as np
 from langchain_core.tools import StructuredTool
-
 from src.multi_agent_analyst.schemas.visualization_agent_schema import (
     PieChartSchema,
     TableVisualizationSchema,
     BarPlotSchema
 )
-
 from src.multi_agent_analyst.utils.utils import object_store, viz_json
-
-plt.rcParams.update({
-    "figure.facecolor": "#050508",
-    "axes.facecolor": "#0c0c11",
-    "savefig.facecolor": "#050508",
-    "axes.edgecolor": "#6366f1",
-    "text.color": "#e5e7eb",
-    "axes.labelcolor": "#e5e7eb",
-    "xtick.color": "#d1d5db",
-    "ytick.color": "#d1d5db",
-    "font.family": "Inter",
-    "axes.titleweight": "bold",
-    "axes.titlecolor": "#ffffff",
-})
-
-COLORS = {
-    'background': '#060b16',       # deep navy
-    'panel':      '#0d1526',       # slightly lighter navy
-    'primary':    '#3b82f6',       # blue-500
-    'accent':     '#60a5fa',       # blue-400
-    'grid':       '#1e293b',       # slate-800
-    'text':       '#e2e8f0',       # slate-200
-}
-
-
-def setup_plot_style(fig, ax):
-    # FIGURE BACKGROUND
-    fig.patch.set_facecolor(COLORS['background'])
-    ax.set_facecolor(COLORS['panel'])
-
-    # GRID
-    ax.grid(
-        True,
-        linestyle='--',
-        linewidth=0.7,
-        color=COLORS['grid'],
-        alpha=0.25
-    )
-
-    # SPINES
-    for spine in ax.spines.values():
-        spine.set_color(COLORS['grid'])
-        spine.set_linewidth(1.2)
-
-    # TICKS
-    ax.tick_params(
-        colors=COLORS['text'],
-        labelsize=10,
-        length=6,
-        width=1
-    )
-
-    # LABEL COLORS
-    ax.xaxis.label.set_color(COLORS['text'])
-    ax.yaxis.label.set_color(COLORS['text'])
-
-    # TITLE
-    ax.title.set_color(COLORS['text'])
-    ax.title.set_weight('bold')
-
-    # ENSURE EXPORT BG MATCHES
-    plt.rcParams['savefig.facecolor'] = COLORS['background']
 
 
 def make_scatter_plot_tool(df):

@@ -47,7 +47,6 @@ CHAT_INTENT_PROMPT="""
 
 #could be done. Nothing to worry about for the DataAgent. Need to only check if there is enough data for the analysis/visualization.
 
-
 INTENT_CLASSIFIER_PROMPT = """
 You are the Intent Classifier and Feasibility Guardrail for a Multi Agent System.
 

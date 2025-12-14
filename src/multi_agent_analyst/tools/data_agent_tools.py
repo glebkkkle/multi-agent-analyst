@@ -19,14 +19,13 @@ def make_sql_query_tool():
     conn=get_thread_conn(list(current_tables.keys())[0])
     
     def sql_query(query: str):
-
         try:
             df = pd.read_sql_query(query, conn)
             conn.close()
 
         except Exception as e:  
             return {
-                'error_message':e, 
+                'error_message':str(e), 
             }
         obj_id=object_store.save(df)
         return {
@@ -55,7 +54,7 @@ def make_select_columns_tool():
             result = df[columns]
         except Exception as e:
             return {
-                'exception': e
+                'exception': str(e)
             }
         
         obj_id = object_store.save(result)
@@ -89,7 +88,7 @@ def make_merge_tool():
 
         except Exception as e:
             return {
-                'exception': e
+                'exception': str(e)
             }
         
         obj_id = object_store.save(merged)

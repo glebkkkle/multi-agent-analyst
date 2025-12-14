@@ -55,7 +55,7 @@ def resolver_agent():
     log=execution_list.execution_log_list
     print(' ')
     print(f'CALLING RESOLVER AGENT WITH EXCEPTION🛠️')
-    print(attempt)
+
     print(' ')
     # print(step_log)
     # current_exception=step_log.error_message if step_log.error_message is not None else step_log.error_message
@@ -76,9 +76,6 @@ def resolver_agent():
     print(repair_response)
     print(' ')
     execution_list.execution_log_list.setdefault('resolver_fix', []).append(repair_response)
-    print(execution_list.execution_log_list)
+
     return repair_response
 
-
-
-# resolver_agent()

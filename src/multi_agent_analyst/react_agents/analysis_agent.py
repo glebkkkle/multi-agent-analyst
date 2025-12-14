@@ -17,10 +17,9 @@ from src.multi_agent_analyst.tools.analysis_agent_tools import (
 from pydantic import BaseModel
 from src.multi_agent_analyst.prompts.react_agents.analysis_agent import ANALYST_AGENT_PROMPT
 from src.multi_agent_analyst.schemas.analysis_agent_schema import ExternalAgentSchema
-from src.multi_agent_analyst.utils.utils import context, object_store
+from src.multi_agent_analyst.utils.utils import context, object_store, load_and_validate_df
 from src.multi_agent_analyst.utils.utils import execution_list, ExecutionLogEntry
 openai_llm = ChatOpenAI(model="gpt-5-mini")
-
 
 class AnalysisAgentArgs(BaseModel):
     analysis_query: str
@@ -33,11 +32,15 @@ def analysis_agent(analysis_query: str, current_plan_step: str, data_id: str):
     print(' ')
     print('CALLING ANALYSIS AGENT')
     print(' ')
-    # print(analysis_query, current_plan_step, data_id)
-    # 1) Load the data based on the ID
-    df = object_store.get(data_id)
 
-    # 2) Create df-bound tool instances
+    df, error = load_and_validate_df(data_id)
+
+    if error:
+        return {"status":"error",
+                "object_id":None,
+                "exception":error
+                }
+
     correlation_tool = make_correlation_tool(df)
     anomaly_tool = make_anomaly_tool(df)
     periodic_tool = make_periodic_tool(df)
@@ -45,7 +48,6 @@ def analysis_agent(analysis_query: str, current_plan_step: str, data_id: str):
     groupby_tool=make_groupby_tool(df)
     difference_analysis=make_difference_tool(df)
 
-    # 3) Create agent *with the tools bound to this df*
     agent = create_agent(
         openai_llm,
         tools=[correlation_tool, anomaly_tool, periodic_tool, summary_tool, groupby_tool, difference_analysis],
@@ -53,29 +55,44 @@ def analysis_agent(analysis_query: str, current_plan_step: str, data_id: str):
         response_format=ExternalAgentSchema,
     )
 
-    #catch exception here, return with schema (ExternalAgentSchema) to controller that error occurred
-
-    # 4) Execute LLM agent
     result = agent.invoke({"messages": [{"role": "user", "content": analysis_query}]})
     
-
-    last = [m for m in result["messages"] if isinstance(m, AIMessage)][-1].content
+    last_agent_message = [m for m in result["messages"] if isinstance(m, AIMessage)][-1].content
     tool_obj_id=[m for m in result['messages'] if isinstance(m, ToolMessage)][-1].content
 
-    msg=json.loads(last)
     tool_output=json.loads(tool_obj_id)
-    obj_id=tool_output['object_id']
-    
 
-    # 5) Save final output ID
-    exception=msg['exception']
+    obj_id=tool_output.get("object_id")
+    exception=tool_output.get("exception")
+
+    try:
+        msg=json.loads(last_agent_message)
+    
+    except Exception:
+        return {"object_id":obj_id,
+                "summary":tool_output.get("details", " "),
+                "exception":exception
+                }
+
+
     context.set("AnalysisAgent", current_plan_step,obj_id)
 
-
-
-    log=ExecutionLogEntry(id=current_plan_step, agent='AnalysisAgent', sub_query=analysis_query, status='success' if exception is None else exception, output_object_id=obj_id, error_message=exception if exception is not None else None)
+    log=ExecutionLogEntry(id=current_plan_step, 
+                          agent='AnalysisAgent',
+                            sub_query=analysis_query, 
+                            status='success' if exception is None else exception, 
+                            output_object_id=obj_id, 
+                            error_message=exception if exception is not None else None)
+    
     msg['object_id']=obj_id
+    msg['exception']=exception
+
     execution_list.execution_log_list.setdefault(current_plan_step, []).append(log)
     print(execution_list.execution_log_list)
+    print(' ')
+    
     print(msg)
     return msg
+
+#make resolver abort if the execution is not bounded based on the user query and cannot be fixed
+

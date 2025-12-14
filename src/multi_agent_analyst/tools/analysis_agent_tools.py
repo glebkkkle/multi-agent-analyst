@@ -13,6 +13,21 @@ from src.multi_agent_analyst.schemas.analysis_agent_schema import (
 )
 from src.multi_agent_analyst.utils.utils import object_store
 
+import math
+
+def sanitize_for_json(obj):
+    if isinstance(obj, dict):
+        return {k: sanitize_for_json(v) for k, v in obj.items()}
+    elif isinstance(obj, list):
+        return [sanitize_for_json(v) for v in obj]
+    elif isinstance(obj, float):
+        if math.isnan(obj) or math.isinf(obj):
+            return None
+        return obj
+    else:
+        return obj
+
+
 def make_correlation_tool(df):
     def correlation():
         try:
@@ -21,7 +36,7 @@ def make_correlation_tool(df):
         #format exception flag properly for the controller
         except Exception as e:
             return {
-                'exception': e
+                'exception': str(e)
             }        
         obj_id=object_store.save(result)
         
@@ -84,7 +99,7 @@ def make_anomaly_tool(df):
 
         except Exception as e:
             return {
-                'exception': e
+                'exception': str(e)
             }
         
         return result
@@ -166,9 +181,10 @@ def make_summary_tool(df):
     def summary():
         try:
             stats = df.describe(include="all").to_dict()
+            stats = sanitize_for_json(stats)
         except Exception as e:
             return {
-                'exception': e
+                'exception': str(e)
             }
         obj_id=object_store.save(stats)
         

@@ -46,3 +46,17 @@ context=CurrentToolContext()
 current_tables={}
 
 viz_json={}
+
+def load_and_validate_df(data_id):
+    try:
+        df = object_store.get(data_id)
+    except Exception as e:
+        return None, f"DATA_ACCESS_ERROR: {e}"
+
+    if df is None:
+        return None, f"DATA_NOT_FOUND: object '{data_id}' does not exist"
+
+    if len(df) == 0:
+        return None, f"DATA_EMPTY: object '{data_id}' is empty"
+
+    return df, None

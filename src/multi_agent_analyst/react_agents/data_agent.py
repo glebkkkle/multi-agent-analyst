@@ -15,7 +15,6 @@ from src.multi_agent_analyst.utils.utils import context, current_tables,Executio
 from src.multi_agent_analyst.schemas.data_agent_schema import ExternalAgentSchema
 openai_llm = ChatOpenAI(model="gpt-4.1-mini")
 
-#were good to use a specifc sql-based model for that
 
 @tool
 def data_agent(data_agent_query: str, current_plan_step: str):
@@ -41,19 +40,32 @@ def data_agent(data_agent_query: str, current_plan_step: str):
     last_msg = [m for m in result["messages"] if isinstance(m, AIMessage)][-1].content
     last_tool_output=[m for m in result['messages'] if isinstance(m, ToolMessage)][-1].content
 
-    msg=json.loads(last_msg)
+
     tool_json=json.loads(last_tool_output)
 
-    object_id=tool_json['object_id']
+    object_id=tool_json.get("object_id")
+    exception=tool_json.get("exception")
 
-    final_obj_id =msg['object_id']
-    exception=msg['exception']
+    try:
+        msg=json.loads(last_msg)
 
-    log=ExecutionLogEntry(id=current_plan_step, agent='DataAgent', sub_query=data_agent_query, status='success' if exception is None else exception, output_object_id=final_obj_id, error_message=exception if exception is not None else None)
+    except Exception:
+        return {"object_id":object_id, 
+                "summary":tool_json.get("details", " "), 
+                "exception":exception
+                }
+
+    log=ExecutionLogEntry(id=current_plan_step, 
+                          agent='DataAgent', 
+                          sub_query=data_agent_query, 
+                          status='success' if exception is None else 'error', 
+                          output_object_id=object_id, 
+                          error_message=exception if exception is not None else None)
 
     msg['object_id']=object_id
+    msg['exception']=exception
 
-    context.set("DataAgent", current_plan_step, final_obj_id)
+    context.set("DataAgent", current_plan_step, object_id)
     print(msg)
     execution_list.execution_log_list.setdefault(current_plan_step, []).append(log)
 

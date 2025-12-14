@@ -17,15 +17,20 @@ from src.multi_agent_analyst.tools.visualization_agent_tools import (
 )
 from src.multi_agent_analyst.utils.utils import context, object_store, execution_list, ExecutionLogEntry
 
-tool_llm = ChatOllama(model="gpt-oss:20b", temperature=0)
 openai_llm = ChatOpenAI(model="gpt-5-mini")
 @tool(description="Visualization agent returning images/tables based on query.")
 def visualization_agent(visualizer_query: str, current_plan_step: str, data_id: str):
     print(' ')
     print('CALLING VISUALIZATION AGENT🎨')
-    df = object_store.get(data_id)
-
-    
+    try:
+        df = object_store.get(data_id)
+        if len(df) < 2:
+            raise ValueError("Visualization Agent requires at least two columns")
+    except Exception as e:
+        return {"status":"error",
+                "object_id":None,
+                "exception":str(e)
+                }
     tools = [
         make_line_plot_tool(df),
         make_scatter_plot_tool(df),
@@ -46,20 +51,31 @@ def visualization_agent(visualizer_query: str, current_plan_step: str, data_id: 
     last_msg = [m for m in result["messages"] if isinstance(m, AIMessage)][-1].content
     last_tool_output=[m for m in result['messages'] if isinstance(m, ToolMessage)][-1].content
 
-    print(last_tool_output)
-    print(type(last_tool_output))
     tool_json=json.loads(last_tool_output)
 
-    object_id=tool_json['object_id']
-    msg=json.loads(last_msg)
+    object_id=tool_json.get("object_id")
+    exception=tool_json.get("exception")
 
-    final_obj_id=msg['object_id']
-    exception=msg['exception']
+    try:
+        msg=json.loads(last_msg)
+        
+    except Exception:
+        return {"object_id":object_id, 
+                "summary":tool_json.get("details", " "), 
+                "exception":exception
+                }
+    
 
-    context.set("VisualizationAgent", current_plan_step, final_obj_id)
-    log=ExecutionLogEntry(id=current_plan_step, agent='VisualizationAgent', sub_query=visualizer_query, status='success' if exception is None else 'error', output_object_id=final_obj_id, error_message=exception)
+    context.set("VisualizationAgent", current_plan_step, object_id)
+    log=ExecutionLogEntry(id=current_plan_step, 
+                          agent='VisualizationAgent', 
+                          sub_query=visualizer_query, 
+                          status='success' if exception is None else 'error', 
+                          output_object_id=object_id, 
+                          error_message=exception)
 
     msg['object_id']=object_id
+    msg['exception']=exception
     execution_list.execution_log_list.setdefault(current_plan_step, []).append(log)
 
     print(msg)
