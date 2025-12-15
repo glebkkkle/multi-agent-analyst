@@ -60,15 +60,15 @@ Your Task:
 (These are the tables and columns the user actually possesses)
 {data_schemas}
 
-### 2. TOOL LOGIC (Soft Constraints)
+### 2. TOOL LOGIC
 Use these rules to judge if a "plan" is executable (`is_sufficient: true`):
 
 * **General Visualization (Bar, Line, Pie):** * Needs: Requires 1 recognizable column from the schemas.
     * *Logic:* If the user says "Plot sales", 'sales' is a table or column, this is SUFFICIENT.
-* **Scatter Plot:** * Needs: 2 distinct numeric columns (X and Y). 
+* **Scatter Plot:** * Needs: 2 distinct numeric columns (X and Y)!. 
     * *Logic:* "Scatter plot of profit" is INSUFFICIENT (missing 2nd variable). "Scatter plot of profit vs revenue" is SUFFICIENT (if both columns exist).
-* **Correlation:** * Needs: A dataset name OR at least 2 specific columns.
-* **Anomaly detection ** * Needs : a dataset name OR at least one column 
+* **Correlation:** * Needs: A dataset name OR at least 2 specific columns from provided schemas
+* **Anomaly detection ** * Needs : a dataset name OR at least one column from the provided schemas
 
 ### 3. CLASSIFICATION RULES
 
@@ -89,35 +89,37 @@ If intent is "plan", check `is_sufficient`:
 
 ---
 
+If intent is chatting, set is_sufficient True and do not specify any missing info.
+
 ### OUTPUT FORMAT (JSON ONLY). Output nothing else!
 Respond with valid JSON.
     "intent": "plan" | "chat"| 'clarification' ,
-    "is_sufficient": boolean,
+    "is_sufficient": boolean (only for plan or clarification)
     "missing_info": string | null, // If false, briefly state what is missing (e.g., "Missing 2nd variable for scatter plot" or "Column 'happiness' not found")
 
 ### USER MESSAGE:
 {user_query}
 """
 
-schemas="""
-{'бізнес план_фін': {'description': "User table 'бізнес план_фін'", 'columns': {'january': 'text'}, 'row_count': 11}, 'sales': {'description': "User table 'sales'", 'columns': {'date': 'text', 'revenue': 'double precision', 'units_sold': 'integer', 'profit': 'double precision'}, 'row_count': 28}, 'customer_feedback': {'description': "User table 'customer_feedback'", 'columns': {'date': 'text', 'stock_level': 'integer', 'restock_units': 'integer', 'stockouts': 'integer'}, 'row_count': 14}, 'radial_data': {'description': "User table 'radial_data'", 'columns': {'col_06310127810182615': 'double precision', 'col_06084932788567511': 'double precision', 'col_1': 'integer'}, 'row_count': 399}}
-"""
+# schemas="""
+# {'бізнес план_фін': {'description': "User table 'бізнес план_фін'", 'columns': {'january': 'text'}, 'row_count': 11}, 'sales': {'description': "User table 'sales'", 'columns': {'date': 'text', 'revenue': 'double precision', 'units_sold': 'integer', 'profit': 'double precision'}, 'row_count': 28}, 'customer_feedback': {'description': "User table 'customer_feedback'", 'columns': {'date': 'text', 'stock_level': 'integer', 'restock_units': 'integer', 'stockouts': 'integer'}, 'row_count': 14}, 'radial_data': {'description': "User table 'radial_data'", 'columns': {'col_06310127810182615': 'double precision', 'col_06084932788567511': 'double precision', 'col_1': 'integer'}, 'row_count': 399}}
+# """
 
-from langchain_openai import ChatOpenAI
-from pydantic import BaseModel 
-from typing import List
+# from langchain_openai import ChatOpenAI
+# from pydantic import BaseModel 
+# from typing import List
 
-# llm=ChatOpenAI(model='gpt-4.1-mini')
+# openai_llm = ChatOpenAI(model="gpt-5-mini")
+# class Output(BaseModel):
+#     intent:str
+#     is_sufficient:bool
+#     missing_info:str
 
-class Output(BaseModel):
-    intent:str
-    is_sufficient:bool
-    missing_info:str
+# user_query='correlation '
 
-# user_query='create a scatter plot of profit vs revenue'
+# sl=openai_llm.with_structured_output(Output).invoke(INTENT_CLASSIFIER_PROMPT.format(data_schemas=schemas, user_query=user_query))
 
-# sl=llm.with_structured_output(Output).invoke(CHAT_INTENT_PROMPT.format(data_schemas=schemas, user_query=user_query))
-
+# print(sl)
 
 # print(sl.is_sufficient)
 # print(type(sl.is_sufficient))

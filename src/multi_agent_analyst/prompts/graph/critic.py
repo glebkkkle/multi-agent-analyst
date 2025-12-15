@@ -61,9 +61,10 @@ You MUST suspend the plan (requires_user_input = true) when:
   Example:
     -Visualize dataset - WRONG (No particular dataset reference and no visualization type)
     -Visualize sales data - WRONG (No visualization type)
-    -Visualize sales with pie chart - CORRECT (name of the dataset/feature included, visualization type included)
-    
+    -Visualize sales with pie chart - CORRECT (name of the dataset/feature included, visualization type included)-
+
 - The user did NOT specify a visualization type, and the plan selects one (pie_chart, scatter_plot, line_plot) without justification.
+- The visualization type MUST CLEARLY BE SPECIFIED by the user. (Exception for the Line Plot). Otherwise - suspend the graph.
 - The plan chooses a visualization or analysis method that is **not clearly grounded** in the user_query.
 
 Conditional visualization is acceptable **only if** the user explicitly asked for visualization.
@@ -106,5 +107,4 @@ USER QUERY:
 PLAN:
 {plan}
 """
-
 

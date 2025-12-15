@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from src.backend.langgraph_runner.executor import run_initial_graph, resume_graph
+from src.backend.langgraph_runner.executor import run_initial_graph, clarify_graph
 from fastapi import UploadFile, File, HTTPException
 from fastapi.responses import StreamingResponse
 from data.converter.reader import read_file
@@ -74,7 +74,7 @@ async def app_page():
 async def handle_clarify(payload: dict, user: CurrentUser = Depends(get_current_user)):
     thread_id = user.thread_id
     clarification = payload["clarification"]
-    return resume_graph(thread_id, clarification)
+    return clarify_graph(thread_id, clarification)
 
 from fastapi.responses import StreamingResponse
 from src.multi_agent_analyst.utils.utils import object_store

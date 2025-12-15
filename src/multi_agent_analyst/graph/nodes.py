@@ -12,7 +12,7 @@ from src.multi_agent_analyst.prompts.graph.planner import PLANNER_PROMPT
 from src.multi_agent_analyst.prompts.graph.critic import CRITIC_PROMPT
 from src.multi_agent_analyst.prompts.graph.revision import PLAN_REVISION_PROMPT
 from src.multi_agent_analyst.prompts.graph.summarizer import SUMMARIZER_PROMPT
-from src.multi_agent_analyst.prompts.chat.intent_classifier import INTENT_CLASSIFIER_PROMPT, Output
+from src.multi_agent_analyst.prompts.chat.intent_classifier import CHAT_INTENT_PROMPT, INTENT_CLASSIFIER_PROMPT
 from src.multi_agent_analyst.prompts.chat.context_agent import CONTEXT_AGENT_PROMPT
 from src.multi_agent_analyst.prompts.chat.chat_reply_prompt import CHAT_REPLY_PROMPT
 
@@ -138,11 +138,10 @@ def revision_router(state: GraphState):
 def ask_user_node(state: GraphState):
     print("SUSPENDING GRAPH FOR USER INPUT")
     print(state.message_to_user)
-
+    
     return {
         "message_to_user": state.message_to_user,
         "requires_user_clarification": True,
-        "interrupt": "user_input",
     }
 def routing(state:GraphState):
     return state.desicion
@@ -151,51 +150,102 @@ def routing(state:GraphState):
 def allow_execution(state:GraphState):
     return state
 
-intent_llm = llm.with_structured_output(Output)
+intent_llm = llm.with_structured_output(IntentSchema)
 
 def clarification_node(state: GraphState):
-    new_query = (state.clean_query or "") + " " + state.clarification
-    print(new_query)
+
+    print(state.clarification)
+    original_query=state.query or ' '
+    combined_query= original_query + ' ' + state.clarification
 
     return {
-        "query": new_query.strip(),
-        "requires_user_clarification": False,
+        "query": combined_query,
+        "clarification": None,                  # 🔥 reset
+        "requires_user_clarification": False,   # 🔥 reset
         "desicion": "planner",
     }
 
+
+from pydantic import BaseModel
+
+
+class Output(BaseModel):
+    intent:str
+    is_sufficient:bool
+    missing_info:str
+
+lm = ChatOpenAI(model="gpt-5-mini").with_structured_output(Output)
+
 def chat_node(state: GraphState):
     user_msg = state.query
-    schemas=load_user_tables(state.thread_id)
+    schemas = load_user_tables(state.thread_id)
     current_tables.setdefault(state.thread_id, schemas)
-    print(schemas)
+
+    print(state.query)
+
+    if state.requires_user_clarification and state.clarification:
+        print(True)
+        return {
+            "desicion": "clarification",
+        }
 
     new_history = state.conversation_history + [
-        {"role": "user", "content": user_msg,}
+        {"role": "user", "content": user_msg}
     ]
 
-    intent = intent_llm.invoke(
-        INTENT_CLASSIFIER_PROMPT.format(data_schemas=current_tables, user_query=user_msg)
+    recent_interactions=state.conversation_history[:3]
+    print(recent_interactions)
+    intent = lm.invoke(
+        INTENT_CLASSIFIER_PROMPT.format(
+            user_query=user_msg,
+            data_schemas=schemas
+        )
     )
 
     print(intent)
-    if intent.is_sufficient == False:
-        print('FALSE')
-        return {'desicion':'clarify', 'message_to_user':intent.missing_info}
+    print(type(intent.is_sufficient))
+    # 🔒 GUARD: insufficient information
+    if intent.intent == "clarification" and intent.is_sufficient == False:
+        return {
+            "desicion": "clarification",
+            "requires_user_clarification": True,
+            "message_to_user": intent.missing_info,
+            "conversation_history": new_history,
+            "dataset_schemas": schemas,
+        }
+
+    # normal flow
     if intent.intent == "plan":
-        return {"desicion": "planner", "conversation_history": new_history, 'dataset_schemas':schemas}
+        return {
+            "desicion": "planner",
+            "conversation_history": new_history,
+            "dataset_schemas": schemas,
+        }
 
     if intent.intent == "chat":
-        return {"desicion": "chat", "conversation_history": new_history, 'dataset_schemas':schemas}
+        return {
+            "desicion": "chat",
+            "conversation_history": new_history,
+            "dataset_schemas": schemas,
+        }
 
-    return {"conversation_history": new_history, 'dataset_schemas':schemas}
+    # return {
+    #     "desicion": "chat",
+    #     "conversation_history": new_history,
+    #     "dataset_schemas": schemas,
+    # }
 
 
 def chat_reply(state: GraphState):
-    reply = llm.invoke(CHAT_REPLY_PROMPT.format(user_query=state.query, conversation_history=state.conversation_history, data_list=state.data_samples))
+    reply = llm.invoke(CHAT_REPLY_PROMPT.format(user_query=state.query, conversation_history=state.conversation_history, data_list=state.dataset_schemas))
     return {"final_response": reply.content}
 
 
 def context_node(state: GraphState):
+    if state.requires_user_clarification and state.clarification:
+        print('CLARIFICATION RECEIVED → CONSUMING')
+        return {'desicion': 'clarify'}    
+    print(state.desicion)
     clean = llm.with_structured_output(ContextSchema).invoke(
         CONTEXT_AGENT_PROMPT.format(
             user_msg=state.query,
@@ -204,7 +254,3 @@ def context_node(state: GraphState):
     ).clean_query
 
     return {"clean_query": clean, "desicion": state.desicion}
-
-
-
-

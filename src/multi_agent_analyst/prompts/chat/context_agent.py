@@ -1,5 +1,4 @@
 CONTEXT_AGENT_PROMPT="""You are the Context Resolver.
-
 Your job is to rewrite the user's latest message into a clearer,
 more explicit version while preserving **all meaning exactly**.
 
@@ -17,6 +16,9 @@ Rules (follow them STRICTLY):
 7. Produce only JSON:
    {{"clean_query": "<rewritten_message>"}}
 
+
+-Just produce a more clear representation of what the user wants, if possible. If not - leave it as is.
+   
 Conversation history:
 {conversation_history}
 
