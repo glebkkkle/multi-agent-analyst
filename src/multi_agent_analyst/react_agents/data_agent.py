@@ -38,10 +38,17 @@ def data_agent(data_agent_query: str, current_plan_step: str):
     result = agent.invoke({"messages": [{"role": "user", "content": data_agent_query}]})
 
     last_msg = [m for m in result["messages"] if isinstance(m, AIMessage)][-1].content
-    last_tool_output=[m for m in result['messages'] if isinstance(m, ToolMessage)][-1].content
+    tool_msgs = [m for m in result["messages"] if isinstance(m, ToolMessage)]
 
+    if not tool_msgs:
+        return {"object_id":None, "summary":'Agent did not call any tools', "exception":'No tool call'}
+    
+    last_tool_output = tool_msgs[-1].content
 
-    tool_json=json.loads(last_tool_output)
+    try:
+        tool_json=json.loads(last_tool_output)
+    except Exception:
+        return {"object_id":None, "summary":'failed to parse tool output', "exception":'Failed Parsing'}
 
     object_id=tool_json.get("object_id")
     exception=tool_json.get("exception")
@@ -66,14 +73,7 @@ def data_agent(data_agent_query: str, current_plan_step: str):
     msg['exception']=exception
 
     context.set("DataAgent", current_plan_step, object_id)
-    print(msg)
+
     execution_list.execution_log_list.setdefault(current_plan_step, []).append(log)
 
-    print(execution_list.execution_log_list)
-    print(object_store.store)
     return msg
- 
-#some bugs in return format from the tools (FIX)
-
-#fix so the resolver identifies CORRECT AGENT THAT CAUSED THE FAILURE
-#fix the prompting to the controller about what when to run, ensuring correct object ids are passed after correction has been completed.

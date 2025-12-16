@@ -74,14 +74,13 @@ class GraphState(BaseModel):
 
     # INTERNAL ROUTING
     desicion: Optional[str] = None
-
+    execution_exception: Optional[str]=None
     # EXECUTION OUTPUT
     final_obj_id: Optional[str] = None
     summary: Optional[str] = None
     final_response: Optional[str] = None
     # THREAD
     thread_id: Optional[str] = None
-
     dataset_schemas:Optional[Dict[str, Any]] = None
 
     @staticmethod

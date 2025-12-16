@@ -49,9 +49,16 @@ def visualization_agent(visualizer_query: str, current_plan_step: str, data_id: 
     result = agent.invoke({"messages": [{"role": "user", "content": visualizer_query}]})
 
     last_msg = [m for m in result["messages"] if isinstance(m, AIMessage)][-1].content
-    last_tool_output=[m for m in result['messages'] if isinstance(m, ToolMessage)][-1].content
+    tool_msgs = [m for m in result["messages"] if isinstance(m, ToolMessage)]
 
-    tool_json=json.loads(last_tool_output)
+    if not tool_msgs:
+        return {"object_id":None, "summary":'Agent did not call any tools', "exception":'No tool call'}
+    
+    last_tool_output = tool_msgs[-1].content
+    try:
+        tool_json=json.loads(last_tool_output)
+    except Exception:
+        return {"object_id":None, "summary":'Failed to parse tool output', "exception":'Failed parsing.'}
 
     object_id=tool_json.get("object_id")
     exception=tool_json.get("exception")
@@ -77,8 +84,5 @@ def visualization_agent(visualizer_query: str, current_plan_step: str, data_id: 
     msg['object_id']=object_id
     msg['exception']=exception
     execution_list.execution_log_list.setdefault(current_plan_step, []).append(log)
-
-    print(msg)
-    print(execution_list.execution_log_list)
-    print(object_store.store)
+    
     return msg

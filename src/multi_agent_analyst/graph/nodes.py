@@ -38,7 +38,7 @@ def planner_node(state: GraphState):
 
 def critic(state: GraphState):
     print("\n🧠CRITIC RECEIVED PLAN\n")
-    print(state.plan)
+
     response = llm.with_structured_output(CriticStucturalResponse).invoke(
         CRITIC_PROMPT.format(
             schemas=state.dataset_schemas,
@@ -73,17 +73,21 @@ def revision_node(state: GraphState):
 
 def router_node(state: GraphState):
     current_tables.setdefault(state.thread_id, load_user_tables(state.thread_id))
-
-    result = controller_agent.invoke({
-        "messages": [
-            {"role": "user", "content": str(state.plan)}
-        ]
-    })
+    try:
+        result = controller_agent.invoke({
+            "messages": [
+                {"role": "user", "content": str(state.plan)}
+            ]
+        })
+    except Exception as e:
+        return {"desicion":'error', "execution_exception":str(e)}
+    
     print(result)
     last = [m for m in result["messages"] if isinstance(m, AIMessage)][-1].content
     d = json.loads(last)
     
     return {
+        "desicion":"ok",
         "final_obj_id": d["object_id"],
         "summary": d["summary"]
     }
@@ -144,23 +148,13 @@ def ask_user_node(state: GraphState):
         "requires_user_clarification": True,
     }
 def routing(state:GraphState):
+    print(state.desicion)
     return state.desicion
-
 
 def allow_execution(state:GraphState):
     return state
 
 intent_llm = llm.with_structured_output(IntentSchema)
-
-def clarification_node(state: GraphState):
-
-    print(state.query)
-    
-    return {
-        "clarification": None,                  # 🔥 reset
-        "requires_user_clarification": False,   # 🔥 reset
-        "desicion": "planner",
-    }
 
 
 from pydantic import BaseModel
@@ -179,12 +173,6 @@ def chat_node(state: GraphState):
 
     print(state.query)
 
-    if state.requires_user_clarification and state.clarification:
-        print(True)
-        return {
-            "desicion": "clarification",
-        }
-
     new_history = state.conversation_history + [
         {"role": "user", "content": user_msg}
     ]
@@ -197,7 +185,6 @@ def chat_node(state: GraphState):
             data_schemas=schemas
         )
     )
-
     print(intent)
     print(type(intent.is_sufficient))
     # 🔒 GUARD: insufficient information
@@ -209,7 +196,6 @@ def chat_node(state: GraphState):
             "conversation_history": new_history,
             "dataset_schemas": schemas,
         }
-
     # normal flow
     if intent.intent == "plan":
         return {
@@ -237,19 +223,28 @@ def chat_reply(state: GraphState):
     return {"final_response": reply.content}
 
 
-def context_node(state: GraphState):
-    if state.requires_user_clarification and state.clarification:
-        print('CLARIFICATION RECEIVED → CONSUMING')
-        return {'desicion': 'clarification_provided'}    
-    print(state.desicion)
-    clean = llm.with_structured_output(ContextSchema).invoke(
-        CONTEXT_AGENT_PROMPT.format(
-            user_msg=state.query,
-            conversation_history=state.conversation_history,
-        )
-    ).clean_query
+def execution_error_node(state: GraphState):
+    return {
+        "final_response": (
+            "I ran into a problem while executing your request.\n\n"
+            f"Details: {state.execution_exception}\n\n"
+            "You can try rephrasing your request or choosing a different operation."
+        ),
+        "final_obj_id": None,
+        "image_base64": None,
+    }
 
-    return {"clean_query": clean, "desicion": state.desicion}
+# def context_node(state: GraphState):
+#     print(state.desicion)
+#     clean = llm.with_structured_output(ContextSchema).invoke(
+#         CONTEXT_AGENT_PROMPT.format(
+#             user_msg=state.query,
+#             conversation_history=state.conversation_history,
+#         )
+#     ).clean_query
+
+#     return {"clean_query": clean, "desicion": state.desicion}
 
 
 #chat node should be more strict on whats allowed to propagate and whats not 
+#should be more informative and now that its a unit bounded to the project

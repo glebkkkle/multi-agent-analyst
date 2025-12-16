@@ -58,10 +58,17 @@ def analysis_agent(analysis_query: str, current_plan_step: str, data_id: str):
     result = agent.invoke({"messages": [{"role": "user", "content": analysis_query}]})
     
     last_agent_message = [m for m in result["messages"] if isinstance(m, AIMessage)][-1].content
-    tool_obj_id=[m for m in result['messages'] if isinstance(m, ToolMessage)][-1].content
+    tool_msgs = [m for m in result["messages"] if isinstance(m, ToolMessage)]
 
-    tool_output=json.loads(tool_obj_id)
-
+    if not tool_msgs:
+        return {"object_id":None, "summary":'Agent did not call any tools', "exception":'No tool call'}
+    
+    last_tool_output = tool_msgs[-1].content
+    try:
+        tool_output=json.loads(last_tool_output)
+    except Exception:
+        return {"object_id":None, "summary":'Failed to parse tool output', "exception":'Failed parsing'}
+    
     obj_id=tool_output.get("object_id")
     exception=tool_output.get("exception")
 
@@ -73,7 +80,6 @@ def analysis_agent(analysis_query: str, current_plan_step: str, data_id: str):
                 "summary":tool_output.get("details", " "),
                 "exception":exception
                 }
-
 
     context.set("AnalysisAgent", current_plan_step,obj_id)
 
@@ -88,12 +94,6 @@ def analysis_agent(analysis_query: str, current_plan_step: str, data_id: str):
     msg['exception']=exception
 
     execution_list.execution_log_list.setdefault(current_plan_step, []).append(log)
-    print(execution_list.execution_log_list)
-    print(' ')
-    
-    print(msg)
-    print(' ')
-    print(object_store.store)
     return msg
 
 #make resolver abort if the execution is not bounded based on the user query and cannot be fixed

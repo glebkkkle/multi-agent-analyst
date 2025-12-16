@@ -13,7 +13,6 @@ from src.multi_agent_analyst.db.db_core import create_table, copy_dataframe, reg
 from fastapi import UploadFile, File, HTTPException
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
-import psycopg2
 import bcrypt
 from src.multi_agent_analyst.db.db_core import conn 
 from fastapi import Form
@@ -56,8 +55,6 @@ app.add_middleware(
 # app.mount("/frontend", StaticFiles(directory="src/frontend"), name="static")
 app.mount("/static", StaticFiles(directory="src/frontend/static"), name="static")
 
-
-
 #some issues with the database, more tools are needed, prettier visualization, more concise summary
 
 #redis, rag later
@@ -67,7 +64,6 @@ async def handle_message(payload: dict, user: CurrentUser = Depends(get_current_
     thread_id = user.thread_id
     message = payload["message"]
 
-    # 1️⃣ create NEW session
     session_id = uuid4().hex
     session_store.create_session(thread_id, session_id, message)
 

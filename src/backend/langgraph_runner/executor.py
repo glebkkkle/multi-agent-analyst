@@ -19,7 +19,12 @@ def _run_graph(thread_id: str, session_id: str, requires_user_clarification: boo
         config={"configurable": {"thread_id": thread_id}}
     )
 
+    last_event = None
+
     for event in events:
+        last_event = event
+
+        # 🟡 clarification requested
         if "ask_user" in event:
             session_store.mark_waiting(thread_id, session_id)
             return {
@@ -27,14 +32,47 @@ def _run_graph(thread_id: str, session_id: str, requires_user_clarification: boo
                 "message_to_user": event["ask_user"]["message_to_user"],
             }
 
-    # ✅ graph completed
+    # 🔒 Safety guard
+    if last_event is None:
+        session_store.mark_completed(thread_id, session_id)
+        thread_meta.clear_active_session(thread_id)
+        return {
+            "status": "error",
+            "result": {
+                "final_response": "The system produced no output.",
+                "final_obj_id": None,
+                "image_base64": None,
+            },
+        }
+
+    # 🔴 execution error path
+    if "execution_error" in last_event:
+        session_store.mark_completed(thread_id, session_id)
+        thread_meta.clear_active_session(thread_id)
+        return {
+            "status": "error",
+            "result": last_event["execution_error"],
+        }
+
+    # 🟢 success path
+    if "summarizer_node" in last_event:
+        session_store.mark_completed(thread_id, session_id)
+        thread_meta.clear_active_session(thread_id)
+        return {
+            "status": "completed",
+            "result": last_event["summarizer_node"],
+        }
+
+    # ❌ unexpected terminal state
     session_store.mark_completed(thread_id, session_id)
     thread_meta.clear_active_session(thread_id)
-
-    final = event.get("summarizer_node", {})
     return {
-        "status": "completed",
-        "result": final,
+        "status": "error",
+        "result": {
+            "final_response": "The system ended in an unexpected state.",
+            "final_obj_id": None,
+            "image_base64": None,
+        },
     }
 
 

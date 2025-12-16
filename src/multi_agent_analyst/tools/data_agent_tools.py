@@ -92,7 +92,6 @@ def make_merge_tool():
             }
         
         obj_id = object_store.save(merged)
-        print(merged)
         return {
             "object_id": obj_id,
             "details": {
