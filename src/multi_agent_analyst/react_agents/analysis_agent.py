@@ -92,6 +92,8 @@ def analysis_agent(analysis_query: str, current_plan_step: str, data_id: str):
     print(' ')
     
     print(msg)
+    print(' ')
+    print(object_store.store)
     return msg
 
 #make resolver abort if the execution is not bounded based on the user query and cannot be fixed

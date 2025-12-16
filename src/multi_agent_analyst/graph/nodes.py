@@ -154,12 +154,9 @@ intent_llm = llm.with_structured_output(IntentSchema)
 
 def clarification_node(state: GraphState):
 
-    print(state.clarification)
-    original_query=state.query or ' '
-    combined_query= original_query + ' ' + state.clarification
-
+    print(state.query)
+    
     return {
-        "query": combined_query,
         "clarification": None,                  # 🔥 reset
         "requires_user_clarification": False,   # 🔥 reset
         "desicion": "planner",
@@ -167,7 +164,6 @@ def clarification_node(state: GraphState):
 
 
 from pydantic import BaseModel
-
 
 class Output(BaseModel):
     intent:str
@@ -193,7 +189,7 @@ def chat_node(state: GraphState):
         {"role": "user", "content": user_msg}
     ]
 
-    recent_interactions=state.conversation_history[:3]
+    recent_interactions=state.conversation_history[:-3]
     print(recent_interactions)
     intent = lm.invoke(
         INTENT_CLASSIFIER_PROMPT.format(
@@ -207,7 +203,7 @@ def chat_node(state: GraphState):
     # 🔒 GUARD: insufficient information
     if intent.intent == "clarification" and intent.is_sufficient == False:
         return {
-            "desicion": "clarification",
+            "desicion": "ask_user",
             "requires_user_clarification": True,
             "message_to_user": intent.missing_info,
             "conversation_history": new_history,
@@ -244,7 +240,7 @@ def chat_reply(state: GraphState):
 def context_node(state: GraphState):
     if state.requires_user_clarification and state.clarification:
         print('CLARIFICATION RECEIVED → CONSUMING')
-        return {'desicion': 'clarify'}    
+        return {'desicion': 'clarification_provided'}    
     print(state.desicion)
     clean = llm.with_structured_output(ContextSchema).invoke(
         CONTEXT_AGENT_PROMPT.format(
@@ -254,3 +250,6 @@ def context_node(state: GraphState):
     ).clean_query
 
     return {"clean_query": clean, "desicion": state.desicion}
+
+
+#chat node should be more strict on whats allowed to propagate and whats not 

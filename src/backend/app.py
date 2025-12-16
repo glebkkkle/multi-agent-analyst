@@ -23,7 +23,7 @@ from src.backend.auth import create_access_token, Token
 from datetime import timedelta
 from src.backend.auth import get_current_user, CurrentUser
 from fastapi import Depends
-from src.multi_agent_analyst.utils.utils import viz_json
+
 
 app = FastAPI()
 

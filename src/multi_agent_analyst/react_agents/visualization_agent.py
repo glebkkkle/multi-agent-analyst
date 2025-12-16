@@ -80,4 +80,5 @@ def visualization_agent(visualizer_query: str, current_plan_step: str, data_id: 
 
     print(msg)
     print(execution_list.execution_log_list)
+    print(object_store.store)
     return msg

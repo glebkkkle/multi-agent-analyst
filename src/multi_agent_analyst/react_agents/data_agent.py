@@ -11,7 +11,7 @@ from src.multi_agent_analyst.tools.data_agent_tools import (
 
 import json
 from src.multi_agent_analyst.prompts.react_agents.data_agent import DATA_AGENT_PROMPT
-from src.multi_agent_analyst.utils.utils import context, current_tables,ExecutionLogEntry, execution_list
+from src.multi_agent_analyst.utils.utils import context, current_tables,ExecutionLogEntry, execution_list, object_store
 from src.multi_agent_analyst.schemas.data_agent_schema import ExternalAgentSchema
 openai_llm = ChatOpenAI(model="gpt-4.1-mini")
 
@@ -70,6 +70,7 @@ def data_agent(data_agent_query: str, current_plan_step: str):
     execution_list.execution_log_list.setdefault(current_plan_step, []).append(log)
 
     print(execution_list.execution_log_list)
+    print(object_store.store)
     return msg
  
 #some bugs in return format from the tools (FIX)
