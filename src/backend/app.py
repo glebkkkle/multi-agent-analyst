@@ -23,11 +23,15 @@ from src.backend.auth import create_access_token, Token
 from datetime import timedelta
 from src.backend.auth import get_current_user, CurrentUser
 from fastapi import Depends
-
+import redis
+from uuid import uuid4
+from src.backend.storage.thread_store import RedisSessionStore, RedisThreadMeta
 
 app = FastAPI()
 
-
+redis_client = redis.Redis(host="localhost", port=6379, decode_responses=True)
+session_store = RedisSessionStore(redis_client)
+thread_meta = RedisThreadMeta(redis_client)
 
 @app.get("/", response_class=HTMLResponse)
 async def root():
@@ -58,23 +62,64 @@ app.mount("/static", StaticFiles(directory="src/frontend/static"), name="static"
 
 #redis, rag later
 
-
 @app.post("/api/message")
 async def handle_message(payload: dict, user: CurrentUser = Depends(get_current_user)):
-
     thread_id = user.thread_id
     message = payload["message"]
-    return run_initial_graph(thread_id, message)
+
+    # 1️⃣ create NEW session
+    session_id = uuid4().hex
+    session_store.create_session(thread_id, session_id, message)
+
+    # 🔥 2️⃣ mark as ACTIVE session
+    thread_meta.set_active_session(thread_id, session_id)
+
+    # 3️⃣ run graph
+    result = run_initial_graph(
+        thread_id=thread_id,
+        session_id=session_id,
+    )
+
+    return {
+        "session_id": session_id,
+        **result,
+    }
 
 @app.get("/app", response_class=HTMLResponse)
 async def app_page():
     return FileResponse("src/frontend/app.html")
 
+
 @app.post("/api/clarify")
 async def handle_clarify(payload: dict, user: CurrentUser = Depends(get_current_user)):
     thread_id = user.thread_id
     clarification = payload["clarification"]
-    return clarify_graph(thread_id, clarification)
+
+    # 1️⃣ fetch ACTIVE session
+    session_id = thread_meta.get_active_session(thread_id)
+
+    if not session_id:
+        raise HTTPException(400, "No active session")
+
+    session = session_store.get_session(thread_id, session_id)
+
+    if session.status != "waiting":
+        raise HTTPException(400, "Session is not waiting for clarification")
+
+    # 2️⃣ append clarification
+    session_store.append_clarification(thread_id, session_id, clarification)
+
+    # 3️⃣ resume graph
+    result = clarify_graph(
+        thread_id=thread_id,
+        session_id=session_id,
+    )
+
+    return {
+        "session_id": session_id,
+        **result,
+    }
+
 
 from fastapi.responses import StreamingResponse
 from src.multi_agent_analyst.utils.utils import object_store

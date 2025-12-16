@@ -1,54 +1,60 @@
 from src.multi_agent_analyst.graph.graph import g as compiled_graph
 from src.backend.storage.redis_client import redis_client
-from src.backend.storage.thread_store import RedisThreadStore
+from src.backend.storage.thread_store import RedisSessionStore, RedisThreadMeta
 
-thread_store = RedisThreadStore(redis_client)
+session_store = RedisSessionStore(redis_client)
+thread_meta = RedisThreadMeta(redis_client)
 
-def run_initial_graph(thread_id: str, message: str):
+def _run_graph(thread_id: str, session_id: str, requires_user_clarification: bool):
+
+    session = session_store.get_session(thread_id, session_id)
+
     events = compiled_graph.stream(
         {
-            "query": message,
+            "query": session.canonical_query,
             "thread_id": thread_id,
-            "requires_user_clarification": False,
+            "session_id": session_id,
+            "requires_user_clarification": requires_user_clarification,
         },
         config={"configurable": {"thread_id": thread_id}}
     )
 
     for event in events:
         if "ask_user" in event:
+            session_store.mark_waiting(thread_id, session_id)
             return {
                 "status": "needs_clarification",
                 "message_to_user": event["ask_user"]["message_to_user"],
             }
 
+    # ✅ graph completed
+    session_store.mark_completed(thread_id, session_id)
+    thread_meta.clear_active_session(thread_id)
+
     final = event.get("summarizer_node", {})
-    return {"status": "completed", "result": final}
+    return {
+        "status": "completed",
+        "result": final,
+    }
 
 
-def clarify_graph(thread_id: str, clarification: str):
-    state = thread_store.get_or_create(thread_id)
-    state = thread_store.append_query(thread_id, clarification)
-    print('LOADING REDIS')
-    print(state.canonical_query)
-    print(' ')
-    events = compiled_graph.stream(
-        {
-            "query":state.canonical_query,
-            "clarification": clarification,
-            "requires_user_clarification": True,
-            "thread_id": thread_id,
-        },
-        config={"configurable": {"thread_id": thread_id}}
+def run_initial_graph(thread_id: str, session_id: str):
+    """
+    Run graph for a NEW session.
+    """
+    return _run_graph(
+        thread_id=thread_id,
+        session_id=session_id,
+        requires_user_clarification=False,
     )
 
-    for event in events:
-        if "ask_user" in event:
-            return {
-                "status": "needs_clarification",
-                "message_to_user": event["ask_user"]["message_to_user"],
-            }
 
-    final = event.get("summarizer_node", {})
-    return {"status": "completed", "result": final}
-
-#MUST fix the resuming logic completely
+def clarify_graph(thread_id: str, session_id: str):
+    """
+    Resume graph for an EXISTING session after clarification.
+    """
+    return _run_graph(
+        thread_id=thread_id,
+        session_id=session_id,
+        requires_user_clarification=True,
+    )

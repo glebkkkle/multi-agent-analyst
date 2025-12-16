@@ -1,64 +1,95 @@
 from dataclasses import dataclass
-from typing import List
-import json
+from typing import Literal
 import redis
+import time
+
+SessionStatus = Literal["active", "waiting", "completed", "aborted"]
 
 @dataclass
-class ThreadState:
+class SessionState:
     thread_id: str
+    session_id: str
     canonical_query: str
-    history: List[str]
+    status: SessionStatus
 
-class RedisThreadStore:
-    def __init__(self, redis_client: redis.Redis, prefix: str = "thread:"):
+class RedisSessionStore:
+    def __init__(self, redis_client: redis.Redis):
         self.r = redis_client
-        self.prefix = prefix
 
-    def _key(self, thread_id: str) -> str:
-        return f"{self.prefix}{thread_id}"
+    def _session_key(self, thread_id: str, session_id: str) -> str:
+        return f"thread:{thread_id}:session:{session_id}"
 
-    def get_or_create(self, thread_id: str) -> ThreadState:
-        key = self._key(thread_id)
-
-        if not self.r.exists(key):
-            self.r.hset(key, mapping={
-                "canonical_query": "",
-                "history": json.dumps([]),
-            })
-
-        data = self.r.hgetall(key)
-
-        return ThreadState(
-            thread_id=thread_id,
-            canonical_query=(data.get("canonical_query") or "").strip(),
-            history=json.loads(data.get("history") or "[]"),
-        )
-
-    def append_query(self, thread_id: str, addition: str) -> ThreadState:
-        addition = addition.strip()
-        if not addition:
-            return self.get_or_create(thread_id)
-
-        state = self.get_or_create(thread_id)
-
-        new_query = (
-            f"{state.canonical_query} {addition}".strip()
-            if state.canonical_query
-            else addition
-        )
-
-        new_history = state.history + [f"user: {addition}"]
-
+    def create_session(self, thread_id: str, session_id: str, initial_query: str):
+        now = int(time.time())
         self.r.hset(
-            self._key(thread_id),
+            self._session_key(thread_id, session_id),
             mapping={
-                "canonical_query": new_query,
-                "history": json.dumps(new_history[-20:]),  # cap history
+                "canonical_query": initial_query.strip(),
+                "status": "active",
+                "created_at": now,
+                "updated_at": now,
             },
         )
 
-        return ThreadState(
+    def get_session(self, thread_id: str, session_id: str) -> SessionState:
+        data = self.r.hgetall(self._session_key(thread_id, session_id))
+        if not data:
+            raise KeyError(f"Session {session_id} not found")
+
+        return SessionState(
             thread_id=thread_id,
-            canonical_query=new_query,
-            history=new_history[-20:],
+            session_id=session_id,
+            canonical_query=data["canonical_query"],
+            status=data["status"],
         )
+
+    def append_clarification(self, thread_id: str, session_id: str, clarification: str):
+        clarification = clarification.strip()
+        if not clarification:
+            return
+
+        key = self._session_key(thread_id, session_id)
+        current = self.r.hget(key, "canonical_query") or ""
+        new_query = f"{current} {clarification}".strip()
+
+        self.r.hset(
+            key,
+            mapping={
+                "canonical_query": new_query,
+                "updated_at": int(time.time()),
+            },
+        )
+
+    def mark_waiting(self, thread_id: str, session_id: str):
+        self.r.hset(
+            self._session_key(thread_id, session_id),
+            mapping={
+                "status": "waiting",
+                "updated_at": int(time.time()),
+            },
+        )
+
+    def mark_completed(self, thread_id: str, session_id: str):
+        self.r.hset(
+            self._session_key(thread_id, session_id),
+            mapping={
+                "status": "completed",
+                "updated_at": int(time.time()),
+            },
+        )
+
+class RedisThreadMeta:
+    def __init__(self, redis_client):
+        self.r = redis_client
+
+    def _key(self, thread_id: str):
+        return f"thread:{thread_id}"
+
+    def set_active_session(self, thread_id: str, session_id: str):
+        self.r.hset(self._key(thread_id), "active_session_id", session_id)
+
+    def get_active_session(self, thread_id: str) -> str | None:
+        return self.r.hget(self._key(thread_id), "active_session_id")
+
+    def clear_active_session(self, thread_id: str):
+        self.r.hdel(self._key(thread_id), "active_session_id")
