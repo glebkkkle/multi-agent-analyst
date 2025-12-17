@@ -6,10 +6,11 @@ from langchain_core.tools import StructuredTool
 from src.multi_agent_analyst.schemas.analysis_agent_schema import (
     CorrelationSchema,
     AnomalySchema,
-    PeriodicSchema,
     SummarySchema,
     GroupBySchema,
-    DifferenceSchema
+    DifferenceSchema,
+    FilterSchema, 
+    SortSchema
 )
 from src.multi_agent_analyst.utils.utils import object_store
 
@@ -22,17 +23,19 @@ def sanitize_for_json(obj):
         return [sanitize_for_json(v) for v in obj]
     elif isinstance(obj, float):
         if math.isnan(obj) or math.isinf(obj):
-            return None
+            return None  # → serialized as `null`
         return obj
+    elif obj is None:
+        return None
     else:
         return obj
-
 
 def make_correlation_tool(df):
     def correlation():
         try:
             result = df.corr(numeric_only=True)
             print(type(result))
+            result=sanitize_for_json(result)
         #format exception flag properly for the controller
         except Exception as e:
             return {
@@ -80,6 +83,8 @@ def make_anomaly_tool(df):
             annotated_df = df.copy()
             annotated_df["outlier"] = mask.any(axis=1)
 
+            annotated_df=sanitize_for_json(annotated_df)
+
             obj_id = object_store.save(annotated_df)
 
             details = {
@@ -109,70 +114,6 @@ def make_anomaly_tool(df):
         name="anomaly_detection",
         description="Detect outliers using IQR rule.",
         args_schema=AnomalySchema,
-    )
-
-def make_periodic_tool(df):
-    def periodic(frequency: int):
-        try:
-            dfc = df.copy()
-            dfc["date"] = pd.to_datetime(dfc["date"])
-            dfc = dfc.sort_values("date")
-
-            # Ensure exactly one numeric column is used
-            numeric_cols = dfc.select_dtypes(include=["float", "int"]).columns
-
-            if len(numeric_cols) == 0:
-                raise ValueError("No numeric columns available for periodic analysis.")
-
-            if len(numeric_cols) > 1:
-                print(f"[WARNING] Multiple numeric columns found. Using: {numeric_cols[0]}")
-
-            series = dfc[numeric_cols[0]].values.astype(float)  # 1D array
-            series = series - np.mean(series)
-
-            stl = STL(series, period=frequency, robust=True).fit()
-
-            decomposition = {
-                "trend": stl.trend.tolist(),
-                "seasonal": stl.seasonal.tolist(),
-                "residual": stl.resid.tolist(),
-                "column_used": numeric_cols[0]
-            }
-            trend = stl.trend.tolist()
-            seasonal = stl.seasonal.tolist()
-            resid = stl.resid.tolist()
-            
-            details = {
-                "trend_preview": trend[:10],
-                "seasonal_preview": seasonal[:10],
-                "residual_stats": {
-                    "std": float(np.std(resid)),
-                    "max": float(np.max(resid)),
-                    "min": float(np.min(resid)),
-                },
-                "full_decomposition":{
-                    "trend": trend,
-                    "seasonal": seasonal,
-                    "residual": resid,
-                }}
-            obj_id=object_store.save(details)
-
-            result={'object_id': obj_id,
-                    'details':details
-                }
-
-        except Exception as e:
-            return {
-                'exception': str(e)
-            }
-
-        return result
-
-    return StructuredTool.from_function(
-        func=periodic,
-        name="periodic_analysis",
-        description="Perform STL periodic decomposition on a single numeric time-series.",
-        args_schema=PeriodicSchema,
     )
 
 def make_summary_tool(df):
@@ -223,8 +164,8 @@ def make_groupby_tool(df):
                 .agg(agg_function)
                 .reset_index()
             )
+            grouped=sanitize_for_json(grouped)
 
-            # Save result
             obj_id = object_store.save(grouped)
 
             # Build details
@@ -307,6 +248,103 @@ def make_difference_tool(df):
         ),
         args_schema=DifferenceSchema,
     )
+
+def make_filter_tool(df):
+    def filter_rows(column: str, operator: str, value):
+        try:
+            if column not in df.columns:
+                raise ValueError(f"Column '{column}' not found")
+
+            series = df[column]
+
+            if operator == "==":
+                mask = series == value
+            elif operator == "!=":
+                mask = series != value
+            elif operator == ">":
+                mask = series > value
+            elif operator == ">=":
+                mask = series >= value
+            elif operator == "<":
+                mask = series < value
+            elif operator == "<=":
+                mask = series <= value
+            elif operator == "in":
+                if not isinstance(value, list):
+                    raise ValueError("Value must be a list for 'in'")
+                mask = series.isin(value)
+            elif operator == "not_in":
+                if not isinstance(value, list):
+                    raise ValueError("Value must be a list for 'not_in'")
+                mask = ~series.isin(value)
+            else:
+                raise ValueError(f"Unsupported operator '{operator}'")
+
+            filtered = df[mask]
+            filtered=sanitize_for_json(filtered)
+
+            obj_id = object_store.save(filtered)
+
+        except Exception as e:
+            return {"exception":str(e)}
+        
+        return {
+                "object_id": obj_id,
+                "details": {
+                    "column": column,
+                    "operator": operator,
+                    "value": value,
+                    "rows_after": len(filtered)
+                }
+            }
+
+
+    return StructuredTool.from_function(
+        func=filter_rows,
+        name="filter_rows",
+        description="Filter rows based on a column condition.",
+        args_schema=FilterSchema,
+    )
+
+def make_sort_tool(df):
+    def sort_rows(column: str, order: str = "desc", limit: int = 10):
+        try:
+            if column not in df.columns:
+                raise ValueError(f"Column '{column}' not found")
+
+            if not pd.api.types.is_numeric_dtype(df[column]):
+                raise ValueError(f"Column '{column}' must be numeric")
+
+            ascending = order == "asc"
+
+            sorted_df = (
+                df.sort_values(column, ascending=ascending)
+                  .head(limit)
+            )
+            sorted_df=sanitize_for_json(sorted_df)
+
+            obj_id = object_store.save(sorted_df)
+
+            return {
+                "object_id": obj_id,
+                "details": {
+                    "column": column,
+                    "order": order,
+                    "limit": limit
+                }
+            }
+
+        except Exception as e:
+            return {"exception": str(e)}
+
+    return StructuredTool.from_function(
+        func=sort_rows,
+        name="sort_rows",
+        description="Sort rows by a numeric column and return top results.",
+        args_schema=SortSchema,
+    )
+
+
 
 #might wanna add the previous exceptions/repairs along to the resolver agent, so he doesnt try the same fix twice but rethink its approach if failing, along with limits 
 

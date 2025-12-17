@@ -10,7 +10,6 @@ from src.multi_agent_analyst.react_agents.visualization_agent import visualizati
 from src.multi_agent_analyst.react_agents.resolver_agent import resolver_agent
 
 openai_llm = ChatOpenAI(model="gpt-5-mini")
-llm = ChatOllama(model="gpt-oss:20b", temperature=0)
 
 controller_agent = create_agent(
     model=openai_llm,

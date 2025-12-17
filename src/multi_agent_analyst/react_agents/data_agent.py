@@ -14,7 +14,7 @@ import json
 from src.multi_agent_analyst.prompts.react_agents.data_agent import DATA_AGENT_PROMPT
 from src.multi_agent_analyst.utils.utils import context, current_tables,ExecutionLogEntry, execution_list, object_store, create_log
 from src.multi_agent_analyst.schemas.data_agent_schema import ExternalAgentSchema
-openai_llm = ChatOpenAI(model="gpt-4.1-mini")
+openai_llm = ChatOpenAI(model="gpt-5-mini")
 
 
 @tool
@@ -29,7 +29,7 @@ def data_agent(data_agent_query: str, current_plan_step: str):
         make_merge_tool(),
         make_schema_list(list(current_tables.values()))
     ]
-    print(data_agent_query)
+
     agent = create_agent(
         openai_llm,
         tools=tools,
@@ -85,3 +85,10 @@ def data_agent(data_agent_query: str, current_plan_step: str):
 
     print(msg)
     return msg
+
+
+#if dataset is bigger than certain size, always reprompt to specify the constrains of the retrival. Setting hard limits is also ok for now
+#data agent, planner should also know about not retriving the whole dataset.
+
+#allow full execution only if user asked, also with the limit of not more than a 1000 
+#otherwise, if not explicitely stated by user, reprompt about constraint, (if data exceeds a predifined limit)

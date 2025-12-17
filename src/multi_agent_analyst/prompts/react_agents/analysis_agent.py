@@ -20,15 +20,21 @@ AVAILABLE ANALYSIS TOOLS
 - correlation_analysis:
     Computes correlation between numeric variables.
 
-- periodic_analysis:
-    Performs time-series decomposition to identify trend and seasonality.
-
 - groupby_aggregate:
     Groups data by a categorical column and computes an aggregation
     (mean, sum, count, min, max) on another column.
 
 - difference_analysis:
     Computes absolute or percentage change of a numeric column over rows.
+
+- summary_statistics:
+    Returns simple summary statistics of given data.
+
+- filter_rows:
+    Filters rows based on specific condition
+
+- sort_rows:
+    Sorts the rows by specific order
 
 ────────────────────────────────────────
 IMPORTANT CONSTRAINTS

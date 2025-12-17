@@ -5,39 +5,8 @@ from langchain_openai import ChatOpenAI
 from langchain_core.tools import tool 
 from langchain.agents import create_agent
 
-llm = ChatOpenAI(model="gpt-4.1-mini")
+llm = ChatOpenAI(model="gpt-5-mini")
 MAX_RETRIES=3
-
-failing_node="""DAGNode(
-    id="S2",
-    agent="AnalysisAgent",
-    sub_query="Compute correlation between revenue and profit",
-    inputs=["obj_sales_df"],
-    outputs=["obj_corr"]
-)"""
-
-failed_log="""
-
-execution_log = [
-    ExecutionLogEntry(
-        id="S1",
-        agent="DataAgent",
-        sub_query="Load sales table with order_id, date, revenue",
-        status="success",
-        output_object_id="obj_sales_df",
-        error_message=None
-    ),
-    ExecutionLogEntry(
-        id="S2",
-        agent="AnalysisAgent",
-        sub_query="Compute correlation between revenue and profit",
-        status="error",
-        output_object_id=None,
-        error_message="KeyError: 'profit'"
-    )
-]
-
-"""
 
 @tool 
 def resolver_agent():

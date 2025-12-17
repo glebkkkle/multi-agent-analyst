@@ -9,10 +9,11 @@ import json
 from src.multi_agent_analyst.tools.analysis_agent_tools import (
     make_correlation_tool,
     make_anomaly_tool,
-    make_periodic_tool,
     make_summary_tool,
     make_groupby_tool, 
-    make_difference_tool
+    make_difference_tool, 
+    make_filter_tool, 
+    make_sort_tool
 )
 from pydantic import BaseModel
 from src.multi_agent_analyst.prompts.react_agents.analysis_agent import ANALYST_AGENT_PROMPT
@@ -43,14 +44,14 @@ def analysis_agent(analysis_query: str, current_plan_step: str, data_id: str):
 
     correlation_tool = make_correlation_tool(df)
     anomaly_tool = make_anomaly_tool(df)
-    periodic_tool = make_periodic_tool(df)
     summary_tool = make_summary_tool(df)
     groupby_tool=make_groupby_tool(df)
     difference_analysis=make_difference_tool(df)
-
+    filter_rows_tool=make_filter_tool(df)
+    sort_rows_tool=make_sort_tool(df)
     agent = create_agent(
         openai_llm,
-        tools=[correlation_tool, anomaly_tool, periodic_tool, summary_tool, groupby_tool, difference_analysis],
+        tools=[correlation_tool, anomaly_tool, summary_tool, groupby_tool, difference_analysis, sort_rows_tool, filter_rows_tool],
         system_prompt=ANALYST_AGENT_PROMPT,
         response_format=ExternalAgentSchema,
     )
@@ -98,3 +99,8 @@ def analysis_agent(analysis_query: str, current_plan_step: str, data_id: str):
 
 #make resolver abort if the execution is not bounded based on the user query and cannot be fixed
 
+#provide more structured info to the resolver?
+
+
+#must assume that for analysis you  receive a dataframe, whatever form or shape that might be. And the tools must be able to correctly perform the computation on this dataset.
+#Same goes for returning. Must always return a dataset in some form.

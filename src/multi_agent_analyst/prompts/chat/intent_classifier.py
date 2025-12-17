@@ -1,37 +1,3 @@
-CHAT_INTENT_PROMPT="""
-    You are an intent classifier for an AI system that supports both:
-    1) normal conversational chat
-    2) analytical queries requiring planning, tool use, or multi-step reasoning.
-
-    Your task:
-    Given ONLY the latest user message, determine whether the user wants:
-    - **"plan"** → when the message requires analytics, data processing, SQL operations,
-                plots, visualizations, segmentation, forecasting,
-                or any task that requires agents or tools.
-    - **"chat"** → when the user is talking casually, asking general questions,
-    making comments, or anything not requiring tools.
-
-    IMPORTANT RULES:
-    - DO NOT classify "clarification". Clarification is NOT your responsibility.
-    The critic/revision system will explicitly request clarification separately.
-    - You NEVER decide if the system is missing information.
-    - You NEVER route to clarification.
-    - Your ONLY outputs are "chat" or "plan".
-
-    Classification logic:
-    - If the message references data, columns, tables, trends, correlations,
-    filtering, merging, visualizing, forecasting → label **"plan"**.
-    - If the message describes an action (“segment X”, “visualize Y”, “retrieve Z”) → **"plan"**.
-    - If the user is discussing feelings, thinking aloud, joking, or chatting → **"chat"**.
-    - Ambiguous messages default to **"chat"**.
-
-    Respond ONLY with JSON:
-        intent: Literal["plan", "chat"]
-        reason: str
-    
-    Latest user message:
-    {user_query}
-"""
 
 #let the intent classifier node check if the query from user is complete. Provide neccessary args definitions for it to evalutate whether we have enough info from the user.
 
@@ -101,27 +67,11 @@ Respond with valid JSON.
 {user_query}
 """
 
-# schemas="""
-# {'бізнес план_фін': {'description': "User table 'бізнес план_фін'", 'columns': {'january': 'text'}, 'row_count': 11}, 'sales': {'description': "User table 'sales'", 'columns': {'date': 'text', 'revenue': 'double precision', 'units_sold': 'integer', 'profit': 'double precision'}, 'row_count': 28}, 'customer_feedback': {'description': "User table 'customer_feedback'", 'columns': {'date': 'text', 'stock_level': 'integer', 'restock_units': 'integer', 'stockouts': 'integer'}, 'row_count': 14}, 'radial_data': {'description': "User table 'radial_data'", 'columns': {'col_06310127810182615': 'double precision', 'col_06084932788567511': 'double precision', 'col_1': 'integer'}, 'row_count': 399}}
-# """
 
-# from langchain_openai import ChatOpenAI
-# from pydantic import BaseModel 
-# from typing import List
 
-# openai_llm = ChatOpenAI(model="gpt-5-mini")
-# class Output(BaseModel):
-#     intent:str
-#     is_sufficient:bool
-#     missing_info:str
-
-# user_query='correlation '
-
-# sl=openai_llm.with_structured_output(Output).invoke(INTENT_CLASSIFIER_PROMPT.format(data_schemas=schemas, user_query=user_query))
-
-# print(sl)
-
-# print(sl.is_sufficient)
-# print(type(sl.is_sufficient))
-
-#or maybe let the intent classifier check if enough data is provided along with the types and so on. While the critic is focused on correcting the created plan 
+# we check in the intent classfier (this is actually where we have the dataset schemas and row count).
+# We check - if the desired by user dataset contains less then 200 rows - then we dont care, and allow future execution
+# if however, the dataset contains more than 200 rows and the user hasnt specified - we reprompt asking for specification 
+# same goes for unbigues specifications like "retrive full dataset".
+#  We are not allowing that for the moment, so just clarify from the user and then implement some safety meassures outside the prompts later 
+# like in sql queries or smth

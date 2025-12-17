@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, Literal, Union, List
 
 class SummarySchema(BaseModel):
     class Config:
@@ -32,3 +32,29 @@ class GroupBySchema(BaseModel):
 class DifferenceSchema(BaseModel):
     column: str
     method: str = "absolute" 
+
+class FilterSchema(BaseModel):
+    column: str = Field(..., description="Column to filter on")
+
+    operator: Literal[
+        "==", "!=", ">", ">=", "<", "<=", "in", "not_in"
+    ]
+
+    value: Union[
+        int,
+        float,
+        str,
+        List[int],
+        List[float],
+        List[str],
+    ] = Field(
+        ...,
+        description="Value to compare against. Use list only with 'in' or 'not_in'."
+    )
+
+class SortSchema(BaseModel):
+    column: str
+    order: Literal["asc", "desc"] = "desc"
+    limit: int = 10
+
+

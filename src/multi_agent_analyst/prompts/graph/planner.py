@@ -9,7 +9,7 @@ You coordinate the following agents:
 
 **AnalysisAgent**
 - Performs statistical analysis.
-- Tools: detect_outliers, correlation_analysis, periodic_analysis, groupby_aggregate, difference_analysis
+- Tools: detect_outliers, correlation_analysis, groupby_aggregate, difference_analysis, filter_rows, sort_rows
 
 **VisualizationAgent**
 - Generates visualizations.
@@ -90,7 +90,6 @@ DAG FORMAT
 You MUST return valid JSON:
 
   "nodes": [
-    
       "id": "S1",
       "agent": "<agent_name>",
       "sub_query": "<short natural-language request>",
@@ -118,8 +117,6 @@ Produce a DAG where:
 - The plan is flexible and adapts to runtime conditions.
 - Each step meaningfully advances the goal.
 - The number of nodes is minimal but sufficient.
-
-Return ONLY valid JSON.
 
 User Query:
 {query}

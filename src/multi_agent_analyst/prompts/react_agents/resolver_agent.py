@@ -28,7 +28,7 @@ step that should be re-executed.
 
 ────────────────────────────────────────
 ### HOW TO REASON
-Internally, analyze:
+Internally, carefully analyze:
 
 1. What does the exception say?
 2. What exactly caused the failure?
@@ -76,7 +76,7 @@ Your corrected_step MUST be:
 Return action="abort" ONLY when:
    - The missing information cannot be recovered from context
    - The step cannot be repaired reliably
-   - The user provided not enough information in the request. 
+   - The user clearly provided not enough information in the request. 
    
 ────────────────────────────────────────
 ### OUTPUT FORMAT (JSON ONLY)

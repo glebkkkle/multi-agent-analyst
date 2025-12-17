@@ -32,7 +32,6 @@ def planner_node(state: GraphState):
     plan = llm.with_structured_output(DAGPlan).invoke(
         PLANNER_PROMPT.format(schemas=state.dataset_schemas,query=state.query)
     )
-
     print(plan, "\n")
     return {"plan": plan}
 
@@ -170,6 +169,8 @@ def chat_node(state: GraphState):
     user_msg = state.query
     schemas = load_user_tables(state.thread_id)
     current_tables.setdefault(state.thread_id, schemas)
+
+    print(schemas)
 
     new_history = state.conversation_history + [
         {"role": "user", "content": user_msg}
