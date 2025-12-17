@@ -9,6 +9,8 @@ You have access to the following tools:
 - sql_query(query)
 - select_columns(table_id, columns)
 - marge_tables(left_id, right_id, on)
+- list_available_data()
+
 =====================================================================
 CRITICAL EXECUTION RULES
 =====================================================================

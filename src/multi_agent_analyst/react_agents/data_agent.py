@@ -7,11 +7,12 @@ from src.multi_agent_analyst.tools.data_agent_tools import (
     make_sql_query_tool,
     make_select_columns_tool,
     make_merge_tool,
+    make_schema_list
 )
 
 import json
 from src.multi_agent_analyst.prompts.react_agents.data_agent import DATA_AGENT_PROMPT
-from src.multi_agent_analyst.utils.utils import context, current_tables,ExecutionLogEntry, execution_list, object_store
+from src.multi_agent_analyst.utils.utils import context, current_tables,ExecutionLogEntry, execution_list, object_store, create_log
 from src.multi_agent_analyst.schemas.data_agent_schema import ExternalAgentSchema
 openai_llm = ChatOpenAI(model="gpt-4.1-mini")
 
@@ -26,8 +27,9 @@ def data_agent(data_agent_query: str, current_plan_step: str):
         make_sql_query_tool(),
         make_select_columns_tool(),
         make_merge_tool(),
+        make_schema_list(list(current_tables.values()))
     ]
-
+    print(data_agent_query)
     agent = create_agent(
         openai_llm,
         tools=tools,
@@ -41,13 +43,18 @@ def data_agent(data_agent_query: str, current_plan_step: str):
     tool_msgs = [m for m in result["messages"] if isinstance(m, ToolMessage)]
 
     if not tool_msgs:
+        create_log('DataAgent', 'Agent did not call any tools', 'error', current_plan_step, None, data_agent_query)
+        print(True)
+        print(execution_list.execution_log_list)        
         return {"object_id":None, "summary":'Agent did not call any tools', "exception":'No tool call'}
     
     last_tool_output = tool_msgs[-1].content
 
     try:
         tool_json=json.loads(last_tool_output)
-    except Exception:
+    except Exception as e:
+        print(True)
+        create_log('DataAgent', str(e), 'error', current_plan_step, None, data_agent_query)
         return {"object_id":None, "summary":'failed to parse tool output', "exception":'Failed Parsing'}
 
     object_id=tool_json.get("object_id")
@@ -76,4 +83,5 @@ def data_agent(data_agent_query: str, current_plan_step: str):
 
     execution_list.execution_log_list.setdefault(current_plan_step, []).append(log)
 
+    print(msg)
     return msg

@@ -26,6 +26,8 @@ import redis
 from uuid import uuid4
 from src.backend.storage.thread_store import RedisSessionStore, RedisThreadMeta
 
+MAX_CLARIFICATIONS=3
+
 app = FastAPI()
 
 redis_client = redis.Redis(host="localhost", port=6379, decode_responses=True)
@@ -103,8 +105,19 @@ async def handle_clarify(payload: dict, user: CurrentUser = Depends(get_current_
         raise HTTPException(400, "Session is not waiting for clarification")
 
     # 2️⃣ append clarification
-    session_store.append_clarification(thread_id, session_id, clarification)
+    count=session_store.append_clarification(thread_id, session_id, clarification)
 
+    if count >= MAX_CLARIFICATIONS:
+        session_store.mark_aborted(thread_id, session_id)
+        thread_meta.clear_active_session(thread_id)
+        
+        return {
+            "status": "aborted",
+            "message_to_user": (
+                "I’m still missing required information. "
+                "Please rephrase your request as a new message."
+            ),
+        }
     # 3️⃣ resume graph
     result = clarify_graph(
         thread_id=thread_id,

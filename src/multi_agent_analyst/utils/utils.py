@@ -60,3 +60,8 @@ def load_and_validate_df(data_id):
         return None, f"DATA_EMPTY: object '{data_id}' is empty"
 
     return df, None
+
+def create_log(agent, exception, status, id,output_object_id, sub_query):
+    log=ExecutionLogEntry(id=id, agent=agent, sub_query=sub_query, status=status, output_object_id=output_object_id, error_message=exception)
+    execution_list.execution_log_list.setdefault(id, []).append(log)
+    return log

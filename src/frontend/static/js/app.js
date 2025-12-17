@@ -654,6 +654,29 @@ async function sendMessage() {
             return;
         }
 
+        if (data.status === "aborted") {
+            waitingForClarification = false;
+
+            addMessage(
+                data.message_to_user ||
+                data.result?.final_response ||
+                "This task was aborted. Please rephrase your request.",
+                "bot"
+            );
+
+            return;
+        }
+
+        if (data.status === "error") {
+            waitingForClarification = false;
+            addMessage(
+                data.message_to_user ||
+                "Something went wrong while executing the task.",
+                "bot"
+            );
+            return;
+        }
+
         waitingForClarification = false;
 
         let finalResponse = null;
@@ -717,7 +740,12 @@ async function sendMessage() {
             addImage(imageBase64);
         }
 
-        if (!finalResponse && !objId && !imageBase64) {
+        if (
+            data.status === "completed" &&
+            !finalResponse &&
+            !objId &&
+            !imageBase64
+        ) {
             addMessage("Task completed successfully.", "bot");
         }
     } catch (error) {

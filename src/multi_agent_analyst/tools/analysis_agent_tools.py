@@ -111,8 +111,6 @@ def make_anomaly_tool(df):
         args_schema=AnomalySchema,
     )
 
-#perhaps make the resolver agent-specific helper 
-
 def make_periodic_tool(df):
     def periodic(frequency: int):
         try:

@@ -11,6 +11,8 @@ class SessionState:
     session_id: str
     canonical_query: str
     status: SessionStatus
+    clarification_count: int
+
 
 class RedisSessionStore:
     def __init__(self, redis_client: redis.Redis):
@@ -26,6 +28,7 @@ class RedisSessionStore:
             mapping={
                 "canonical_query": initial_query.strip(),
                 "status": "active",
+                "clarification_count": 0,
                 "created_at": now,
                 "updated_at": now,
             },
@@ -39,26 +42,36 @@ class RedisSessionStore:
         return SessionState(
             thread_id=thread_id,
             session_id=session_id,
-            canonical_query=data["canonical_query"],
-            status=data["status"],
+            canonical_query=data.get("canonical_query", ""),
+            status=data.get("status", "active"),
+            clarification_count=int(data.get("clarification_count", 0)),
         )
 
-    def append_clarification(self, thread_id: str, session_id: str, clarification: str):
+    def append_clarification(self, thread_id: str, session_id: str, clarification: str) -> int:
         clarification = clarification.strip()
         if not clarification:
-            return
+            return self.get_session(thread_id, session_id).clarification_count
 
         key = self._session_key(thread_id, session_id)
-        current = self.r.hget(key, "canonical_query") or ""
-        new_query = f"{current} {clarification}".strip()
+        now = int(time.time())
+
+        pipe = self.r.pipeline()
+        pipe.hget(key, "canonical_query")
+        pipe.hincrby(key, "clarification_count", 1)
+        current_query, new_count = pipe.execute()
+
+        new_query = f"{current_query or ''} {clarification}".strip()
 
         self.r.hset(
             key,
             mapping={
                 "canonical_query": new_query,
-                "updated_at": int(time.time()),
+                "updated_at": now,
             },
         )
+
+        return int(new_count)
+
 
     def mark_waiting(self, thread_id: str, session_id: str):
         self.r.hset(
@@ -74,6 +87,14 @@ class RedisSessionStore:
             self._session_key(thread_id, session_id),
             mapping={
                 "status": "completed",
+                "updated_at": int(time.time()),
+            },
+        )
+    def mark_aborted(self, thread_id: str, session_id: str):
+        self.r.hset(
+            self._session_key(thread_id, session_id),
+            mapping={
+                "status": "aborted",
                 "updated_at": int(time.time()),
             },
         )

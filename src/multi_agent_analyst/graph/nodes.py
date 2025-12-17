@@ -80,6 +80,7 @@ def router_node(state: GraphState):
             ]
         })
     except Exception as e:
+        print(str(e))
         return {"desicion":'error', "execution_exception":str(e)}
     
     print(result)
@@ -111,7 +112,6 @@ def summarizer_node(state: GraphState):
                 summary=state.summary
             )
         ).content
-
 
         execution_list.execution_log_list.clear()
         print(' ')
@@ -171,22 +171,16 @@ def chat_node(state: GraphState):
     schemas = load_user_tables(state.thread_id)
     current_tables.setdefault(state.thread_id, schemas)
 
-    print(state.query)
-
     new_history = state.conversation_history + [
         {"role": "user", "content": user_msg}
     ]
 
-    recent_interactions=state.conversation_history[:-3]
-    print(recent_interactions)
     intent = lm.invoke(
         INTENT_CLASSIFIER_PROMPT.format(
             user_query=user_msg,
             data_schemas=schemas
         )
     )
-    print(intent)
-    print(type(intent.is_sufficient))
     # 🔒 GUARD: insufficient information
     if intent.intent == "clarification" and intent.is_sufficient == False:
         return {
@@ -211,17 +205,11 @@ def chat_node(state: GraphState):
             "dataset_schemas": schemas,
         }
 
-    # return {
-    #     "desicion": "chat",
-    #     "conversation_history": new_history,
-    #     "dataset_schemas": schemas,
-    # }
 
 
 def chat_reply(state: GraphState):
     reply = llm.invoke(CHAT_REPLY_PROMPT.format(user_query=state.query, conversation_history=state.conversation_history, data_list=state.dataset_schemas))
     return {"final_response": reply.content}
-
 
 def execution_error_node(state: GraphState):
     return {

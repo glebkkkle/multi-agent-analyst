@@ -5,6 +5,7 @@ from src.multi_agent_analyst.schemas.data_agent_schema import (
     SQLQuerySchema,
     SelectColumnsSchema,
     MergeTablesSchema,
+    ListDataSchema
 )
 
 from src.multi_agent_analyst.db.db_core import get_thread_conn
@@ -19,6 +20,7 @@ def make_sql_query_tool():
     conn=get_thread_conn(list(current_tables.keys())[0])
     
     def sql_query(query: str):
+        print(query)
         try:
             df = pd.read_sql_query(query, conn)
             conn.close()
@@ -43,7 +45,34 @@ def make_sql_query_tool():
         description="Executes an SQL query on company_data.db and returns the result.",
         args_schema=SQLQuerySchema,
     )
+def make_schema_list(schemas):
+    def list_available_data():
+        # Convert inner objects → readable strings
+        readable = []
 
+        for schema in schemas:
+            readable.append({
+                k: (
+                    ", ".join(f"{ck}: {cv}" for ck, cv in v.items())
+                    if isinstance(v, dict)
+                    else v
+                )
+                for k, v in schema.items()
+            })
+
+        obj_id = object_store.save(readable)
+
+        return {
+            "object_id": obj_id,
+            "details": {"schemas": "listed"}
+        }
+
+    return StructuredTool.from_function(
+        func=list_available_data,
+        name="list_available_data",
+        description="A function that provides a list of available data",
+        args_schema=ListDataSchema
+    )
 
 def make_select_columns_tool():
     """Factory: returns a column-selection tool."""

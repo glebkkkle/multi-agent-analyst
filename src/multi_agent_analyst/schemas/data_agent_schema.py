@@ -14,6 +14,9 @@ class MergeTablesSchema(BaseModel):
     on: str = Field(..., description="Join key.")
     how: str = Field("inner", description="Join type.")
 
+class ListDataSchema(BaseModel):
+    pass
+
 
 class ExternalAgentSchema(BaseModel):
     object_id:str=Field(..., description='A final ID of the object after all the modification completed.')
