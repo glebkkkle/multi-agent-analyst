@@ -12,8 +12,8 @@ from src.multi_agent_analyst.prompts.graph.planner import PLANNER_PROMPT
 from src.multi_agent_analyst.prompts.graph.critic import CRITIC_PROMPT
 from src.multi_agent_analyst.prompts.graph.revision import PLAN_REVISION_PROMPT
 from src.multi_agent_analyst.prompts.graph.summarizer import SUMMARIZER_PROMPT
-from src.multi_agent_analyst.prompts.chat.intent_classifier import CHAT_INTENT_PROMPT, INTENT_CLASSIFIER_PROMPT
-from src.multi_agent_analyst.prompts.chat.context_agent import CONTEXT_AGENT_PROMPT
+from src.multi_agent_analyst.prompts.chat.intent_classifier import  INTENT_CLASSIFIER_PROMPT
+from src.multi_agent_analyst.prompts.chat.context_agent import cl
 from src.multi_agent_analyst.prompts.chat.chat_reply_prompt import CHAT_REPLY_PROMPT
 
 ollama_llm=ChatOllama(model='gpt-oss:20b', temperature=0)
@@ -155,35 +155,44 @@ def allow_execution(state:GraphState):
 
 intent_llm = llm.with_structured_output(IntentSchema)
 
-
 from pydantic import BaseModel
 
-class Output(BaseModel):
-    intent:str
-    is_sufficient:bool
-    missing_info:str
+class CleanQueryState(BaseModel):
+    planner_query:str
 
-lm = ChatOpenAI(model="gpt-5-mini").with_structured_output(Output)
+
+lm = ChatOpenAI(model="gpt-5-mini").with_structured_output(IntentSchema)
 
 def chat_node(state: GraphState):
     user_msg = state.query
     schemas = load_user_tables(state.thread_id)
     current_tables.setdefault(state.thread_id, schemas)
-
-    print(schemas)
-
-    new_history = state.conversation_history + [
-        {"role": "user", "content": user_msg}
-    ]
-
+    
+    print(state.conversation_history)
+    print(' ')
+    print(INTENT_CLASSIFIER_PROMPT.format(
+            user_query=user_msg,
+            data_schemas=schemas,
+            conversation_history=state.conversation_history
+        ))
+    print(' ')
+    print(' ')
     intent = lm.invoke(
         INTENT_CLASSIFIER_PROMPT.format(
             user_query=user_msg,
-            data_schemas=schemas
+            data_schemas=schemas,
+            conversation_history=state.conversation_history
         )
     )
+    print(intent)
+    print(' ')
+
     # 🔒 GUARD: insufficient information
     if intent.intent == "clarification" and intent.is_sufficient == False:
+        new_history = state.conversation_history + [
+        {"role":'user', "content":user_msg},
+        {"role": "system", "content": intent.missing_info}
+        ]
         return {
             "desicion": "ask_user",
             "requires_user_clarification": True,
@@ -191,22 +200,22 @@ def chat_node(state: GraphState):
             "conversation_history": new_history,
             "dataset_schemas": schemas,
         }
-    # normal flow
     if intent.intent == "plan":
+        new_history=state.conversation_history + [{"role":'user', "content":user_msg}]
         return {
             "desicion": "planner",
             "conversation_history": new_history,
             "dataset_schemas": schemas,
+            "retrival_mode":intent.result_mode
         }
 
     if intent.intent == "chat":
+        new_history=state.conversation_history + [{"role":'user', "content":user_msg}]
         return {
             "desicion": "chat",
             "conversation_history": new_history,
             "dataset_schemas": schemas,
         }
-
-
 
 def chat_reply(state: GraphState):
     reply = llm.invoke(CHAT_REPLY_PROMPT.format(user_query=state.query, conversation_history=state.conversation_history, data_list=state.dataset_schemas))
@@ -223,6 +232,14 @@ def execution_error_node(state: GraphState):
         "image_base64": None,
     }
 
+
+def clean_query(state:GraphState):
+    conv_history=state.conversation_history[:-3]
+    response=llm.with_structured_output(CleanQueryState).invoke(cl.format(original_query=state.query, session_context=conv_history, retrieval_mode=state.retrival_mode))
+
+    return {"query":response.planner_query}
+
+
 # def context_node(state: GraphState):
 #     print(state.desicion)
 #     clean = llm.with_structured_output(ContextSchema).invoke(
@@ -237,3 +254,5 @@ def execution_error_node(state: GraphState):
 
 #chat node should be more strict on whats allowed to propagate and whats not 
 #should be more informative and now that its a unit bounded to the project
+
+#simply appending the clarification seems fraguile, needs a fix. 

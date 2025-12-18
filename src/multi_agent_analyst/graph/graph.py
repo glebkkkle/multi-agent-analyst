@@ -1,6 +1,6 @@
 from langgraph.graph import StateGraph, END
 from langgraph.checkpoint.memory import InMemorySaver
-from src.multi_agent_analyst.graph.nodes import planner_node, critic, router_node, routing, revision_node, revision_router, allow_execution, execution_error_node,summarizer_node, chat_node, chat_reply, ask_user_node
+from src.multi_agent_analyst.graph.nodes import planner_node, critic, router_node, routing,clean_query, revision_node, revision_router, allow_execution, execution_error_node,summarizer_node, chat_node, chat_reply, ask_user_node
 from src.multi_agent_analyst.graph.states import GraphState
 
 
@@ -17,10 +17,14 @@ graph.add_node('ask_user', ask_user_node)
 graph.add_node('chat_node', chat_node)
 graph.add_node('chat_reply', chat_reply)
 graph.add_node('execution_error', execution_error_node)
+graph.add_node('clean_query', clean_query)
+
 
 graph.set_entry_point('chat_node')
-graph.add_conditional_edges('chat_node', routing, {'chat':'chat_reply', 'planner': 'planner', 'ask_user':'ask_user',})
+graph.add_conditional_edges('chat_node', routing, {'chat':'chat_reply', 'planner': 'clean_query', 'ask_user':'ask_user',})
 graph.add_edge('chat_reply', 'summarizer_node')
+
+graph.add_edge('clean_query', 'planner')
 
 graph.add_edge('planner', 'critic')
 graph.add_edge('critic', 'revision_node')

@@ -37,8 +37,6 @@ class DAGPlan(BaseModel):
     nodes: List[DAGNode]
     edges: List[DAGEdge]
 
-
-
 #FIX FROM REVISOR
 class RevisionState(BaseModel):
     fixed_plan:DAGPlan
@@ -46,9 +44,11 @@ class RevisionState(BaseModel):
 
 #CLASSIFY USER'S INTENT
 class IntentSchema(BaseModel):
-    intent: Literal["plan", "chat"]
-    reason: str
-    
+    intent:str
+    is_sufficient:bool
+    missing_info:str
+    result_mode:Literal['analysis', 'preview', 'full']
+
 #REWRITE USER'S QUERY
 class ContextSchema(BaseModel):
     clean_query:str
@@ -75,6 +75,8 @@ class GraphState(BaseModel):
     # INTERNAL ROUTING
     desicion: Optional[str] = None
     execution_exception: Optional[str]=None
+    retrival_mode:Optional[str]=None
+
     # EXECUTION OUTPUT
     final_obj_id: Optional[str] = None
     summary: Optional[str] = None

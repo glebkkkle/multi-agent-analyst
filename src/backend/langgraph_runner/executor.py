@@ -1,6 +1,9 @@
 from src.multi_agent_analyst.graph.graph import g as compiled_graph
 from src.backend.storage.redis_client import redis_client
 from src.backend.storage.thread_store import RedisSessionStore, RedisThreadMeta
+from src.multi_agent_analyst.db.conversation_store import ThreadConversationStore
+
+conversation_store = ThreadConversationStore()
 
 session_store = RedisSessionStore(redis_client)
 thread_meta = RedisThreadMeta(redis_client)
@@ -9,12 +12,17 @@ def _run_graph(thread_id: str, session_id: str, requires_user_clarification: boo
 
     session = session_store.get_session(thread_id, session_id)
 
+    conversation_history = conversation_store.get_recent(
+        thread_id=thread_id,
+        limit=6,
+    )
     events = compiled_graph.stream(
         {
             "query": session.canonical_query,
             "thread_id": thread_id,
             "session_id": session_id,
             "requires_user_clarification": requires_user_clarification,
+            "conversation_history":conversation_history
         },
         config={"configurable": {"thread_id": thread_id}}
     )
