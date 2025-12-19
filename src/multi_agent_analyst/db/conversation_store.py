@@ -2,6 +2,7 @@
 from typing import List, Dict
 from datetime import datetime
 from src.multi_agent_analyst.db.db_core import get_conn  # reuse your helper
+import time 
 
 class ThreadConversationStore:
     def append(self, thread_id: str, role: str, content: str):
@@ -19,28 +20,35 @@ class ThreadConversationStore:
     def get_recent(
         self,
         thread_id: str,
-        limit: int = 6,
-    ) -> List[Dict]:
+        max_age_seconds: int,
+        limit: int = 4,
+    ) -> list[dict]:
+        cutoff = time.time() - max_age_seconds
+
         with get_conn() as conn:
             with conn.cursor() as cur:
                 cur.execute(
                     """
-                    SELECT role, content
+                    SELECT content, created_at
                     FROM thread_messages
                     WHERE thread_id = %s
+                      AND created_at >= to_timestamp(%s)
+                      AND role = 'user'
                     ORDER BY created_at DESC
                     LIMIT %s
                     """,
-                    (thread_id, limit),
+                    (thread_id, cutoff, limit),
                 )
                 rows = cur.fetchall()
-
-        # reverse → chronological order
+        # chronological order
         return [
-            {"role": role, "content": content}
-            for role, content in reversed(rows)
+            {
+                "content": content,
+                "created_at": created_at.timestamp()
+                if hasattr(created_at, "timestamp") else created_at,
+            }
+            for content, created_at in reversed(rows)
         ]
-
     def clear(self, thread_id: str):
         with get_conn() as conn:
             with conn.cursor() as cur:

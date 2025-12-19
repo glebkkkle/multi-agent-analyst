@@ -12,8 +12,8 @@ from src.multi_agent_analyst.prompts.graph.planner import PLANNER_PROMPT
 from src.multi_agent_analyst.prompts.graph.critic import CRITIC_PROMPT
 from src.multi_agent_analyst.prompts.graph.revision import PLAN_REVISION_PROMPT
 from src.multi_agent_analyst.prompts.graph.summarizer import SUMMARIZER_PROMPT
-from src.multi_agent_analyst.prompts.chat.intent_classifier import  INTENT_CLASSIFIER_PROMPT
-from src.multi_agent_analyst.prompts.chat.context_agent import cl
+from src.multi_agent_analyst.prompts.chat.intent_classifier import  INTENT_CLASSIFIER_PROMPT, intent_class, new_intent
+from src.multi_agent_analyst.prompts.chat.context_agent import cleaned_query
 from src.multi_agent_analyst.prompts.chat.chat_reply_prompt import CHAT_REPLY_PROMPT
 
 ollama_llm=ChatOllama(model='gpt-oss:20b', temperature=0)
@@ -165,20 +165,14 @@ lm = ChatOpenAI(model="gpt-5-mini").with_structured_output(IntentSchema)
 
 def chat_node(state: GraphState):
     user_msg = state.query
+    print(user_msg)
     schemas = load_user_tables(state.thread_id)
     current_tables.setdefault(state.thread_id, schemas)
     
     print(state.conversation_history)
-    print(' ')
-    print(INTENT_CLASSIFIER_PROMPT.format(
-            user_query=user_msg,
-            data_schemas=schemas,
-            conversation_history=state.conversation_history
-        ))
-    print(' ')
-    print(' ')
+
     intent = lm.invoke(
-        INTENT_CLASSIFIER_PROMPT.format(
+        new_intent.format(
             user_query=user_msg,
             data_schemas=schemas,
             conversation_history=state.conversation_history
@@ -232,11 +226,17 @@ def execution_error_node(state: GraphState):
         "image_base64": None,
     }
 
+#carefully using the information from the conversational history and only executing a current task, nothing else.
+
 
 def clean_query(state:GraphState):
-    conv_history=state.conversation_history[:-3]
-    response=llm.with_structured_output(CleanQueryState).invoke(cl.format(original_query=state.query, session_context=conv_history, retrieval_mode=state.retrival_mode))
-
+    conv_history=state.conversation_history
+    print(conv_history)
+    response=llm.with_structured_output(CleanQueryState).invoke(cleaned_query.format(original_query=state.query, session_context=conv_history))
+    print(' ')
+    print(cleaned_query.format(original_query=state.query, session_context=conv_history))
+    print(' ')
+    print(response.planner_query)
     return {"query":response.planner_query}
 
 

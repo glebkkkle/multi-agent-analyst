@@ -23,6 +23,8 @@ from datetime import timedelta
 from src.backend.auth import get_current_user, CurrentUser
 from fastapi import Depends
 import redis
+import time
+import json 
 from uuid import uuid4
 from src.backend.storage.thread_store import RedisSessionStore, RedisThreadMeta
 from src.multi_agent_analyst.db.conversation_store  import ThreadConversationStore
@@ -31,6 +33,7 @@ conversation_store = ThreadConversationStore()
 MAX_CLARIFICATIONS=3
 
 app = FastAPI()
+
 
 redis_client = redis.Redis(host="localhost", port=6379, decode_responses=True)
 session_store = RedisSessionStore(redis_client)
@@ -68,41 +71,29 @@ async def handle_message(payload: dict, user: CurrentUser = Depends(get_current_
     thread_id = user.thread_id
     message = payload["message"]
 
-    # 🧠 0️⃣ Persist USER message (thread-level memory)
-    conversation_store.append(
-        thread_id=thread_id,
-        role="user",
-        content=message,
-    )
-
-    # 🧩 1️⃣ Create NEW session
     session_id = uuid4().hex
     session_store.create_session(thread_id, session_id, message)
 
-    # 🔥 2️⃣ Mark as ACTIVE session
     thread_meta.set_active_session(thread_id, session_id)
 
-    # ▶️ 3️⃣ Run graph
     result = run_initial_graph(
         thread_id=thread_id,
         session_id=session_id,
     )
-
-    # 🤖 4️⃣ Persist ASSISTANT output
-    if result.get("status") == "needs_clarification":
+    if result['status'] == 'completed':
+        conv_context={"content":message, "created_at":time.time(), "status":'completed'}
         conversation_store.append(
             thread_id=thread_id,
-            role="assistant",
-            content=result.get("message_to_user", ""),
+            role="user",
+            content=json.dumps(conv_context),
         )
-    elif result.get("status") == "completed":
-        final = result.get("result", {})
-        if isinstance(final, dict) and "final_response" in final:
-            conversation_store.append(
-                thread_id=thread_id,
-                role="assistant",
-                content=final["final_response"],
-            )
+    elif result['status'] == 'needs_clarification':
+        conv_context={"content":message, "created_at":time.time(), "status":'clarification_required'}
+        conversation_store.append(
+            thread_id=thread_id,
+            role="user",
+            content=json.dumps(conv_context),
+        )
 
     return {
         "session_id": session_id,
@@ -119,13 +110,6 @@ async def app_page():
 async def handle_clarify(payload: dict, user: CurrentUser = Depends(get_current_user)):
     thread_id = user.thread_id
     clarification = payload["clarification"]
-
-    # 🧠 0️⃣ Persist USER clarification
-    conversation_store.append(
-        thread_id=thread_id,
-        role="user",
-        content=clarification,
-    )
 
     # 1️⃣ Fetch ACTIVE session
     session_id = thread_meta.get_active_session(thread_id)
@@ -148,39 +132,31 @@ async def handle_clarify(payload: dict, user: CurrentUser = Depends(get_current_
             "Please rephrase your request as a new message."
         )
 
-        # 🤖 persist abort response
-        conversation_store.append(
-            thread_id=thread_id,
-            role="assistant",
-            content=abort_msg,
-        )
-
+    
         return {
             "status": "aborted",
             "message_to_user": abort_msg,
         }
 
-    # ▶️ 3️⃣ Resume graph
     result = clarify_graph(
         thread_id=thread_id,
         session_id=session_id,
     )
 
-    # 🤖 4️⃣ Persist assistant output
-    if result.get("status") == "needs_clarification":
+    if result['status'] == 'completed':
+        conv_context={"content":clarification, "created_at":time.time(), "status":'completed'}
         conversation_store.append(
             thread_id=thread_id,
-            role="assistant",
-            content=result.get("message_to_user", ""),
+            role="user",
+            content=json.dumps(conv_context),
         )
-    elif result.get("status") == "completed":
-        final = result.get("result", {})
-        if isinstance(final, dict) and "final_response" in final:
-            conversation_store.append(
-                thread_id=thread_id,
-                role="assistant",
-                content=final["final_response"],
-            )
+    elif result['status'] == 'needs_clarification':
+        conv_context={"content":clarification, "created_at":time.time(), "status":'clarification_required'}
+        conversation_store.append(
+            thread_id=thread_id,
+            role="user",
+            content=json.dumps(conv_context),
+        )
 
     return {
         "session_id": session_id,

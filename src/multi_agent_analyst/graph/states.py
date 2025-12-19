@@ -60,7 +60,7 @@ class GraphState(BaseModel):
     clarification: Optional[str] = None
 
     # MEMORY
-    conversation_history: List[Dict[str, str]] = Field(default_factory=list)
+    conversation_history: List[Dict[Any, Any]] = Field(default_factory=list)
 
     # PLANNING
     plan: Optional[DAGPlan] = None

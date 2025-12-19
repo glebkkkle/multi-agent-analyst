@@ -14,8 +14,12 @@ def _run_graph(thread_id: str, session_id: str, requires_user_clarification: boo
 
     conversation_history = conversation_store.get_recent(
         thread_id=thread_id,
-        limit=6,
+        max_age_seconds=300, 
+        limit=3,
     )
+    print(' ')
+    print(conversation_history)
+    print(' ')
     events = compiled_graph.stream(
         {
             "query": session.canonical_query,
