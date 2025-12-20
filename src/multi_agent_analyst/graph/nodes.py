@@ -50,10 +50,15 @@ def critic(state: GraphState):
         "message_to_user": response.message_to_user,
         "requires_user_clarification": response.requires_user_input,
         "valid": response.valid,
+        "desicion":str(response.valid)
     }
 
 def revision_node(state: GraphState):
     print("🧠REVISOR RECEIVED PLAN\n")
+    print(' ')
+    print(state.desicion)
+    print(type(state.desicion))
+    print(' ')
 
     response = llm.with_structured_output(RevisionState).invoke(
         PLAN_REVISION_PROMPT.format(
@@ -242,6 +247,25 @@ def clean_query(state:GraphState):
     print(' ')
     print(response.planner_query)
     return {"query":response.planner_query}
+
+
+def final_result_node(state:GraphState):
+    if state.desicion == 'chat':
+            return {'final_response':state.final_response, "image_base64":None, 'final_obj_id':None}
+    
+    else:
+        summary_react=state.summary
+        execution_list.execution_log_list.clear()
+        print(' ')
+        print('RESPONSE TO THE USER:')
+        print(' ')
+        print(summary_react)
+        print(state.final_table_shape)
+        return {
+            "final_response": summary_react,
+            "final_obj_id": state.final_obj_id,
+            "final_table_shape":state.final_table_shape
+        }
 
 
 # def context_node(state: GraphState):

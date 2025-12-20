@@ -94,7 +94,7 @@ FINAL OUTPUT (ONLY AFTER FULL DAG COMPLETION)
 Once ALL nodes are finished, return:
 {
   "object_id": <id of the last node>,
-  "summary": <executed nodes>,
+  "summary": short, friendly explanation of what was produced for user (line plot, analysis, ect.), without heavy technical terms or list of executed steps, just produce a clean message to the user.
   "exception": null, 
   "result_details": {
      "data_type": "analytical" | "visual" | "retrieval",

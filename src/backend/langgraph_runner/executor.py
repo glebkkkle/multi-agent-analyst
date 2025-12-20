@@ -67,12 +67,12 @@ def _run_graph(thread_id: str, session_id: str, requires_user_clarification: boo
         }
 
     # 🟢 success path
-    if "summarizer_node" in last_event:
+    if "final_result_node" in last_event:
         session_store.mark_completed(thread_id, session_id)
         thread_meta.clear_active_session(thread_id)
         return {
             "status": "completed",
-            "result": last_event["summarizer_node"],
+            "result": last_event["final_result_node"],
         }
 
     # ❌ unexpected terminal state

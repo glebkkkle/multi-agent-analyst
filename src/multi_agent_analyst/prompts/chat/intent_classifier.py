@@ -270,13 +270,12 @@ Use these rules ONLY to judge validity — do not infer new intent.
 Analytical tasks are independent of dataset size.
 
 ---
-
 ### RESULT MODE INFERENCE
 
 If intent is "plan", infer `result_mode`:
 
 * **analysis**
-  - The user asks for analysis, visualization, statistics, correlation, anomaly detection, aggregation
+  - The user asks for analysis, visualization, statistics, correlation, anomaly detection, aggregation. The strict limits are not required, allow full retrieval.
 
 * **preview**
   - The user asks to "show", "display", or "see" data
