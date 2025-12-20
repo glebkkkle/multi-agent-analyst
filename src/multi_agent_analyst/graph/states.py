@@ -61,7 +61,7 @@ class GraphState(BaseModel):
 
     # MEMORY
     conversation_history: List[Dict[Any, Any]] = Field(default_factory=list)
-
+    final_table_shape : Any=None
     # PLANNING
     plan: Optional[DAGPlan] = None
     critic_output: Optional[CriticStucturalResponse] = None

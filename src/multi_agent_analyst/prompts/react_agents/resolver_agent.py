@@ -33,7 +33,7 @@ Internally, carefully analyze:
 1. What does the exception say?
 2. What exactly caused the failure?
    - Missing column? → The DataAgent step that produced the dataframe may need to be corrected.
-   - Wrong object ID? → Use context_lookup to find the correct one.
+   - Wrong object ID? → Replace with the correct one
    - Wrong agent/tool? → Replace agent with the correct one.
    - Incorrect or incomplete sub_query? → Rewrite it clearly.
 
@@ -100,3 +100,10 @@ Current Log:
 #perhaps prompt the planner better 
 #modify the resolver
 #add stable analysis tools
+
+
+#analysis would still render all of the tables regardless of the constraints
+
+
+#analysis agent should perhaps have an idea about the date or other identifier within the dataset.
+#agents have pretty much no idea about the data they are working with, which makes them practically blind. 

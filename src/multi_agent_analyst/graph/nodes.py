@@ -17,7 +17,7 @@ from src.multi_agent_analyst.prompts.chat.context_agent import cleaned_query
 from src.multi_agent_analyst.prompts.chat.chat_reply_prompt import CHAT_REPLY_PROMPT
 
 ollama_llm=ChatOllama(model='gpt-oss:20b', temperature=0)
-llm=ChatOpenAI(model='gpt-4.1-mini')
+llm=ChatOpenAI(model="gpt-5.2")
 
 #maybe use sql tool to only identify the appropriate database, and use select columns to format the db appropriately for later use
 #might have to fix the planner 
@@ -66,7 +66,7 @@ def revision_node(state: GraphState):
     return {
         "plan": response.fixed_plan,
         "fixed_manually": response.fixed_manually,
-        "message_to_user": state.message_to_user,  # stays for ask_user
+        "message_to_user": state.message_to_user, 
         "valid": state.valid
     }
 
@@ -78,18 +78,21 @@ def router_node(state: GraphState):
                 {"role": "user", "content": str(state.plan)}
             ]
         })
+        print(result)
     except Exception as e:
+        print(True)
         print(str(e))
+        
         return {"desicion":'error', "execution_exception":str(e)}
     
-    print(result)
     last = [m for m in result["messages"] if isinstance(m, AIMessage)][-1].content
     d = json.loads(last)
     
     return {
         "desicion":"ok",
         "final_obj_id": d["object_id"],
-        "summary": d["summary"]
+        "summary": d["summary"], 
+        "final_table_shape":d['result_details']
     }
 
 def summarizer_node(state: GraphState):
@@ -117,10 +120,12 @@ def summarizer_node(state: GraphState):
         print('RESPONSE TO THE USER:')
         print(' ')
         print(final_text)
+        print(state.final_table_shape)
         return {
             "final_response": final_text,
             "image_base64": image_base64,
-            "final_obj_id": state.final_obj_id
+            "final_obj_id": state.final_obj_id,
+            "final_table_shape":state.final_table_shape
         }
 
 def revision_router(state: GraphState):

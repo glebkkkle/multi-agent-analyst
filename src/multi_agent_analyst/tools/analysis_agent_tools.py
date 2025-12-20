@@ -36,6 +36,7 @@ def make_correlation_tool(df):
             result = df.corr(numeric_only=True)
             print(type(result))
             result=sanitize_for_json(result)
+            table_shape=result.shape
         #format exception flag properly for the controller
         except Exception as e:
             return {
@@ -44,7 +45,7 @@ def make_correlation_tool(df):
         obj_id=object_store.save(result)
         
         return {'object_id':obj_id, 
-                'details':'correlation matrix is executed'}
+                'details':{'table_shape':table_shape}}
 
     return StructuredTool.from_function(
         func=correlation,
@@ -85,13 +86,16 @@ def make_anomaly_tool(df):
 
             annotated_df=sanitize_for_json(annotated_df)
 
+            table_shape=annotated_df.shape
+
             obj_id = object_store.save(annotated_df)
 
             details = {
                 "outlier_count": outlier_count,
                 "outlier_rows": outlier_rows_display if len(outlier_rows_display) > 0 else 'No outliers detected',
                 "columns_checked": list(numeric.columns),
-                "iqr_bounds": ", ".join(f"{k}: {v}" for k, v in iqr_bounds.items())
+                "iqr_bounds": ", ".join(f"{k}: {v}" for k, v in iqr_bounds.items()),
+                'table_shape':table_shape
                 }            
             # object_id=object_store.save(details)
 
@@ -121,6 +125,7 @@ def make_summary_tool(df):
         try:
             stats = df.describe(include="all").to_dict()
             stats = sanitize_for_json(stats)
+            table_shape=stats.shape
         except Exception as e:
             return {
                 'exception': str(e)
@@ -128,7 +133,7 @@ def make_summary_tool(df):
         obj_id=object_store.save(stats)
         
         result={'object_id':obj_id, 
-                'details':stats}
+                'details':{'summary_table_shape':table_shape}}
         
         return result
 
@@ -166,6 +171,8 @@ def make_groupby_tool(df):
             )
             grouped=sanitize_for_json(grouped)
 
+            table_shape=grouped.shape
+
             obj_id = object_store.save(grouped)
 
             # Build details
@@ -173,7 +180,8 @@ def make_groupby_tool(df):
                 "group_column": group_column,
                 "agg_column": agg_column,
                 "agg_function": agg_function,
-                "row_count": len(grouped)
+                "row_count": len(grouped),
+                "table_shape":table_shape
             }
 
             result = {
@@ -218,6 +226,7 @@ def make_difference_tool(df):
                 dfx["difference"] = dfx[column].pct_change() * 100.0
                 dfx = dfx.replace({np.nan: None, np.inf: None, -np.inf: None})
 
+            table_shape=dfx.shape
             obj_id = object_store.save(dfx)
 
             details = {
@@ -227,7 +236,8 @@ def make_difference_tool(df):
                     "max": float(dfx["difference"].max(skipna=True)),
                     "min": float(dfx["difference"].min(skipna=True)),
                     "mean": float(dfx["difference"].mean(skipna=True)),
-                }
+                }, 
+                "table_shape":table_shape
             }
             print(obj_id)
             print(details)
@@ -285,6 +295,7 @@ def make_filter_tool(df):
 
             obj_id = object_store.save(filtered)
 
+            table_shape=filtered.shape
         except Exception as e:
             return {"exception":str(e)}
         
@@ -294,7 +305,8 @@ def make_filter_tool(df):
                     "column": column,
                     "operator": operator,
                     "value": value,
-                    "rows_after": len(filtered)
+                    "rows_after": len(filtered), 
+                    "table_shape":table_shape
                 }
             }
 
@@ -325,12 +337,14 @@ def make_sort_tool(df):
 
             obj_id = object_store.save(sorted_df)
 
+            table_shape=sorted_df.shape
             return {
                 "object_id": obj_id,
                 "details": {
                     "column": column,
                     "order": order,
-                    "limit": limit
+                    "limit": limit, 
+                    "table_shape":table_shape
                 }
             }
 

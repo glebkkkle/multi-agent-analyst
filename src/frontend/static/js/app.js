@@ -273,8 +273,10 @@ function addMessage(text, sender) {
     messagesDiv.appendChild(wrapper);
     messagesDiv.scrollTop = messagesDiv.scrollHeight;
 }
-
-function addDataTable(data) {
+function addDataTable(data, metadata = {}) {
+    // 1. HARD LIMIT - Set your max rows here
+    const MAX_ROWS = 100; 
+    
     const wrapper = document.createElement("div");
     wrapper.classList.add("message", "bot", "data-message");
 
@@ -285,12 +287,28 @@ function addDataTable(data) {
     const content = document.createElement("div");
     content.classList.add("message-content");
 
-    if (Array.isArray(data) && data.length > 0 && typeof data[0] === "object") {
+    // DEBUG: Check what the data looks like in the console
+    console.log("Table Data Received:", data);
+
+    // 2. DATA NORMALIZATION
+    // Ensure we are working with an array. If backend returns {data: [...]}, extract it.
+    let rows = Array.isArray(data) ? data : (data && data.data ? data.data : []);
+
+    if (rows.length > 0) {
+        // 3. APPLY HARD SLICE IMMEDIATELY
+        const totalRowsFound = metadata.total_rows || rows.length;
+        const isTruncated = rows.length > MAX_ROWS;
+        const displayData = rows.slice(0, MAX_ROWS); // This forces the limit
+
+        const tableContainer = document.createElement("div");
+        tableContainer.className = "table-scroll-wrapper"; 
+
         const table = document.createElement("table");
+        const keys = Object.keys(displayData[0]);
+
+        // Build Header
         const thead = document.createElement("thead");
         const headerRow = document.createElement("tr");
-        const keys = Object.keys(data[0]);
-
         keys.forEach(key => {
             const th = document.createElement("th");
             th.textContent = key;
@@ -299,24 +317,36 @@ function addDataTable(data) {
         thead.appendChild(headerRow);
         table.appendChild(thead);
 
+        // Build Body (Limited to displayData)
         const tbody = document.createElement("tbody");
-        data.forEach(row => {
+        displayData.forEach(row => {
             const tr = document.createElement("tr");
             keys.forEach(key => {
                 const td = document.createElement("td");
-                td.textContent = row[key];
+                td.textContent = row[key] !== null ? row[key] : "-";
                 tr.appendChild(td);
             });
             tbody.appendChild(tr);
         });
         table.appendChild(tbody);
-        content.appendChild(table);
-    } else if (typeof data === "object") {
-        const pre = document.createElement("pre");
-        pre.textContent = JSON.stringify(data, null, 2);
-        content.appendChild(pre);
+        tableContainer.appendChild(table);
+        content.appendChild(tableContainer);
+
+        // 4. METADATA FOOTER
+        const footer = document.createElement("div");
+        footer.className = "table-footer-info";
+        footer.style.cssText = "margin-top: 10px; font-size: 12px; color: #94a3b8; display: flex; justify-content: space-between;";
+        
+        const shapeText = metadata.total_cols ? ` (${totalRowsFound} rows × ${metadata.total_cols} cols)` : ` (${totalRowsFound} rows)`;
+        
+        footer.innerHTML = `
+            <span>Dataset size: ${shapeText}</span>
+            ${isTruncated ? `<span style="color: #60a5fa; font-weight: bold;">⚠️ Previewing first ${MAX_ROWS} rows</span>` : ""}
+        `;
+        content.appendChild(footer);
+
     } else {
-        content.textContent = String(data);
+        content.textContent = "No displayable data found.";
     }
 
     wrapper.appendChild(avatar);
@@ -726,12 +756,25 @@ async function sendMessage() {
             if (objectResult) {
                 if (objectResult.type === "image") {
                     addImage(objectResult.data);
-
                 } else if (objectResult.type === "visualization") {
                     renderVisualization(objectResult.data);
-
                 } else if (objectResult.type === "data") {
-                    addDataTable(objectResult.data);
+                    // CRITICAL FIX: Ensure we are targeting the array
+                    // If the backend returns { data: [...], total_rows: X }, we need the inner 'data'
+                    const tableData = Array.isArray(objectResult.data) ? objectResult.data : (objectResult.data.data || []);
+                    
+                    // Extract shape from the controller's final result_details or summarizer
+                    const shapeSource = data.result?.summarizer_node?.final_table_shape || 
+                                        data.result?.result_details?.resulting_object_shape || 
+                                        data.final_table_shape || 
+                                        objectResult.data;
+
+                    const metadata = {
+                        total_rows: shapeSource?.rows || shapeSource?.[0] || tableData.length,
+                        total_cols: shapeSource?.columns || shapeSource?.[1] || (tableData[0] ? Object.keys(tableData[0]).length : 0)
+                    };
+
+                    addDataTable(tableData, metadata);
                 }
             }
         }

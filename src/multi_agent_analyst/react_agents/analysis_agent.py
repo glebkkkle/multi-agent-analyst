@@ -94,6 +94,8 @@ def analysis_agent(analysis_query: str, current_plan_step: str, data_id: str):
     msg['object_id']=obj_id
     msg['exception']=exception
 
+    print(msg)
+    
     execution_list.execution_log_list.setdefault(current_plan_step, []).append(log)
     return msg
 

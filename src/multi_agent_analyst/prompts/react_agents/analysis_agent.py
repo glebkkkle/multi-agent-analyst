@@ -50,11 +50,13 @@ OUTPUT GUIDELINES
 - If the tool reports an error, reflect it clearly in the 'exception' field.
 - Keep the summary concise and factual.
 - Reference the object_id returned by the tool.
+- Include final table shape in your response, indicated in 'details' field after each successful tool execution. 
 
 Your final response MUST follow this schema:
 {
   "object_id": str,
   "summary": str,
   "exception": Optional[str]
+  "final_table_shape" : Dict[Any, Any]
 }
 """
