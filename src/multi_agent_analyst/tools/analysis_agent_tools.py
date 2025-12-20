@@ -10,10 +10,11 @@ from src.multi_agent_analyst.schemas.analysis_agent_schema import (
     GroupBySchema,
     DifferenceSchema,
     FilterSchema, 
-    SortSchema
+    SortSchema,
+    DistributionSchema
 )
 from src.multi_agent_analyst.utils.utils import object_store
-
+from scipy import stats
 import math
 
 def sanitize_for_json(obj):
@@ -358,6 +359,79 @@ def make_sort_tool(df):
         args_schema=SortSchema,
     )
 
+
+
+def make_distribution_tool(df):
+    def analyze_distribution(column: str):
+        try:
+            if column not in df.columns:
+                raise ValueError(f"Column '{column}' not found")
+
+            series = df[column].dropna()
+            if not pd.api.types.is_numeric_dtype(series):
+                raise ValueError(f"Column '{column}' must be numeric for distribution analysis")
+
+            if len(series) < 3:
+                raise ValueError("Not enough data points to determine distribution")
+
+            # Basic Statistics
+            mean_val = float(series.mean())
+            median_val = float(series.median())
+            std_val = float(series.std())
+            
+            # Shape Statistics
+            skewness = float(stats.skew(series))
+            kurtosis = float(stats.kurtosis(series))
+
+            # Normality Testing (D'Agostino's K^2 test)
+            # p < 0.05 usually means the data is NOT normally distributed
+            stat, p_val = stats.normaltest(series)
+            is_normal = p_val > 0.05
+
+            # Identify Shape for the Summary
+            if skewness > 1:
+                shape = "highly right-skewed"
+            elif skewness < -1:
+                shape = "highly left-skewed"
+            elif -0.5 < skewness < 0.5:
+                shape = "approximately symmetric"
+            else:
+                shape = "moderately skewed"
+
+            counts, bin_edges = np.histogram(series, bins='auto')
+            dist_df = pd.DataFrame({
+                "bin_start": bin_edges[:-1],
+                "bin_end": bin_edges[1:],
+                "count": counts
+            })
+            
+            dist_df = sanitize_for_json(dist_df)
+            obj_id = object_store.save(dist_df)
+
+            return {
+                "object_id": obj_id,
+                "details": {
+                    "column": column,
+                    "mean": round(mean_val, 2),
+                    "median": round(median_val, 2),
+                    "std_dev": round(std_val, 2),
+                    "skewness": round(skewness, 2),
+                    "is_normal": bool(is_normal),
+                    "normality_p_value": round(p_val, 4),
+                    "distribution_shape": shape,
+                    "table_shape": dist_df.shape
+                }
+            }
+
+        except Exception as e:
+            return {"exception": str(e)}
+
+    return StructuredTool.from_function(
+        func=analyze_distribution,
+        name="distribution_analysis",
+        description="Calculate statistical distribution metrics (mean, skew, normality) for a numeric column.",
+        args_schema=DistributionSchema,
+    )
 
 
 #might wanna add the previous exceptions/repairs along to the resolver agent, so he doesnt try the same fix twice but rethink its approach if failing, along with limits 

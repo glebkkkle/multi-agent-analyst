@@ -36,6 +36,9 @@ AVAILABLE ANALYSIS TOOLS
 - sort_rows:
     Sorts the rows by specific order
 
+-analyze_distribution:
+    Analyzes the distribution of a given column 
+
 ────────────────────────────────────────
 IMPORTANT CONSTRAINTS
 ────────────────────────────────────────

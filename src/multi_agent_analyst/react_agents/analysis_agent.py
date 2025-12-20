@@ -13,7 +13,8 @@ from src.multi_agent_analyst.tools.analysis_agent_tools import (
     make_groupby_tool, 
     make_difference_tool, 
     make_filter_tool, 
-    make_sort_tool
+    make_sort_tool, 
+    make_distribution_tool
 )
 from pydantic import BaseModel
 from src.multi_agent_analyst.prompts.react_agents.analysis_agent import ANALYST_AGENT_PROMPT
@@ -49,9 +50,11 @@ def analysis_agent(analysis_query: str, current_plan_step: str, data_id: str):
     difference_analysis=make_difference_tool(df)
     filter_rows_tool=make_filter_tool(df)
     sort_rows_tool=make_sort_tool(df)
+    analyze_distribution_tool=make_distribution_tool(df)
+
     agent = create_agent(
         openai_llm,
-        tools=[correlation_tool, anomaly_tool, summary_tool, groupby_tool, difference_analysis, sort_rows_tool, filter_rows_tool],
+        tools=[correlation_tool, anomaly_tool, summary_tool, groupby_tool, difference_analysis, sort_rows_tool,analyze_distribution_tool,filter_rows_tool],
         system_prompt=ANALYST_AGENT_PROMPT,
         response_format=ExternalAgentSchema,
     )
@@ -95,7 +98,7 @@ def analysis_agent(analysis_query: str, current_plan_step: str, data_id: str):
     msg['exception']=exception
 
     print(msg)
-    
+
     execution_list.execution_log_list.setdefault(current_plan_step, []).append(log)
     return msg
 

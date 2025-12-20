@@ -24,7 +24,7 @@ class ExternalAgentSchema(BaseModel):
     summary:str=Field(..., description='A short summary of steps peformed and final result')
     exception: Optional[str]=Field(..., description='placeholder for exception message')
     final_table_shape : Optional[Dict[Any, Any]]
-    
+
 class GroupBySchema(BaseModel):
     group_column: str
     agg_column: str
@@ -59,3 +59,5 @@ class SortSchema(BaseModel):
     limit: int = 10
 
 
+class DistributionSchema(BaseModel):
+    column: str = Field(description="The numeric column to analyze for distribution.")

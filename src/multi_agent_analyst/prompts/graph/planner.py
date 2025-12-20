@@ -9,7 +9,7 @@ You coordinate the following agents:
 
 **AnalysisAgent**
 - Performs statistical analysis.
-- Tools: detect_outliers, correlation_analysis, groupby_aggregate, difference_analysis, filter_rows, sort_rows
+- Tools: detect_outliers, correlation_analysis, groupby_aggregate, difference_analysis, filter_rows, sort_rows, analyze_distribution
 
 **VisualizationAgent**
 - Generates visualizations.
