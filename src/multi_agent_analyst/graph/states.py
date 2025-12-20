@@ -75,7 +75,7 @@ class GraphState(BaseModel):
     # INTERNAL ROUTING
     desicion: Optional[str] = None
     execution_exception: Optional[str]=None
-    retrival_mode:Optional[str]=None
+    retrieval_mode:Optional[str]=None
 
     # EXECUTION OUTPUT
     final_obj_id: Optional[str] = None

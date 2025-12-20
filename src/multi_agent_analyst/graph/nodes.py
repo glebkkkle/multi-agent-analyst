@@ -30,7 +30,7 @@ def planner_node(state: GraphState):
     print('QUERY')
     print(state.query)
     plan = llm.with_structured_output(DAGPlan).invoke(
-        PLANNER_PROMPT.format(schemas=state.dataset_schemas,query=state.query)
+        PLANNER_PROMPT.format(schemas=state.dataset_schemas,query=state.query, retrieval_mode=state.retrieval_mode)
     )
     print(plan, "\n")
     return {"plan": plan}
@@ -200,7 +200,7 @@ def chat_node(state: GraphState):
             "desicion": "planner",
             "conversation_history": new_history,
             "dataset_schemas": schemas,
-            "retrival_mode":intent.result_mode
+            "retrieval_mode":intent.result_mode
         }
 
     if intent.intent == "chat":
@@ -231,10 +231,9 @@ def execution_error_node(state: GraphState):
 
 def clean_query(state:GraphState):
     conv_history=state.conversation_history
-    print(conv_history)
+
     response=llm.with_structured_output(CleanQueryState).invoke(cleaned_query.format(original_query=state.query, session_context=conv_history))
     print(' ')
-    print(cleaned_query.format(original_query=state.query, session_context=conv_history))
     print(' ')
     print(response.planner_query)
     return {"query":response.planner_query}

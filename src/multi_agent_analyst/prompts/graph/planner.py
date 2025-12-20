@@ -76,6 +76,20 @@ Only use conditional branching when the user’s request logically depends on an
 - Inputs must reference only outputs from previous nodes;  
   do NOT include multiple inputs unless they are truly required.
 
+- Data Retrieval Governance
+  IMPORTANT: You must check the provided result_mode before writing DataAgent sub-queries.
+
+  IF result_mode == 'preview':
+
+    You MUST explicitly include the phrase "limit to 200 rows" in the sub_query for the DataAgent.
+
+    Purpose: To provide a quick data snapshot without loading the entire dataset.
+
+  IF result_mode == 'analysis':
+
+    You MUST NOT add a row limit.
+
+  {retrieval_mode}
 ----------------------------------------------------------------------
 OBJECT ID RULE
 ----------------------------------------------------------------------

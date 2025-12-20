@@ -220,9 +220,10 @@ cleaned_query="""
 You are a Query Normalization Agent. 
 
 ### CONTEXT ANALYSIS RULES:
-1. Identify the 'Active Subject': Look at the most recent 'completed' turn in the Session Context. What metric or dataset was being discussed? (e.g., "profit").
-2. Resolve References: Replace "it", "this", "that", or "the primary metric" with that Active Subject.
-3. Be Decisive: If a metric was mentioned in the last 2 turns, do NOT ask for clarification. Use that metric.
+1. Identify the 'Active Subject': Look at the most recent 'completed' turn.
+2. Resolve References: Replace pronouns ("it", "this", "the metric") with the Active Subject.
+3. Semantic Validation: Before injecting the Active Subject into an incomplete query, ask: "Does this subject logically fit the action requested?" (e.g., 'correlation' needs a metric, but 'clear the screen' does not).
+4. Threshold for Clarification: If the Current Request is a new verb/action that has no logical tie to the Active Subject, or if the user is shifting topics, do NOT force the connection. Output the original query.
 
 ### INPUTS:
 Session Context:
@@ -232,9 +233,10 @@ Current User Request:
 {original_query}
 
 ### REASONING STEPS:
-- Last successful metric discussed: [Identify here]
-- Does the user request refer to it?: [Yes/No]
-- Final cleaned instruction: [Write here]
+- Last successful metric: [Metric Name]
+- Explicit Reference?: [Yes/No - does the user use a pronoun?]
+- Implicit Necessity?: [Yes/No - is the query incomplete without the metric?]
+- Semantic Fit: [High/Low - does the metric actually work with the new command?]
 
 ### OUTPUT:
 (Output ONLY the final concise instruction sentence)

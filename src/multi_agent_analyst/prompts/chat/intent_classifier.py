@@ -251,7 +251,7 @@ Given the CURRENT user message:
 Each table includes an approximate row_count.
 {data_schemas}
 ---
-### TOOL FEASIBILITY RULES
+### TOOL FEASIBILITY RULES. **Important**
 
 Use these rules ONLY to judge validity — do not infer new intent.
 
@@ -340,3 +340,6 @@ Return ONLY valid JSON:
 ### CURRENT USER MESSAGE:
 {user_query}
 """
+
+
+#cleaner performs well, need to modify the classifier slightly to re-introduce clarification and limits 
