@@ -2,6 +2,8 @@ from langgraph.graph import StateGraph, END
 from langgraph.checkpoint.memory import InMemorySaver
 from src.multi_agent_analyst.graph.nodes import planner_node, final_result_node, critic, router_node, routing,clean_query, revision_node, revision_router, allow_execution, execution_error_node,summarizer_node, chat_node, chat_reply, ask_user_node
 from src.multi_agent_analyst.graph.states import GraphState
+from src.backend.storage.redis_client import checkpointer
+
 
 
 graph = StateGraph(GraphState)
@@ -38,7 +40,7 @@ graph.add_conditional_edges('router_node', routing,{'ok':'final_result_node', 'e
 graph.add_edge('final_result_node', END)
 graph.add_edge('execution_error', END)
 
-g = graph.compile(checkpointer=InMemorySaver())
+g = graph.compile(checkpointer=checkpointer)
 
 
 #decrease latency by improving the graph structure 

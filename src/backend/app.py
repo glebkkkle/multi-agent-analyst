@@ -25,14 +25,23 @@ from fastapi import Depends
 import redis
 import time
 import json 
+from contextlib import asynccontextmanager
 from uuid import uuid4
 from src.backend.storage.thread_store import RedisSessionStore, RedisThreadMeta
 from src.multi_agent_analyst.db.conversation_store  import ThreadConversationStore
+from src.backend.storage.redis_client import checkpointer
+
 conversation_store = ThreadConversationStore()
 
 MAX_CLARIFICATIONS=3
 
 app = FastAPI()
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # startup
+    checkpointer.setup()
+    yield
 
 
 redis_client = redis.Redis(host="localhost", port=6379, decode_responses=True)

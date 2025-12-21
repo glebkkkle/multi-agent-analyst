@@ -9,13 +9,11 @@ from src.multi_agent_analyst.tools.data_agent_tools import (
     make_merge_tool,
     make_schema_list
 )
-
 import json
 from src.multi_agent_analyst.prompts.react_agents.data_agent import DATA_AGENT_PROMPT
 from src.multi_agent_analyst.utils.utils import context, current_tables,ExecutionLogEntry, execution_list, object_store, create_log
 from src.multi_agent_analyst.schemas.data_agent_schema import ExternalAgentSchema
 openai_llm = ChatOpenAI(model="gpt-5-mini")
-
 
 @tool
 def data_agent(data_agent_query: str, current_plan_step: str):
