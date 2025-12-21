@@ -19,8 +19,9 @@ from src.multi_agent_analyst.tools.analysis_agent_tools import (
 from pydantic import BaseModel
 from src.multi_agent_analyst.prompts.react_agents.analysis_agent import ANALYST_AGENT_PROMPT
 from src.multi_agent_analyst.schemas.analysis_agent_schema import ExternalAgentSchema
-from src.multi_agent_analyst.utils.utils import context, object_store, load_and_validate_df
+from src.multi_agent_analyst.utils.utils import context, object_store, load_and_validate_df, generate_data_preview
 from src.multi_agent_analyst.utils.utils import execution_list, ExecutionLogEntry
+
 openai_llm = ChatOpenAI(model="gpt-5-mini")
 
 class AnalysisAgentArgs(BaseModel):
@@ -36,7 +37,9 @@ def analysis_agent(analysis_query: str, current_plan_step: str, data_id: str):
     print(' ')
 
     df, error = load_and_validate_df(data_id)
-
+    print(' ')
+    data_overview=generate_data_preview(data_id)
+    print(' ')
     if error:
         return {"status":"error",
                 "object_id":None,
@@ -55,7 +58,7 @@ def analysis_agent(analysis_query: str, current_plan_step: str, data_id: str):
     agent = create_agent(
         openai_llm,
         tools=[correlation_tool, anomaly_tool, summary_tool, groupby_tool, difference_analysis, sort_rows_tool,analyze_distribution_tool,filter_rows_tool],
-        system_prompt=ANALYST_AGENT_PROMPT,
+        system_prompt=ANALYST_AGENT_PROMPT.format(data_preview=data_overview),
         response_format=ExternalAgentSchema,
     )
 
@@ -102,10 +105,4 @@ def analysis_agent(analysis_query: str, current_plan_step: str, data_id: str):
     execution_list.execution_log_list.setdefault(current_plan_step, []).append(log)
     return msg
 
-#make resolver abort if the execution is not bounded based on the user query and cannot be fixed
-
-#provide more structured info to the resolver?
-
-
-#must assume that for analysis you  receive a dataframe, whatever form or shape that might be. And the tools must be able to correctly perform the computation on this dataset.
-#Same goes for returning. Must always return a dataset in some form.
+#PASSING THE PREVIEW (and schema/description) OF THE DATA TO THE AGENTS !

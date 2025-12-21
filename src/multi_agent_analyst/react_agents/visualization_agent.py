@@ -15,7 +15,7 @@ from src.multi_agent_analyst.tools.visualization_agent_tools import (
     make_table_visualization_tool,
     make_bar_chart_tool
 )
-from src.multi_agent_analyst.utils.utils import context, object_store, execution_list, ExecutionLogEntry
+from src.multi_agent_analyst.utils.utils import context, object_store, execution_list, ExecutionLogEntry, generate_data_preview
 
 openai_llm = ChatOpenAI(model="gpt-5-mini")
 @tool(description="Visualization agent returning images/tables based on query.")
@@ -31,6 +31,9 @@ def visualization_agent(visualizer_query: str, current_plan_step: str, data_id: 
                 "object_id":None,
                 "exception":str(e)
                 }
+    print(' ')
+    data_overview=generate_data_preview(data_id)
+    print(' ')
     tools = [
         make_line_plot_tool(df),
         make_scatter_plot_tool(df),
@@ -42,7 +45,7 @@ def visualization_agent(visualizer_query: str, current_plan_step: str, data_id: 
     agent = create_agent(
         openai_llm,
         tools=tools,
-        system_prompt=VISUALIZATION_AGENT_PROMPT,
+        system_prompt=VISUALIZATION_AGENT_PROMPT.format(data_overview=data_overview),
         response_format=ExternalAgentSchema,
     )
 

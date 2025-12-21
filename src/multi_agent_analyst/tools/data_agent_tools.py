@@ -22,13 +22,14 @@ def make_sql_query_tool():
     def sql_query(query: str):
         print(query)
         try:
-            df = pd.read_sql_query(query, conn)
-            conn.close()
+            with conn:
+                df = pd.read_sql_query(query, conn)
 
         except Exception as e:  
             return {
                 'error_message':str(e), 
             }
+
         obj_id=object_store.save(df)
         return {
                 "object_id": obj_id,

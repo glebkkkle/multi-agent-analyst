@@ -65,3 +65,14 @@ def create_log(agent, exception, status, id,output_object_id, sub_query):
     log=ExecutionLogEntry(id=id, agent=agent, sub_query=sub_query, status=status, output_object_id=output_object_id, error_message=exception)
     execution_list.execution_log_list.setdefault(id, []).append(log)
     return log
+
+def generate_data_preview(object_id):
+    df, error=load_and_validate_df(object_id)
+    if error:
+        return {"exception":error}
+    
+    types_schema=df.dtypes.to_dict()
+    sample=df.head(3).to_dict(orient='records')
+
+    return f"Object {object_id} CONTEXT:\nColumns: {types_schema}\nSample: {sample}"
+

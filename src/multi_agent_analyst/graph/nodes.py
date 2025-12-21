@@ -18,6 +18,8 @@ from src.multi_agent_analyst.prompts.chat.chat_reply_prompt import CHAT_REPLY_PR
 
 ollama_llm=ChatOllama(model='gpt-oss:20b', temperature=0)
 llm=ChatOpenAI(model="gpt-5.2")
+openai_llm=ChatOpenAI(model="gpt-5-mini")
+
 
 #maybe use sql tool to only identify the appropriate database, and use select columns to format the db appropriately for later use
 #might have to fix the planner 
@@ -222,7 +224,7 @@ def chat_node(state: GraphState):
         }
 
 def chat_reply(state: GraphState):
-    reply = llm.invoke(CHAT_REPLY_PROMPT.format(user_query=state.query, conversation_history=state.conversation_history, data_list=state.dataset_schemas))
+    reply = openai_llm.invoke(CHAT_REPLY_PROMPT.format(user_query=state.query, conversation_history=state.conversation_history, data_list=state.dataset_schemas))
     return {"final_response": reply.content}
 
 def execution_error_node(state: GraphState):
@@ -242,7 +244,7 @@ def execution_error_node(state: GraphState):
 def clean_query(state:GraphState):
     conv_history=state.conversation_history
 
-    response=llm.with_structured_output(CleanQueryState).invoke(cleaned_query.format(original_query=state.query, session_context=conv_history))
+    response=openai_llm.with_structured_output(CleanQueryState).invoke(cleaned_query.format(original_query=state.query, session_context=conv_history))
     print(' ')
     print(' ')
     print(response.planner_query)
