@@ -11,44 +11,43 @@ from src.multi_agent_analyst.schemas.data_agent_schema import (
 from src.multi_agent_analyst.db.db_core import get_thread_conn
 
 from src.multi_agent_analyst.utils.utils import object_store, current_tables
+import pandas as pd
+from langchain_core.tools import StructuredTool
 
-
-#need to make sure executes from the correct thread_id tables
+from src.multi_agent_analyst.db.db_core import engine, get_thread_conn
+from src.multi_agent_analyst.utils.utils import object_store, current_tables, normalize_dataframe_types
 
 def make_sql_query_tool():
-    """Factory: returns a SQL query execution tool."""
-    conn=get_thread_conn(list(current_tables.keys())[0])
-    
+    thread_id = list(current_tables.keys())[0]
+
     def sql_query(query: str):
-        print(query)
+
+        conn = get_thread_conn(thread_id)
+        
         try:
-            with conn:
-                df = pd.read_sql_query(query, conn)
-
-        except Exception as e:  
+            df = pd.read_sql_query(query, conn)
+            df=normalize_dataframe_types(df)
+                        
+            obj_id = object_store.save(df)
             return {
-                'error_message':str(e), 
-            }
-
-        obj_id=object_store.save(df)
-        return {
                 "object_id": obj_id,
-                "details": {
-                        "row_count": len(df),
-                        "column_count": len(df.columns),
-                        "columns": list(df.columns)[:20],
-                    },
+                "details": {"row_count": len(df)}
             }
+        except Exception as e:
+            return {'error_message': str(e)}
+        finally:
+
+            conn.close()
 
     return StructuredTool.from_function(
         func=sql_query,
         name="sql_query",
-        description="Executes an SQL query on company_data.db and returns the result.",
+        description="Executes an SQL query on the database and returns the result.",
         args_schema=SQLQuerySchema,
     )
+
 def make_schema_list(schemas):
     def list_available_data():
-        # Convert inner objects → readable strings
         readable = []
 
         for schema in schemas:

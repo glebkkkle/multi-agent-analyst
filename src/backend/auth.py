@@ -1,4 +1,3 @@
-# src/backend/auth.py
 from datetime import datetime, timedelta
 from typing import Optional
 
@@ -6,14 +5,15 @@ from fastapi import Depends, HTTPException, status, Request
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 from pydantic import BaseModel
-from src.multi_agent_analyst.db.db_core import conn  
+# 1. Update the import
+from src.multi_agent_analyst.db.db_core import get_conn  
 
 # JWT CONFIG
-SECRET_KEY = "RANDKEY123"  # env var in prod
+SECRET_KEY = "RANDKEY123"  
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24  # 1 day
+ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24  
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/login_raw")  # token URL = your login endpoint
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/login_raw")
 
 class Token(BaseModel):
     access_token: str
@@ -55,14 +55,18 @@ def decode_access_token(token: str) -> TokenData:
             detail="Could not validate credentials",
         )
 
-# DB helper: load user
+# 2. Refactor the DB helper to use a context manager
 def get_user_by_id(user_id: int) -> Optional[CurrentUser]:
-    cur = conn.cursor()
-    cur.execute("SELECT id, email, thread_id FROM users WHERE id = %s", (user_id,))
-    row = cur.fetchone()
-    cur.close()
+    """Retrieves user info using a pooled connection."""
+    # Use 'with' to ensure the connection returns to the pool automatically
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute("SELECT id, email, thread_id FROM users WHERE id = %s", (user_id,))
+            row = cur.fetchone()
+            
     if not row:
         return None
+        
     uid, email, thread_id = row
     return CurrentUser(id=uid, email=email, thread_id=thread_id)
 
@@ -70,11 +74,13 @@ def get_user_by_id(user_id: int) -> Optional[CurrentUser]:
 async def get_current_user(token: str = Depends(oauth2_scheme)) -> CurrentUser:
     token_data = decode_access_token(token)
     user = get_user_by_id(token_data.user_id)
+    
     if user is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="User not found",
         )
+        
     if user.thread_id != token_data.thread_id:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

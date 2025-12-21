@@ -296,8 +296,6 @@ function addDataTable(data, metadata = {}) {
 
     if (rows.length > 0) {
         // 3. APPLY HARD SLICE IMMEDIATELY
-        const totalRowsFound = metadata.total_rows || rows.length;
-        const isTruncated = rows.length > MAX_ROWS;
         const displayData = rows.slice(0, MAX_ROWS); // This forces the limit
 
         const tableContainer = document.createElement("div");
@@ -332,18 +330,7 @@ function addDataTable(data, metadata = {}) {
         tableContainer.appendChild(table);
         content.appendChild(tableContainer);
 
-        // 4. METADATA FOOTER
-        const footer = document.createElement("div");
-        footer.className = "table-footer-info";
-        footer.style.cssText = "margin-top: 10px; font-size: 12px; color: #94a3b8; display: flex; justify-content: space-between;";
-        
-        const shapeText = metadata.total_cols ? ` (${totalRowsFound} rows × ${metadata.total_cols} cols)` : ` (${totalRowsFound} rows)`;
-        
-        footer.innerHTML = `
-            <span>Dataset size: ${shapeText}</span>
-            ${isTruncated ? `<span style="color: #60a5fa; font-weight: bold;">⚠️ Previewing first ${MAX_ROWS} rows</span>` : ""}
-        `;
-        content.appendChild(footer);
+        // FOOTER REMOVED PER REQUEST
 
     } else {
         content.textContent = "No displayable data found.";

@@ -1,81 +1,78 @@
-import psycopg2
 import io
-from datetime import datetime
+import pandas as pd
+from sqlalchemy import create_engine, text
+from sqlalchemy.pool import QueuePool
 
-import warnings
-warnings.filterwarnings("ignore", message="pandas only supports SQLAlchemy")
+# 1. Create the persistent Engine
+# This manages the pool of connections automatically.
+from contextlib import contextmanager
+from sqlalchemy import create_engine
+from sqlalchemy.pool import QueuePool
+
+DATABASE_URL = "postgresql://glebkle:123@localhost:5432/multi_analyst"
+engine = create_engine(DATABASE_URL, pool_size=10, max_overflow=20)
+
+@contextmanager 
+def get_conn():
+    """Context manager that yields a connection and returns it to the pool."""
+    conn = engine.raw_connection()
+    try:
+        yield conn # 3. 'Yield' the connection to the 'with' block
+    finally:
+        # 4. This ensures the connection is ALWAYS returned to the pool
+        conn.close() 
+
+from sqlalchemy import text 
 
 def get_thread_conn(thread_id):
-    conn = psycopg2.connect(
-    dbname="multi_analyst",
-    user="glebkle",
-    password="123",
-    host="localhost",
-    port=5432
-)
-    cur = conn.cursor()
-
-    if thread_id is not None:
-        cur.execute(f"SET search_path TO {thread_id}, public;")
-
+    """Returns a SQLAlchemy Connection object with the search_path set."""
+    conn = engine.connect() 
+    
+    if thread_id:
+        # Use .execute(text(...)) for SQLAlchemy compatibility
+        conn.execute(text(f'SET search_path TO "{thread_id}", public;'))
+        
     return conn
-
-
-conn = psycopg2.connect(
-    dbname="multi_analyst",
-    user="glebkle",
-    password="123",
-    host="localhost",
-    port=5432
-)
-
-def get_conn():
-    conn = psycopg2.connect(
-    dbname="multi_analyst",
-    user="glebkle",
-    password="123",
-    host="localhost",
-    port=5432
-)
-    return conn 
 
 def create_table(schema_name, table_name, columns):
     cols = ", ".join([f'"{col}" {dtype}' for col, dtype in columns.items()])
     sql = f'CREATE TABLE IF NOT EXISTS "{schema_name}"."{table_name}" ({cols});'
-
-    with get_conn() as conn:
-        with conn.cursor() as cur:
-            cur.execute(sql)
-        conn.commit()
+    
+    # Using 'with' on the engine directly is cleaner for simple executions
+    with engine.begin() as conn:
+        conn.execute(text(sql))
 
 def copy_dataframe(schema_name, table_name, df):
     csv_buffer = io.StringIO()
     df.to_csv(csv_buffer, index=False, header=False)
     csv_buffer.seek(0)
 
-    with get_conn() as conn:
+    # We get a raw connection for the copy_expert feature
+    conn = get_conn()
+    try:
         with conn.cursor() as cur:
             cur.copy_expert(
                 f'COPY "{schema_name}"."{table_name}" FROM STDIN WITH CSV',
                 csv_buffer
             )
         conn.commit()
+    finally:
+        conn.close() # Returns it to the pool
 
 def register_data_source(thread_id: str, table_name: str, filename: str):
-    with get_conn() as conn:
-        with conn.cursor() as cur:
-            cur.execute("""
-                INSERT INTO data_sources (thread_id, table_name, original_filename)
-                VALUES (%s, %s, %s)
-                RETURNING id;
-            """, (thread_id, table_name, filename))
-            new_id = cur.fetchone()[0]
-        conn.commit()
-    return new_id
-
+    sql = """
+        INSERT INTO data_sources (thread_id, table_name, original_filename)
+        VALUES (:thread_id, :table_name, :filename)
+        RETURNING id;
+    """
+    with engine.begin() as conn:
+        result = conn.execute(text(sql), {
+            "thread_id": thread_id, 
+            "table_name": table_name, 
+            "filename": filename
+        })
+        return result.fetchone()[0]
 
 def ensure_schema(schema_name):
-    with get_conn() as conn:
-        with conn.cursor() as cur:
-            cur.execute(f'CREATE SCHEMA IF NOT EXISTS "{schema_name}";')
-        conn.commit()
+    with engine.begin() as conn:
+        conn.execute(text(f'CREATE SCHEMA IF NOT EXISTS "{schema_name}";'))

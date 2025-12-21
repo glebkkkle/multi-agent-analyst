@@ -7,48 +7,85 @@ from langchain_core.tools import StructuredTool
 from src.multi_agent_analyst.schemas.visualization_agent_schema import (
     PieChartSchema,
     TableVisualizationSchema,
-    BarPlotSchema
+    BarPlotSchema, 
+    ScatterPlotSchema, 
+    LinePlotSchema
 )
+from typing import List
+
+
 from src.multi_agent_analyst.utils.utils import object_store, viz_json
 
+# def make_scatter_plot_tool(df):
+#     """Beautiful scatter plot with gradient colors and styling."""
+
+#     def scatter_plot():
+#         try:
+#             numeric_cols = df.select_dtypes(include=['float', 'int']).columns
+
+#             if len(numeric_cols) < 2:
+#                 return {'object_id':None, 
+#                         'details':'Failed',
+#                         'plot_type':'scatter plot',
+#                         'exception': str(ValueError('Not enough nummerical column provided for the scatter plot.'))        
+#                     }
+
+#             x_col, y_col = numeric_cols[:2]
+
+#             vis_json = {
+#                 "type": "visualization",
+#                 "plot_type": "scatter",
+#                 "x": df[x_col].tolist(),
+#                 "y": df[y_col].tolist(),
+#                 "labels": {"x": x_col, "y": y_col},
+#                 "title": f"{y_col} vs {x_col}"
+#             }
+            
+
+#             obj_id=object_store.save(vis_json)
+#             return{
+#                 'object_id':obj_id, 
+#                 'details':{
+#                     'plot_type':'scatter plot',
+#                     'x':x_col,
+#                     'y':y_col
+#                 }
+#             }
+        
+#         except Exception as e:
+#             return {'object_id':None, 
+#                     'details':'Failed',
+#                     'plot_type':'scatter plot',
+#                     'x':x_col,
+#                     'y':y_col,
+#                     'exception':str(e)               
+#                 }
+#     return StructuredTool.from_function(
+#         func=scatter_plot,
+#         name="scatter_plot",
+#         description="Beautiful scatter plot with gradient colors based on numeric columns.",
+#         args_schema=ScatterPlotSchema,
+#     )
 
 def make_scatter_plot_tool(df):
-    """Beautiful scatter plot with gradient colors and styling."""
-
-    def scatter_plot():
+    def scatter_plot(x_axis: str , y_axis: str):
         try:
-            numeric_cols = df.select_dtypes(include=['float', 'int']).columns
+            numeric_cols = df.select_dtypes(include=['number']).columns.tolist()
+            x_col = x_axis if x_axis in df.columns else (numeric_cols[0] if numeric_cols else None)
+            y_col = y_axis if y_axis in df.columns else (numeric_cols[1] if len(numeric_cols) > 1 else None)
 
-            if len(numeric_cols) < 2:
-                return {'object_id':None, 
-                        'details':'Failed',
-                        'plot_type':'scatter plot',
-                        'exception': str(ValueError('Not enough nummerical column provided for the scatter plot.'))        
-                    }
+            if not x_col or not y_col:
+                raise ValueError("Insufficient numeric data for scatter plot.")
 
-            x_col, y_col = numeric_cols[:2]
-
-            # Create figur
-            
             vis_json = {
                 "type": "visualization",
                 "plot_type": "scatter",
                 "x": df[x_col].tolist(),
                 "y": df[y_col].tolist(),
                 "labels": {"x": x_col, "y": y_col},
-                "title": f"{y_col} vs {x_col}"
             }
-            
-
-            obj_id=object_store.save(vis_json)
-            return{
-                'object_id':obj_id, 
-                'details':{
-                    'plot_type':'scatter plot',
-                    'x':x_col,
-                    'y':y_col
-                }
-            }
+            obj_id = object_store.save(vis_json)
+            return {"object_id": obj_id, "status": "success", "type": "visualization"}
         
         except Exception as e:
             return {'object_id':None, 
@@ -58,106 +95,205 @@ def make_scatter_plot_tool(df):
                     'y':y_col,
                     'exception':str(e)               
                 }
+        
     return StructuredTool.from_function(
         func=scatter_plot,
         name="scatter_plot",
-        description="Beautiful scatter plot with gradient colors based on numeric columns.",
-        args_schema=TableVisualizationSchema,
+        description="Creates a scatter plot. Agent must specify x_axis and y_axis from available columns.",
+        args_schema=ScatterPlotSchema
     )
 
 
-def make_line_plot_tool(df):
-    """Elegant line plot with smooth curves and beautiful styling."""
 
-    def line_plot():
-        try:
-            # Find date column
-            date_col = None
-            for col in df.columns:
-                if "date" in col.lower():
-                    date_col = col
-                    break
+# def make_line_plot_tool(df):
+#     """Elegant line plot with smooth curves and beautiful styling."""
 
-            if date_col is None:
-                print(' ')
-                print('❌CURRENT EXCEPTION:')
-                print("Line plot requires a date column.")
-                raise ValueError("Line plot requires a date column.")
+#     def line_plot():
+#         try:
+#             # Find date column
+#             date_col = None
+#             for col in df.columns:
+#                 if "date" in col.lower():
+#                     date_col = col
+#                     break
 
-            # Choose first numeric column
-            numeric_cols = df.select_dtypes(include=['float', 'int']).columns
-            if len(numeric_cols) == 0:
-                raise ValueError("No numeric column to plot.")
+#             if date_col is None:
+#                 print(' ')
+#                 print('❌CURRENT EXCEPTION:')
+#                 print("Line plot requires a date column.")
+#                 raise ValueError("Line plot requires a date column.")
 
-            y_col = numeric_cols[0]
+#             # Choose first numeric column
+#             numeric_cols = df.select_dtypes(include=['float', 'int']).columns
+#             if len(numeric_cols) == 0:
+#                 raise ValueError("No numeric column to plot.")
 
-            x_data = range(len(df))
-            y_data = df[y_col].values
+#             y_col = numeric_cols[0]
+
+#             x_data = range(len(df))
+#             y_data = df[y_col].values
             
 
 
-            x_data = list(range(len(df)))          
-            y_data = df[y_col].astype(float).tolist()  
+#             x_data = list(range(len(df)))          
+#             y_data = df[y_col].astype(float).tolist()  
+#             vis_json = {
+#                 "type": "visualization",
+#                 "plot_type": "line_plot",
+#                 "x": x_data,
+#                 "y": y_data,
+#                 "labels": {"x": date_col, "y": y_col},
+#                 "title": ' '
+#             }
+
+#         except Exception as e:
+#             return {'object_id':None, 
+#                     'details':'Failed',
+#                     'plot_type':'line plot',
+#                     'exception':str(e)               
+#                 }
+#         obj_id=object_store.save(vis_json)
+#         return{
+#                 'object_id':obj_id, 
+#                 'details':{
+#                     'plot_type':'line_plot',
+#                     'x':date_col,
+#                     'y':y_col
+#                 }
+#             }
+
+#     return StructuredTool.from_function(
+#         func=line_plot,
+#         name="line_plot",
+#         description="Elegant line plot with smooth curves and gradient fill.",
+#         args_schema=TableVisualizationSchema,
+#     )
+
+def make_line_plot_tool(df):
+    def line_plot(x_axis: str , y_axis: str ):
+        try:
+            if not x_axis:
+                for col in df.columns:
+                    if "date" in col.lower() or "time" in col.lower():
+                        x_axis = col
+                        break
+            
+            y_col = y_axis if y_axis in df.columns else df.select_dtypes(include=['number']).columns[0]
+
+            temp_df = df.sort_values(by=x_axis) if x_axis in df.columns else df
+
             vis_json = {
                 "type": "visualization",
                 "plot_type": "line_plot",
-                "x": x_data,
-                "y": y_data,
-                "labels": {"x": date_col, "y": y_col},
-                "title": ' '
+                "x": temp_df[x_axis].tolist() if x_axis in temp_df.columns else list(range(len(temp_df))),
+                "y": temp_df[y_col].astype(float).tolist(),
+                "labels": {"x": x_axis or "Index", "y": y_col},
             }
-
+        
+            obj_id = object_store.save(vis_json)
+            return {"object_id": obj_id, "status": "success"}
+        
         except Exception as e:
             return {'object_id':None, 
                     'details':'Failed',
                     'plot_type':'line plot',
                     'exception':str(e)               
                 }
-        obj_id=object_store.save(vis_json)
-        return{
-                'object_id':obj_id, 
-                'details':{
-                    'plot_type':'line_plot',
-                    'x':date_col,
-                    'y':y_col
-                }
-            }
 
     return StructuredTool.from_function(
         func=line_plot,
         name="line_plot",
-        description="Elegant line plot with smooth curves and gradient fill.",
-        args_schema=TableVisualizationSchema,
+        description="Creates a line plot. Best for trends. Specify a date/time column for x_axis.",
+        args_schema=LinePlotSchema
     )
+
+
+
 
 #fix pie chart
 #tighten the prompting to the react, so that always return object ids!!!!
 #fix the simple chatting node 
 
 
+# def make_pie_chart_tool(df):
+#     """Modern pie chart with beautiful gradients and styling, no params needed."""
+
+#     def pie_chart():
+#         try:
+#             # Ensure dataframe has data
+#             if df.empty:
+#                 raise ValueError("Dataframe is empty, cannot create pie chart.")
+
+#             num_df=df.select_dtypes(include=['float', 'int'])
+
+#             # Column names are the labels
+#             labels = num_df.columns.tolist()
+
+#             # First row values are used for the pie chart
+#             values = num_df.iloc[0].tolist()
+
+#             vis_json = {
+#                 "type": "visualization",
+#                 "plot_type": "pie_chart",
+#                 "labels": labels,
+#                 'values':values,
+#                 "title": " "
+#             }
+
+#         except Exception as e:
+#             return{
+#                  'object_id':None, 
+#                     'details':'Failed',
+#                     'plot_type':'pie chart',
+#                     'columns':labels,
+#                     'exception':str(e)               
+#                 }
+
+#         obj_id=object_store.save(vis_json)
+        
+#         return {
+#                 'object_id':obj_id, 
+#                 'details':{
+#                     'plot_type':'pie_chat',
+#                     'columns':labels,
+#                 }
+#             }
+
+#     # Tool wrapper
+#     return StructuredTool.from_function(
+#         func=pie_chart,
+#         name="pie_chart",
+#         description="Generate a modern pie chart using all dataframe columns.",
+#         args_schema=None   # IMPORTANT: no args
+#     )
+
 def make_pie_chart_tool(df):
-    """Modern pie chart with beautiful gradients and styling, no params needed."""
-
-    def pie_chart():
+    def pie_chart(column_names: List[str]):
         try:
-            # Ensure dataframe has data
-            if df.empty:
-                raise ValueError("Dataframe is empty, cannot create pie chart.")
+            missing = [c for c in column_names if c not in df.columns]
+            if missing:
+                raise ValueError(f"Columns not found in dataframe: {', '.join(missing)}")
 
-            num_df=df.select_dtypes(include=['float', 'int'])
+            subset = df[column_names].select_dtypes(include=['number'])
+            values = subset.sum().astype(float).tolist()
+            labels = subset.columns.tolist()
 
-            # Column names are the labels
-            labels = num_df.columns.tolist()
-
-            # First row values are used for the pie chart
-            values = num_df.iloc[0].tolist()
+            if not values:
+                raise ValueError("None of the selected columns contain numeric data.")
 
             vis_json = {
                 "type": "visualization",
                 "plot_type": "pie_chart",
                 "labels": labels,
-                'values':values,
-                "title": " "
+                "values": values,
+            }
+
+            obj_id = object_store.save(vis_json)
+            
+            return {
+                "object_id": obj_id, 
+                "status": "success",
+                "details": f"Generated pie chart for: {', '.join(labels)}"
             }
 
         except Exception as e:
@@ -169,23 +305,13 @@ def make_pie_chart_tool(df):
                     'exception':str(e)               
                 }
 
-        obj_id=object_store.save(vis_json)
-        
-        return {
-                'object_id':obj_id, 
-                'details':{
-                    'plot_type':'pie_chat',
-                    'columns':labels,
-                }
-            }
-
-    # Tool wrapper
     return StructuredTool.from_function(
         func=pie_chart,
         name="pie_chart",
-        description="Generate a modern pie chart using all dataframe columns.",
-        args_schema=None   # IMPORTANT: no args
+        description="Creates a pie chart comparing different numeric columns. Pass a list of column names.",
+        args_schema=PieChartSchema
     )
+
 
 def make_bar_chart_tool(df):
     """Beautiful bar chart with gradients and modern styling."""
@@ -211,8 +337,6 @@ def make_bar_chart_tool(df):
                 "title": "BAR PLOT"
             }
 
-           
-            
         except Exception as e:
             return {'exception': e}
         

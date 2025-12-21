@@ -1,6 +1,7 @@
 import uuid
 from typing import List, Optional, Dict, Any
 from pydantic import BaseModel
+import pandas as pd 
 
 class ObjectStore:
     def __init__(self):
@@ -76,3 +77,34 @@ def generate_data_preview(object_id):
 
     return f"Object {object_id} CONTEXT:\nColumns: {types_schema}\nSample: {sample}"
 
+
+def normalize_dataframe_types(df: pd.DataFrame) -> pd.DataFrame:
+    df = df.copy()
+
+    for col in df.columns:
+        s = df[col]
+
+        if s.dtype == object:
+            try:
+                parsed = pd.to_datetime(s, errors="raise", utc=False)
+                df[col] = parsed
+                continue
+            except Exception:
+                pass
+
+        if s.dtype == object:
+            numeric = pd.to_numeric(s, errors="coerce")
+            if not numeric.isna().all():
+                df[col] = numeric
+                continue
+
+        if pd.api.types.is_integer_dtype(s):
+            df[col] = s.astype("Int64")  
+
+        elif pd.api.types.is_float_dtype(s):
+            df[col] = s.astype("float64")
+
+        elif s.dtype == object:
+            df[col] = s.astype("string")
+
+    return df

@@ -24,5 +24,3 @@ controller_agent = create_agent(
     response_format=ExternalAgentSchema,
 )
 
-#alright so the left tasks are : figure out something about agents operating blindly with the data they receive 
-#add analysis tool about distribution 

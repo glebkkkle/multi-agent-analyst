@@ -1,23 +1,30 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 from typing import List, Optional
 
 
 class LinePlotSchema(BaseModel):
-    pass
+    model_config = ConfigDict(extra="forbid")
+    x_axis: str= Field(..., description="The column name for the X axis")
+    y_axis: str = Field(..., description="The column name for the Y axis")
+
 
 class ScatterPlotSchema(BaseModel):
-    pass
+    model_config = ConfigDict(extra="forbid")
+    x_axis: str = Field(..., description="The column name for the X axis")
+    y_axis: str = Field(..., description="The column name for the Y axis")
+
 
 class PieChartSchema(BaseModel):
-    column_names:List[str]=Field(..., description='The names of the target columns for the pie chart')
+    model_config = ConfigDict(extra="forbid")
+    column_names: List[str] = Field(..., description="The names of the target columns for the pie chart")
 
 class TableVisualizationSchema(BaseModel):
-    pass
+    model_config = ConfigDict(extra="forbid")
 
 class BarPlotSchema(BaseModel):
-    pass
+    model_config = ConfigDict(extra="forbid")
 
 class ExternalAgentSchema(BaseModel):
-    object_id:str=Field(..., description='A final ID of the object after all the modification completed.')
-    summary:str=Field(..., description='A short summary of steps peformed and final result')
-    exception: Optional[str]=Field(..., description='placeholder for exception message')
+    object_id: str = Field(..., description="Final object ID after all modifications")
+    summary: str = Field(..., description="Short summary of steps performed and final result")
+    exception: Optional[str] = Field(None, description="Exception message if any")
