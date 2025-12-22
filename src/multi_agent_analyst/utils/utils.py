@@ -3,21 +3,48 @@ from typing import List, Optional, Dict, Any
 from pydantic import BaseModel
 import pandas as pd 
 
-class ObjectStore:
+import uuid
+import pickle
+from typing import Any
+import redis
+
+from src.backend.config import settings
+
+
+class RedisObjectStore:
+    """
+    Redis-backed object store for intermediate artifacts.
+    Used for DataFrames, analysis results, visualization specs, etc.
+    """
+
     def __init__(self):
-        self.store = {}
-    
-    def save(self, obj):
+        self.redis = redis.Redis(
+            host=settings.redis_app_host,
+            port=settings.redis_app_port,
+            db=settings.redis_app_db,
+            decode_responses=False, 
+        )
+
+    def save(self, obj: Any, ttl: int = 3600) -> str:
+        """
+        Save an object and return its object_id.
+        """
         obj_id = f"obj_{uuid.uuid4().hex[:8]}"
-        self.store[obj_id] = obj
-        #could potentially save the results of all intermediate steps inside a STEP (S1, ...)
+        payload = pickle.dumps(obj, protocol=pickle.HIGHEST_PROTOCOL)
+        self.redis.set(obj_id, payload, ex=ttl)
         return obj_id
 
-    def get(self, obj_id):
-        return self.store[obj_id]
+    def get(self, obj_id: str) -> Any:
+        """
+        Retrieve an object by object_id.
+        """
+        payload = self.redis.get(obj_id)
+        if payload is None:
+            raise KeyError(f"Object '{obj_id}' not found in Redis")
+        return pickle.loads(payload)
 
 
-object_store = ObjectStore()
+object_store = RedisObjectStore()
 
 class CurrentToolContext:
     def __init__(self):
@@ -29,6 +56,7 @@ class CurrentToolContext:
     def get(self,agent, step_id):
         return self.dict[agent][step_id]
     
+
 class ExecutionLogEntry(BaseModel):
     id: str
     agent: str
