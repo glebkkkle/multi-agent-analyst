@@ -13,7 +13,9 @@ import json
 from src.multi_agent_analyst.prompts.react_agents.data_agent import DATA_AGENT_PROMPT
 from src.multi_agent_analyst.utils.utils import context, current_tables,ExecutionLogEntry, execution_list, object_store, create_log
 from src.multi_agent_analyst.schemas.data_agent_schema import ExternalAgentSchema
-openai_llm = ChatOpenAI(model="gpt-5-mini")
+from src.backend.llm.registry import  get_mini_llm
+
+mini=get_mini_llm()
 
 @tool
 def data_agent(data_agent_query: str, current_plan_step: str):
@@ -29,7 +31,7 @@ def data_agent(data_agent_query: str, current_plan_step: str):
     ]
 
     agent = create_agent(
-        openai_llm,
+        mini,
         tools=tools,
         system_prompt=DATA_AGENT_PROMPT.format(tables=list(current_tables.values())),
         response_format=ExternalAgentSchema,

@@ -1,6 +1,5 @@
 import bcrypt
 import uuid
-# 1. Change the import to get_conn
 from src.multi_agent_analyst.db.db_core import get_conn 
 
 def register_user(email: str, password: str):

@@ -12,17 +12,14 @@ from src.multi_agent_analyst.prompts.graph.planner import PLANNER_PROMPT
 from src.multi_agent_analyst.prompts.graph.critic import CRITIC_PROMPT
 from src.multi_agent_analyst.prompts.graph.revision import PLAN_REVISION_PROMPT
 from src.multi_agent_analyst.prompts.graph.summarizer import SUMMARIZER_PROMPT
-from src.multi_agent_analyst.prompts.chat.intent_classifier import  INTENT_CLASSIFIER_PROMPT, intent_class, new_intent
+from src.multi_agent_analyst.prompts.chat.intent_classifier import new_intent
 from src.multi_agent_analyst.prompts.chat.context_agent import cleaned_query
 from src.multi_agent_analyst.prompts.chat.chat_reply_prompt import CHAT_REPLY_PROMPT
-
-ollama_llm=ChatOllama(model='gpt-oss:20b', temperature=0)
-llm=ChatOpenAI(model="gpt-5.2")
-openai_llm=ChatOpenAI(model="gpt-5-mini")
+from src.backend.llm.registry import get_default_llm, get_mini_llm
 
 
-#maybe use sql tool to only identify the appropriate database, and use select columns to format the db appropriately for later use
-#might have to fix the planner 
+llm = get_default_llm()
+mini = get_mini_llm()
 
 
 def planner_node(state: GraphState):
@@ -224,7 +221,7 @@ def chat_node(state: GraphState):
         }
 
 def chat_reply(state: GraphState):
-    reply = openai_llm.invoke(CHAT_REPLY_PROMPT.format(user_query=state.query, conversation_history=state.conversation_history, data_list=state.dataset_schemas))
+    reply = mini.invoke(CHAT_REPLY_PROMPT.format(user_query=state.query, conversation_history=state.conversation_history, data_list=state.dataset_schemas))
     return {"final_response": reply.content}
 
 def execution_error_node(state: GraphState):
@@ -238,13 +235,10 @@ def execution_error_node(state: GraphState):
         "image_base64": None,
     }
 
-#carefully using the information from the conversational history and only executing a current task, nothing else.
-
-
 def clean_query(state:GraphState):
     conv_history=state.conversation_history
 
-    response=openai_llm.with_structured_output(CleanQueryState).invoke(cleaned_query.format(original_query=state.query, session_context=conv_history))
+    response=mini.with_structured_output(CleanQueryState).invoke(cleaned_query.format(original_query=state.query, session_context=conv_history))
     print(' ')
     print(' ')
     print(response.planner_query)
@@ -269,20 +263,3 @@ def final_result_node(state:GraphState):
             "final_table_shape":state.final_table_shape
         }
 
-
-# def context_node(state: GraphState):
-#     print(state.desicion)
-#     clean = llm.with_structured_output(ContextSchema).invoke(
-#         CONTEXT_AGENT_PROMPT.format(
-#             user_msg=state.query,
-#             conversation_history=state.conversation_history,
-#         )
-#     ).clean_query
-
-#     return {"clean_query": clean, "desicion": state.desicion}
-
-
-#chat node should be more strict on whats allowed to propagate and whats not 
-#should be more informative and now that its a unit bounded to the project
-
-#simply appending the clarification seems fraguile, needs a fix. 

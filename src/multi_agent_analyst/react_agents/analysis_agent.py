@@ -21,8 +21,9 @@ from src.multi_agent_analyst.prompts.react_agents.analysis_agent import ANALYST_
 from src.multi_agent_analyst.schemas.analysis_agent_schema import ExternalAgentSchema
 from src.multi_agent_analyst.utils.utils import context, object_store, load_and_validate_df, generate_data_preview
 from src.multi_agent_analyst.utils.utils import execution_list, ExecutionLogEntry
+from src.backend.llm.registry import get_default_llm
 
-openai_llm = ChatOpenAI(model="gpt-5-mini")
+llm=get_default_llm()
 
 class AnalysisAgentArgs(BaseModel):
     analysis_query: str
@@ -56,7 +57,7 @@ def analysis_agent(analysis_query: str, current_plan_step: str, data_id: str):
     analyze_distribution_tool=make_distribution_tool(df)
 
     agent = create_agent(
-        openai_llm,
+        llm,
         tools=[correlation_tool, anomaly_tool, summary_tool, groupby_tool, difference_analysis, sort_rows_tool,analyze_distribution_tool,filter_rows_tool],
         system_prompt=ANALYST_AGENT_PROMPT.format(data_preview=data_overview),
         response_format=ExternalAgentSchema,

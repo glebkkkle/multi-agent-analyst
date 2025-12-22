@@ -8,8 +8,9 @@ from src.multi_agent_analyst.react_agents.visualization_agent import visualizati
 from src.multi_agent_analyst.react_agents.resolver_agent import resolver_agent
 from pydantic import BaseModel
 from typing import Dict, Any, Optional
+from src.backend.llm.registry import get_default_llm
 
-openai_llm = ChatOpenAI(model="gpt-5.2")
+llm=get_default_llm()
 
 class ExternalAgentSchema(BaseModel):
     summary:str
@@ -18,7 +19,7 @@ class ExternalAgentSchema(BaseModel):
     exception:Optional[str]
 
 controller_agent = create_agent(
-    model=openai_llm,
+    model=llm,
     tools=[data_agent, analysis_agent, visualization_agent, resolver_agent],
     system_prompt=CONTROLLER_AGENT_PROMPT,
     response_format=ExternalAgentSchema,

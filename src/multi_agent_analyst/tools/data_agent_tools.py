@@ -1,6 +1,5 @@
 import pandas as pd
 from langchain_core.tools import StructuredTool
-
 from src.multi_agent_analyst.schemas.data_agent_schema import (
     SQLQuerySchema,
     SelectColumnsSchema,
@@ -36,7 +35,6 @@ def make_sql_query_tool():
         except Exception as e:
             return {'error_message': str(e)}
         finally:
-
             conn.close()
 
     return StructuredTool.from_function(

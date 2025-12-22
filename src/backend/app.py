@@ -11,6 +11,7 @@ import redis
 from uuid import uuid4
 from datetime import timedelta
 from contextlib import asynccontextmanager
+from dotenv import load_dotenv
 
 # DB Imports
 from src.multi_agent_analyst.db.db_core import (
@@ -33,6 +34,9 @@ from src.backend.storage.thread_store import RedisSessionStore, RedisThreadMeta
 from src.multi_agent_analyst.db.conversation_store import ThreadConversationStore
 from src.backend.storage.redis_client import checkpointer
 from pydantic import BaseModel
+
+
+load_dotenv()
 
 conversation_store = ThreadConversationStore()
 MAX_CLARIFICATIONS = 3

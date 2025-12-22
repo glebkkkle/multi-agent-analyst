@@ -8,10 +8,11 @@ from pydantic import BaseModel
 # 1. Update the import
 from src.multi_agent_analyst.db.db_core import get_conn  
 
-# JWT CONFIG
-SECRET_KEY = "RANDKEY123"  
-ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24  
+from src.backend.config import settings
+
+SECRET_KEY = settings.jwt_secret_key
+ALGORITHM = settings.jwt_algorithm
+ACCESS_TOKEN_EXPIRE_MINUTES = settings.jwt_exp_minutes
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/login_raw")
 

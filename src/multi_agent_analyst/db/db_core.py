@@ -9,9 +9,24 @@ from contextlib import contextmanager
 from sqlalchemy import create_engine
 from sqlalchemy.pool import QueuePool
 
-DATABASE_URL = "postgresql://glebkle:123@localhost:5432/multi_analyst"
-engine = create_engine(DATABASE_URL, pool_size=10, max_overflow=20)
+from src.backend.config import settings
 
+if settings.database_url:
+    DATABASE_URL = settings.database_url
+else:
+    DATABASE_URL = (
+        f"postgresql://{settings.postgres_user}:"
+        f"{settings.postgres_password}@"
+        f"{settings.postgres_host}:"
+        f"{settings.postgres_port}/"
+        f"{settings.postgres_db}"
+    )
+
+engine = create_engine(
+    DATABASE_URL,
+    pool_size=10,
+    max_overflow=20,
+)
 @contextmanager 
 def get_conn():
     """Context manager that yields a connection and returns it to the pool."""

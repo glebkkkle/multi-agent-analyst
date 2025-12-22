@@ -4,8 +4,10 @@ from src.multi_agent_analyst.utils.utils import context, execution_list
 from langchain_openai import ChatOpenAI
 from langchain_core.tools import tool 
 from langchain.agents import create_agent
+from src.backend.llm.registry import get_default_llm
 
-llm = ChatOpenAI(model="gpt-5-mini")
+llm=get_default_llm()
+
 MAX_RETRIES=3
 
 @tool 
