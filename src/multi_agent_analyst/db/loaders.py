@@ -10,7 +10,6 @@ def load_user_tables(thread_id: str):
         WHERE table_schema = '{schema}';
     """
 
-    # Pandas loves SQLAlchemy engines! No more warnings.
     tables = pd.read_sql(query_tables, engine)['table_name'].tolist()
 
     output = {}

@@ -23,6 +23,8 @@ class TableVisualizationSchema(BaseModel):
 
 class BarPlotSchema(BaseModel):
     model_config = ConfigDict(extra="forbid")
+    category_column: str
+    value_column: str
 
 class ExternalAgentSchema(BaseModel):
     object_id: str = Field(..., description="Final object ID after all modifications")

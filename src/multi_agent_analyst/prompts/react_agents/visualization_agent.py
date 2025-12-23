@@ -25,7 +25,7 @@ VISUALIZATION_AGENT_PROMPT = """
       - Mapping: Select the numeric columns that best represent the "parts of a whole" requested.
 
    3. **bar_chart**:
-      - Arguments: `column_names` (List[str])
+      - Arguments: 'category_column:str', 'value_column':str
       - Mapping: List format: [Logical_Category_Column, Logical_Value_Column].
 
    4. **table_visualization**:

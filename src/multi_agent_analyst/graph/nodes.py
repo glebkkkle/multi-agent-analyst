@@ -1,29 +1,23 @@
 from langchain_core.messages import AIMessage
 import json
-from langchain_ollama import ChatOllama
-from langchain_openai import ChatOpenAI
-import io
 from src.multi_agent_analyst.db.loaders import load_user_tables
-import base64
 from src.multi_agent_analyst.react_agents.controller_agent import controller_agent
 from src.multi_agent_analyst.utils.utils import object_store, execution_list, current_tables
-from src.multi_agent_analyst.graph.states import GraphState, CriticStucturalResponse, IntentSchema, DAGPlan,RevisionState, CleanQueryState, ContextSchema
+from src.multi_agent_analyst.graph.states import GraphState, CriticStucturalResponse, RequestTrace, IntentSchema, DAGPlan,RevisionState, CleanQueryState, ContextSchema
 from src.multi_agent_analyst.prompts.graph.planner import PLANNER_PROMPT
 from src.multi_agent_analyst.prompts.graph.critic import CRITIC_PROMPT
 from src.multi_agent_analyst.prompts.graph.revision import PLAN_REVISION_PROMPT
-from src.multi_agent_analyst.prompts.graph.summarizer import SUMMARIZER_PROMPT
-from src.multi_agent_analyst.prompts.chat.intent_classifier import new_intent
+from src.multi_agent_analyst.prompts.chat.intent_classifier import INTENT_CLASSIFIER_PROMPT
 from src.multi_agent_analyst.prompts.chat.context_agent import cleaned_query
 from src.multi_agent_analyst.prompts.chat.chat_reply_prompt import CHAT_REPLY_PROMPT
 from src.backend.llm.registry import get_default_llm, get_mini_llm
 
-from src.multi_agent_analyst.logging import logger
+from src.multi_agent_analyst.logging import logger, trace_logger
 
 llm = get_default_llm()
 mini = get_mini_llm()
 
 def planner_node(state: GraphState):
-    #perhaps fix the planner so outputs are [smth.example_obj_id]
     logger.info(
         "Planner started",
         extra={
@@ -38,11 +32,12 @@ def planner_node(state: GraphState):
         "Planner finished",
         extra={
             "thread_id": state.thread_id,
-            # cheap, useful signals
-            "num_steps": len(plan.steps) if hasattr(plan, "steps") else None,
         }
     )
-    return {"plan": plan}
+    if state.trace:
+        state.trace.plan = plan
+
+    return {"plan": plan, "trace":state.trace}
 
 def critic(state: GraphState):
     response = llm.with_structured_output(CriticStucturalResponse).invoke(
@@ -52,12 +47,20 @@ def critic(state: GraphState):
             plan=state.plan
         )
     )
+    if state.trace:
+        state.trace.critic_verdict = {
+            "valid": response.valid,
+            "requires_user_input": response.requires_user_input,
+            "message_to_user": response.message_to_user,
+        }
+
     return {
         "critic_output": response,
         "message_to_user": response.message_to_user,
         "requires_user_clarification": response.requires_user_input,
         "valid": response.valid,
-        "desicion":str(response.valid)
+        "desicion":str(response.valid), 
+        "trace":state.trace
     }
 
 def revision_node(state: GraphState):
@@ -68,7 +71,6 @@ def revision_node(state: GraphState):
             "thread_id": state.thread_id,
         }
     )
-
     response = llm.with_structured_output(RevisionState).invoke(
         PLAN_REVISION_PROMPT.format(
             critic_output=state.critic_output,
@@ -84,6 +86,7 @@ def revision_node(state: GraphState):
             "requires_user_input": response.requires_user_input,
         }
     )
+
     return {
         "plan": response.fixed_plan,
         "fixed_manually": response.fixed_manually,
@@ -103,15 +106,23 @@ def router_node(state: GraphState):
         return {"desicion":'error', "execution_exception":str(e)}
     
     last = [m for m in result["messages"] if isinstance(m, AIMessage)][-1].content
-    d = json.loads(last)
+    try:
+        d = json.loads(last)
+    except Exception as e:
+        return {"desicion":'error', "execution_exception":str(e)}
+
+    if state.trace:
+        state.trace.final = {
+            "status":"completed", 
+        }
     
     return {
         "desicion":"ok",
         "final_obj_id": d["object_id"],
         "summary": d["summary"], 
-        "final_table_shape":d['result_details']
+        "final_table_shape":d['result_details'], 
+        "trace":state.trace
     }
-
 
 def revision_router(state: GraphState):
     if state.valid:
@@ -145,14 +156,25 @@ def chat_node(state: GraphState):
 
     schemas = load_user_tables(state.thread_id)
     current_tables.setdefault(state.thread_id, schemas)
-    
+
     intent = mini.with_structured_output(IntentSchema).invoke(
-        new_intent.format(
+        INTENT_CLASSIFIER_PROMPT.format(
             user_query=user_msg,
             data_schemas=schemas,
             conversation_history=state.conversation_history
         )
     )
+    if intent.intent == 'abort':
+        new_history = state.conversation_history + [
+        {"role":'user', "content":user_msg},
+        {"role": "system", "content": intent.missing_info}
+        ]
+        return {"desicion":'abort', 
+                "conversation_history":new_history, 
+                "dataset_schemas":schemas, 
+                "message_to_user":intent.missing_info
+                }
+
     # 🔒 GUARD: insufficient information
     if intent.intent == "clarification" and intent.is_sufficient == False:
         new_history = state.conversation_history + [
@@ -201,6 +223,13 @@ def execution_error_node(state: GraphState):
 def clean_query(state:GraphState):
     conv_history=state.conversation_history
 
+    trace = state.trace
+    if state.trace is None:
+        trace = RequestTrace(
+            thread_id=state.thread_id,
+            input={"raw_query": state.query}
+        )
+
     response=mini.with_structured_output(CleanQueryState).invoke(cleaned_query.format(original_query=state.query, session_context=conv_history))
 
     logger.info(
@@ -211,18 +240,26 @@ def clean_query(state:GraphState):
             "cleaned_query": response.planner_query
         }
     )
-    return {"query":response.planner_query}
+    trace.input['cleaned_query'] = response.planner_query
+    return {"query":response.planner_query, "trace":trace}
 
 
 def final_result_node(state:GraphState):
     if state.desicion == 'chat':
             return {'final_response':state.final_response, "image_base64":None, 'final_obj_id':None}
+    elif state.desicion == 'abort':
+        return {'final_response' : state.message_to_user , "image_base64":None, "final_obj_id":None}
     else:
+        if state.trace:
+            trace_logger.info(json.dumps(state.trace.model_dump()))
         summary_react=state.summary
         execution_list.execution_log_list.clear()
         return {
             "final_response": summary_react,
             "final_obj_id": state.final_obj_id,
-            "final_table_shape":state.final_table_shape
+            "final_table_shape":state.final_table_shape, 
+            "trace":state.trace
         }
 
+
+#add scope guard to intent classsifier 

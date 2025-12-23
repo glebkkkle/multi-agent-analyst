@@ -47,7 +47,7 @@ class RevisionState(BaseModel):
 
 #CLASSIFY USER'S INTENT
 class IntentSchema(BaseModel):
-    intent:str
+    intent:Literal['plan', 'clarification', 'chat', 'abort']
     is_sufficient:bool
     missing_info:str
     result_mode:Literal['analysis', 'preview', 'full']
@@ -55,6 +55,19 @@ class IntentSchema(BaseModel):
 #REWRITE USER'S QUERY
 class ContextSchema(BaseModel):
     clean_query:str
+
+
+class RequestTrace(BaseModel):
+    thread_id: Optional[str] = None
+
+    input: Dict[str, str] = Field(default_factory=dict)
+
+    plan: Optional[DAGPlan] = None
+    critic_verdict: Optional[Dict[str, Any]] = None
+
+    execution: List[Dict[str, Any]] = Field(default_factory=list)
+
+    final: Dict[str, Any] = Field(default_factory=dict)
 
 class GraphState(BaseModel):
     # USER INPUT
@@ -88,8 +101,12 @@ class GraphState(BaseModel):
     thread_id: Optional[str] = None
     dataset_schemas:Optional[Dict[str, Any]] = None
 
+    trace:RequestTrace = None
+
     @staticmethod
     def reducers():
         return {
             "conversation_history": lambda old, new: old + new
         }
+    
+

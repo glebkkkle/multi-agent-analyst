@@ -10,11 +10,11 @@ from src.multi_agent_analyst.schemas.visualization_agent_schema import (
     BarPlotSchema, 
     ScatterPlotSchema, 
     LinePlotSchema, 
-    HistogramSchema
+    HistogramSchema, 
+    
 )
 from typing import List
-
-
+import pandas as pd 
 from src.multi_agent_analyst.utils.utils import object_store
 
 
@@ -170,43 +170,53 @@ def make_pie_chart_tool(df):
         args_schema=PieChartSchema
     )
 
-
 def make_bar_chart_tool(df):
-    """Beautiful bar chart with gradients and modern styling."""
-
-    def bar_chart():
+    def bar_chart(category_column: str, value_column: str):
         try:
-            # Get first categorical and first numeric column
-            cat_cols = df.select_dtypes(include=['object', 'category']).columns
-            num_cols = df.select_dtypes(include=['float', 'int']).columns
-            
+            if category_column not in df.columns:
+                raise ValueError(f"Column '{category_column}' not found in dataframe.")
 
-            if len(cat_cols) == 0 or len(num_cols) == 0:
-                raise ValueError("Need at least one categorical and one numeric column")
-            
-            cat_col = cat_cols[0]
-            num_col = num_cols[0]
+            if value_column not in df.columns:
+                raise ValueError(f"Column '{value_column}' not found in dataframe.")
+
+            if not pd.api.types.is_numeric_dtype(df[value_column]):
+                raise ValueError(f"Column '{value_column}' must be numeric.")
 
             vis_json = {
                 "type": "visualization",
                 "plot_type": "bar",
-                "x": num_col,
-                'y':cat_col,
-                "title": "BAR PLOT"
+                "x": category_column,
+                "y": value_column,
             }
 
-        except Exception as e:
-            return {'exception': e}
-        
+            obj_id = object_store.save(vis_json)
 
-    
+            return {
+                "object_id": obj_id,
+                "status": "success",
+                "details": (
+                    f"Generated bar chart using '{category_column}' "
+                    f"and '{value_column}'."
+                ),
+            }
+        except Exception as e:
+            return {
+                "object_id": None,
+                "status": "error",
+                "plot_type": "bar",
+                "columns": [category_column, value_column],
+                "exception": str(e),
+            }
+
     return StructuredTool.from_function(
         func=bar_chart,
         name="bar_chart",
-        description="Beautiful bar chart with gradient colors.",
-        args_schema=TableVisualizationSchema,
+        description=(
+            "Creates a bar chart using one categorical column (x-axis) "
+            "and one numeric column (y-axis)."
+        ),
+        args_schema=BarPlotSchema,
     )
-
 
 def make_table_visualization_tool(df):
     """Factory: returns a table visualization tool bound to the given dataframe."""

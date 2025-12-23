@@ -23,7 +23,7 @@ graph.add_node('final_result_node', final_result_node)
 
 graph.set_entry_point('clean_query')
 graph.add_edge('clean_query', 'chat_node')
-graph.add_conditional_edges('chat_node', routing, {'chat':'chat_reply', 'planner': 'planner', 'ask_user':'ask_user',})
+graph.add_conditional_edges('chat_node', routing, {'chat':'chat_reply', 'planner': 'planner', 'ask_user':'ask_user', 'abort':'final_result_node'})
 graph.add_edge('chat_reply', 'final_result_node')
 
 graph.add_edge('planner', 'critic')
