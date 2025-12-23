@@ -17,7 +17,6 @@ from typing import List
 import pandas as pd 
 from src.multi_agent_analyst.utils.utils import object_store
 
-
 def make_scatter_plot_tool(df):
     def scatter_plot(x_axis: str , y_axis: str):
         try:

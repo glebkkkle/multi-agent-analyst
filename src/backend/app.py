@@ -22,6 +22,7 @@ from src.multi_agent_analyst.db.db_core import (
     register_data_source, 
     ensure_schema
 )
+from psycopg2 import OperationalError
 from src.multi_agent_analyst.db.loaders import load_user_tables
 from src.multi_agent_analyst.utils.utils import object_store
 
@@ -35,13 +36,70 @@ from src.multi_agent_analyst.db.conversation_store import ThreadConversationStor
 from src.backend.storage.redis_client import checkpointer
 from pydantic import BaseModel
 
-
-load_dotenv()
-
 conversation_store = ThreadConversationStore()
 MAX_CLARIFICATIONS = 3
 
 app = FastAPI()
+
+def check_postgres():
+    try:
+        with get_conn() as conn:
+            with conn.cursor() as cur:
+                cur.execute("SELECT 1;")
+        return True
+    except Exception:
+        return False
+
+
+def check_redis(redis_client):
+    try:
+        redis_client.ping()
+        return True
+    except Exception:
+        return False
+
+
+def check_checkpointer():
+    try:
+        # Minimal sanity check — no mutation
+        return checkpointer is not None
+    except Exception:
+        return False
+
+
+def check_object_store():
+    try:
+        # Test save + read
+        obj_id = object_store.save({"health": "ok"})
+        _ = object_store.get(obj_id)
+        return True
+    except Exception:
+        return False
+
+
+@app.get("/api/health")
+def health_check():
+    components = {
+        "postgres": "ok" if check_postgres() else "down",
+        "redis": "ok" if check_redis(redis_client) else "down",
+        "checkpointer": "ok" if check_checkpointer() else "down",
+        "object_store": "ok" if check_object_store() else "down",
+    }
+
+    if any(v == "down" for v in components.values()):
+        raise HTTPException(
+            status_code=503,
+            detail={
+                "status": "degraded",
+                "components": components
+            }
+        )
+
+    return {
+        "status": "ok",
+        "components": components
+    }
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
