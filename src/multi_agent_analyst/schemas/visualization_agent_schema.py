@@ -28,3 +28,7 @@ class ExternalAgentSchema(BaseModel):
     object_id: str = Field(..., description="Final object ID after all modifications")
     summary: str = Field(..., description="Short summary of steps performed and final result")
     exception: Optional[str] = Field(None, description="Exception message if any")
+
+class HistogramSchema(BaseModel):
+    model_config=ConfigDict(extra='forbid')
+    column:str=Field(..., description='Column for the histogram')

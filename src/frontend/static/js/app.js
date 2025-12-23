@@ -434,6 +434,24 @@ switch (spec.plot_type) {
         }];
         break;
 
+    case "histogram":
+        plotData = [{
+            x: spec.x, // Now matches the 'x' key from Python
+            type: "histogram",
+            marker: {
+                color: "#60a5fa",
+                line: {
+                    color: "#3b82f6",
+                    width: 1
+                },
+                opacity: 0.8
+            },
+            // This ensures bars are visible even with small datasets
+            nbinsx: 20, 
+            autobinx: true
+        }];
+        break;
+
     case "bar":
         plotData = [{
             x: spec.x,

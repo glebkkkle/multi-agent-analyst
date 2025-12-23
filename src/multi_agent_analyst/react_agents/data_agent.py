@@ -14,15 +14,21 @@ from src.multi_agent_analyst.prompts.react_agents.data_agent import DATA_AGENT_P
 from src.multi_agent_analyst.utils.utils import context, current_tables,ExecutionLogEntry, execution_list, object_store, create_log
 from src.multi_agent_analyst.schemas.data_agent_schema import ExternalAgentSchema
 from src.backend.llm.registry import  get_mini_llm
+from src.multi_agent_analyst.logging import logger
 
 mini=get_mini_llm()
 
 @tool
 def data_agent(data_agent_query: str, current_plan_step: str):
     """High-level DataAgent using SQL, selection, and merge tools."""
-    print(' ')
-    print('CALLING DATA AGENT📊')
-    print(' ')
+
+    logger.info(
+        "DataAgent started",
+        extra={
+            "agent": "DataAgent",
+            "step_id": current_plan_step,
+        }
+    )
     tools = [
         make_sql_query_tool(),
         make_select_columns_tool(),
@@ -44,8 +50,13 @@ def data_agent(data_agent_query: str, current_plan_step: str):
 
     if not tool_msgs:
         create_log('DataAgent', 'Agent did not call any tools', 'error', current_plan_step, None, data_agent_query)
-        print(True)
-        print(execution_list.execution_log_list)        
+        logger.warning(
+            "DataAgent finished without tool call",
+            extra={
+                "agent": "DataAgent",
+                "step_id": current_plan_step,
+            }
+        )
         return {"object_id":None, "summary":'Agent did not call any tools', "exception":'No tool call'}
     
     last_tool_output = tool_msgs[-1].content
@@ -53,7 +64,14 @@ def data_agent(data_agent_query: str, current_plan_step: str):
     try:
         tool_json=json.loads(last_tool_output)
     except Exception as e:
-        print(True)
+        logger.error(
+            "DataAgent failed to parse tool output",
+            extra={
+                "agent": "DataAgent",
+                "step_id": current_plan_step,
+                "error": str(e),
+            }
+        )
         create_log('DataAgent', str(e), 'error', current_plan_step, None, data_agent_query)
         return {"object_id":None, "summary":'failed to parse tool output', "exception":'Failed Parsing'}
 
@@ -82,13 +100,22 @@ def data_agent(data_agent_query: str, current_plan_step: str):
     context.set("DataAgent", current_plan_step, object_id)
 
     execution_list.execution_log_list.setdefault(current_plan_step, []).append(log)
-
-    print(msg)
+    if exception:
+        logger.error(
+            "DataAgent tool execution failed",
+            extra={
+                "agent": "DataAgent",
+                "step_id": current_plan_step,
+                "error": exception,
+            }
+        )
+    else:
+        logger.info(
+            "DataAgent completed successfully",
+            extra={
+                "agent": "DataAgent",
+                "step_id": current_plan_step,
+                "object_id": object_id,
+            }
+        )
     return msg
-
-
-#if dataset is bigger than certain size, always reprompt to specify the constrains of the retrival. Setting hard limits is also ok for now
-#data agent, planner should also know about not retriving the whole dataset.
-
-#allow full execution only if user asked, also with the limit of not more than a 1000 
-#otherwise, if not explicitely stated by user, reprompt about constraint, (if data exceeds a predifined limit)

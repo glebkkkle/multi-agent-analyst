@@ -1,5 +1,5 @@
 from langgraph.graph import StateGraph, END
-from src.multi_agent_analyst.graph.nodes import planner_node, final_result_node, critic, router_node, routing,clean_query, revision_node, revision_router, allow_execution, execution_error_node,summarizer_node, chat_node, chat_reply, ask_user_node
+from src.multi_agent_analyst.graph.nodes import planner_node, final_result_node, critic, router_node, routing,clean_query, revision_node, revision_router, allow_execution, execution_error_node, chat_node, chat_reply, ask_user_node
 from src.multi_agent_analyst.graph.states import GraphState
 from src.backend.storage.redis_client import checkpointer
 
@@ -13,7 +13,6 @@ graph.add_node('revision_node', revision_node)
 graph.add_node('revision_router', revision_router) 
 graph.add_node('finalizer', allow_execution)
 graph.add_node('router_node', router_node)
-graph.add_node('summarizer_node', summarizer_node)
 graph.add_node('ask_user', ask_user_node)
 graph.add_node('chat_node', chat_node)
 graph.add_node('chat_reply', chat_reply)
@@ -40,7 +39,4 @@ graph.add_edge('final_result_node', END)
 graph.add_edge('execution_error', END)
 
 g = graph.compile(checkpointer=checkpointer)
-
-
-#decrease latency by improving the graph structure 
 

@@ -26,9 +26,9 @@ GROUNDING RULES (READ CAREFULLY)
 ===================================================
 AGENT CAPABILITIES
 ===================================================
-- DataAgent: Retrieves data. sub_query must reference the domain/metrics.
-- AnalysisAgent: [detect_outliers, correlation_analysis, difference_analysis]
-- VisualizationAgent: [line_plot, scatter_plot, pie_chart]
+- DataAgent: Retrieves data. sub_query must reference the domain/metrics (fuzzy names are allowed).
+- AnalysisAgent: [detect_outliers, correlation_analysis, difference_analysis, sorting, filtering]
+- VisualizationAgent: [line_plot, scatter_plot, pie_chart, histogram, bar_plot]
 
 Available Data:
 {schemas}

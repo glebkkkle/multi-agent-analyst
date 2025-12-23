@@ -7,7 +7,7 @@ from src.multi_agent_analyst.db.loaders import load_user_tables
 import base64
 from src.multi_agent_analyst.react_agents.controller_agent import controller_agent
 from src.multi_agent_analyst.utils.utils import object_store, execution_list, current_tables
-from src.multi_agent_analyst.graph.states import GraphState, CriticStucturalResponse, DAGPlan,RevisionState, IntentSchema, ContextSchema
+from src.multi_agent_analyst.graph.states import GraphState, CriticStucturalResponse, IntentSchema, DAGPlan,RevisionState, CleanQueryState, ContextSchema
 from src.multi_agent_analyst.prompts.graph.planner import PLANNER_PROMPT
 from src.multi_agent_analyst.prompts.graph.critic import CRITIC_PROMPT
 from src.multi_agent_analyst.prompts.graph.revision import PLAN_REVISION_PROMPT
@@ -17,26 +17,34 @@ from src.multi_agent_analyst.prompts.chat.context_agent import cleaned_query
 from src.multi_agent_analyst.prompts.chat.chat_reply_prompt import CHAT_REPLY_PROMPT
 from src.backend.llm.registry import get_default_llm, get_mini_llm
 
+from src.multi_agent_analyst.logging import logger
 
 llm = get_default_llm()
 mini = get_mini_llm()
 
-
 def planner_node(state: GraphState):
     #perhaps fix the planner so outputs are [smth.example_obj_id]
-    print('🧠CREATING EXECUTION PLAN: ')
-    print(' ')
-    print('QUERY')
-    print(state.query)
+    logger.info(
+        "Planner started",
+        extra={
+            "thread_id": state.thread_id,
+            "retrieval_mode": state.retrieval_mode,
+        }
+    )
     plan = llm.with_structured_output(DAGPlan).invoke(
         PLANNER_PROMPT.format(schemas=state.dataset_schemas,query=state.query, retrieval_mode=state.retrieval_mode)
     )
-    print(plan, "\n")
+    logger.info(
+        "Planner finished",
+        extra={
+            "thread_id": state.thread_id,
+            # cheap, useful signals
+            "num_steps": len(plan.steps) if hasattr(plan, "steps") else None,
+        }
+    )
     return {"plan": plan}
 
 def critic(state: GraphState):
-    print("\n🧠CRITIC RECEIVED PLAN\n")
-
     response = llm.with_structured_output(CriticStucturalResponse).invoke(
         CRITIC_PROMPT.format(
             schemas=state.dataset_schemas,
@@ -53,11 +61,13 @@ def critic(state: GraphState):
     }
 
 def revision_node(state: GraphState):
-    print("🧠REVISOR RECEIVED PLAN\n")
-    print(' ')
-    print(state.desicion)
-    print(type(state.desicion))
-    print(' ')
+
+    logger.info(
+        "Critic evaluating plan",
+        extra={
+            "thread_id": state.thread_id,
+        }
+    )
 
     response = llm.with_structured_output(RevisionState).invoke(
         PLAN_REVISION_PROMPT.format(
@@ -66,7 +76,14 @@ def revision_node(state: GraphState):
             user_query=state.clean_query
         )
     )
-
+    logger.info(
+        "Critic finished evaluation",
+        extra={
+            "thread_id": state.thread_id,
+            "valid": response.valid,
+            "requires_user_input": response.requires_user_input,
+        }
+    )
     return {
         "plan": response.fixed_plan,
         "fixed_manually": response.fixed_manually,
@@ -82,11 +99,7 @@ def router_node(state: GraphState):
                 {"role": "user", "content": str(state.plan)}
             ]
         })
-        print(result)
-    except Exception as e:
-        print(True)
-        print(str(e))
-        
+    except Exception as e:        
         return {"desicion":'error', "execution_exception":str(e)}
     
     last = [m for m in result["messages"] if isinstance(m, AIMessage)][-1].content
@@ -99,38 +112,6 @@ def router_node(state: GraphState):
         "final_table_shape":d['result_details']
     }
 
-def summarizer_node(state: GraphState):
-    if state.desicion == 'chat':
-        return {'final_response':state.final_response, "image_base64":None, 'final_obj_id':None}
-
-    else:
-        obj = object_store.get(state.final_obj_id)
-
-        image_base64 = None
-        if isinstance(obj, io.BytesIO):
-            image_base64 = base64.b64encode(obj.getvalue()).decode()
-
-        model = ChatOllama(model="gpt-oss:20b", temperature=0)
-        final_text = model.invoke(
-            SUMMARIZER_PROMPT.format(
-                user_query=state.query,
-                obj=obj,
-                summary=state.summary
-            )
-        ).content
-
-        execution_list.execution_log_list.clear()
-        print(' ')
-        print('RESPONSE TO THE USER:')
-        print(' ')
-        print(final_text)
-        print(state.final_table_shape)
-        return {
-            "final_response": final_text,
-            "image_base64": image_base64,
-            "final_obj_id": state.final_obj_id,
-            "final_table_shape":state.final_table_shape
-        }
 
 def revision_router(state: GraphState):
     if state.valid:
@@ -148,48 +129,30 @@ def revision_router(state: GraphState):
     return {"desicion": "END"}
 
 def ask_user_node(state: GraphState):
-    print("SUSPENDING GRAPH FOR USER INPUT")
-    print(state.message_to_user)
-    
+    logger.info("Graph suspended")
     return {
         "message_to_user": state.message_to_user,
         "requires_user_clarification": True,
     }
 def routing(state:GraphState):
-    print(state.desicion)
     return state.desicion
 
 def allow_execution(state:GraphState):
     return state
 
-intent_llm = llm.with_structured_output(IntentSchema)
-
-from pydantic import BaseModel
-
-class CleanQueryState(BaseModel):
-    planner_query:str
-
-
-lm = ChatOpenAI(model="gpt-5-mini").with_structured_output(IntentSchema)
-
 def chat_node(state: GraphState):
     user_msg = state.query
-    print(user_msg)
+
     schemas = load_user_tables(state.thread_id)
     current_tables.setdefault(state.thread_id, schemas)
     
-    print(state.conversation_history)
-
-    intent = lm.invoke(
+    intent = mini.with_structured_output(IntentSchema).invoke(
         new_intent.format(
             user_query=user_msg,
             data_schemas=schemas,
             conversation_history=state.conversation_history
         )
     )
-    print(intent)
-    print(' ')
-
     # 🔒 GUARD: insufficient information
     if intent.intent == "clarification" and intent.is_sufficient == False:
         new_history = state.conversation_history + [
@@ -239,24 +202,24 @@ def clean_query(state:GraphState):
     conv_history=state.conversation_history
 
     response=mini.with_structured_output(CleanQueryState).invoke(cleaned_query.format(original_query=state.query, session_context=conv_history))
-    print(' ')
-    print(' ')
-    print(response.planner_query)
+
+    logger.info(
+        "Cleaned query generated",
+        extra={
+            "thread_id":state.thread_id,
+            "original_query": state.query,
+            "cleaned_query": response.planner_query
+        }
+    )
     return {"query":response.planner_query}
 
 
 def final_result_node(state:GraphState):
     if state.desicion == 'chat':
             return {'final_response':state.final_response, "image_base64":None, 'final_obj_id':None}
-    
     else:
         summary_react=state.summary
         execution_list.execution_log_list.clear()
-        print(' ')
-        print('RESPONSE TO THE USER:')
-        print(' ')
-        print(summary_react)
-        print(state.final_table_shape)
         return {
             "final_response": summary_react,
             "final_obj_id": state.final_obj_id,

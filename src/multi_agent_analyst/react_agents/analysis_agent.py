@@ -22,6 +22,7 @@ from src.multi_agent_analyst.schemas.analysis_agent_schema import ExternalAgentS
 from src.multi_agent_analyst.utils.utils import context, object_store, load_and_validate_df, generate_data_preview
 from src.multi_agent_analyst.utils.utils import execution_list, ExecutionLogEntry
 from src.backend.llm.registry import get_default_llm
+from src.multi_agent_analyst.logging import logger
 
 llm=get_default_llm()
 
@@ -33,14 +34,17 @@ class AnalysisAgentArgs(BaseModel):
 @tool(args_schema=AnalysisAgentArgs)
 def analysis_agent(analysis_query: str, current_plan_step: str, data_id: str):
     """Analysis Agent performing correlation, anomaly detection, periodicity, etc."""
-    print(' ')
-    print('CALLING ANALYSIS AGENT')
-    print(' ')
+    logger.info(
+        "AnalysisAgent started",
+        extra={
+            "agent": "AnalysisAgent",
+            "step_id": current_plan_step,
+        }
+    )
 
     df, error = load_and_validate_df(data_id)
-    print(' ')
     data_overview=generate_data_preview(data_id)
-    print(' ')
+
     if error:
         return {"status":"error",
                 "object_id":None,
@@ -69,12 +73,28 @@ def analysis_agent(analysis_query: str, current_plan_step: str, data_id: str):
     tool_msgs = [m for m in result["messages"] if isinstance(m, ToolMessage)]
 
     if not tool_msgs:
+        logger.warning(
+            "AnalysisAgent finished without tool call",
+            extra={
+                "agent": "AnalysisAgent",
+                "step_id": current_plan_step,
+            }
+        )
         return {"object_id":None, "summary":'Agent did not call any tools', "exception":'No tool call'}
     
     last_tool_output = tool_msgs[-1].content
     try:
         tool_output=json.loads(last_tool_output)
-    except Exception:
+    except Exception as e:
+        logger.error(
+            "DataAgent failed to parse tool output",
+            extra={
+                "agent": "DataAgent",
+                "step_id": current_plan_step,
+                "error": str(e),
+            }
+        )
+            
         return {"object_id":None, "summary":'Failed to parse tool output', "exception":'Failed parsing'}
     
     obj_id=tool_output.get("object_id")
@@ -100,10 +120,23 @@ def analysis_agent(analysis_query: str, current_plan_step: str, data_id: str):
     
     msg['object_id']=obj_id
     msg['exception']=exception
-
-    print(msg)
-
+    if exception:
+        logger.error(
+            "AnalysisAgent tool execution failed",
+            extra={
+                "agent": "AnalysisAgent",
+                "step_id": current_plan_step,
+                "error": exception,
+            }
+        )
+    else:
+        logger.info(
+            "AnalysisAgent completed successfully",
+            extra={
+                "agent": "AnalysisAgent",
+                "step_id": current_plan_step,
+                "object_id": obj_id,
+            }
+        )
     execution_list.execution_log_list.setdefault(current_plan_step, []).append(log)
     return msg
-
-#PASSING THE PREVIEW (and schema/description) OF THE DATA TO THE AGENTS !

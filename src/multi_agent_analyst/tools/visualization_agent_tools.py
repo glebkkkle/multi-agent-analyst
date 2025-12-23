@@ -9,7 +9,8 @@ from src.multi_agent_analyst.schemas.visualization_agent_schema import (
     TableVisualizationSchema,
     BarPlotSchema, 
     ScatterPlotSchema, 
-    LinePlotSchema
+    LinePlotSchema, 
+    HistogramSchema
 )
 from typing import List
 
@@ -53,6 +54,38 @@ def make_scatter_plot_tool(df):
         args_schema=ScatterPlotSchema
     )
 
+def make_histogram_tool(df):
+    def histogram(column: str):
+        try:
+            numeric_cols = df.select_dtypes(include=['number']).columns.tolist()
+            selected_col = column if column in numeric_cols else (numeric_cols[0] if numeric_cols else None)
+
+            if not selected_col:
+                raise ValueError("No numeric data available.")
+
+            # Ensure data is numeric and drop NaNs
+            plot_data = df[selected_col].dropna().tolist()
+
+            vis_json = {
+                "type": "visualization",
+                "plot_type": "histogram",
+                "title": f"Distribution of {selected_col}", # Added title
+                "x": plot_data,  # Changed 'data' to 'x' to match your other tools
+                "labels": {"x": selected_col, "y": "Frequency"},
+            }
+            
+            obj_id = object_store.save(vis_json)
+            return {"object_id": obj_id, "status": "success", "type": "visualization"}
+        
+        except Exception as e:
+            return {'object_id': None, 'exception': str(e)}
+        
+    return StructuredTool.from_function(
+        func=histogram,
+        name="histogram",
+        description="Creates a histogram of a numeric column.",
+        args_schema=HistogramSchema
+    )
 
 def make_line_plot_tool(df):
     def line_plot(x_axis: str , y_axis: str ):

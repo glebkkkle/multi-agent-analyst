@@ -31,6 +31,10 @@ VISUALIZATION_AGENT_PROMPT = """
    4. **table_visualization**:
       - Arguments: None.
 
+   5. **histogram**:
+      -Arguments : column (str)
+      - Mapping: Select the column for the histogram visualization.
+
    ### STRICT OBJECT-ID RULES
    - NEVER invent an `object_id`.
    - The ONLY valid `object_id` is the one returned directly from a tool.

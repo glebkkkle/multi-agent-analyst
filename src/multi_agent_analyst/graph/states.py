@@ -33,6 +33,9 @@ class DAGEdge(BaseModel):
     to_node: str               # "S2"
     condition: Optional[str] = None   # e.g. "outlier_count > 0"
 
+class CleanQueryState(BaseModel):
+    planner_query:str
+
 class DAGPlan(BaseModel):
     nodes: List[DAGNode]
     edges: List[DAGEdge]

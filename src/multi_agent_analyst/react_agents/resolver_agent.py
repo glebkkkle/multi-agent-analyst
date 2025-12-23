@@ -5,47 +5,41 @@ from langchain_openai import ChatOpenAI
 from langchain_core.tools import tool 
 from langchain.agents import create_agent
 from src.backend.llm.registry import get_default_llm
-
+from src.multi_agent_analyst.logging import logger
 llm=get_default_llm()
 
-MAX_RETRIES=3
+MAX_RETRIES=2
 
 @tool 
 def resolver_agent():
     'Resolver Agent that can solve exceptions that occurred during execution of agents'
-
+    logger.info(
+        "ResolverAgent started",
+        extra={
+            "agent": "ResolverAgent",
+        }
+    )
     attempt = len(execution_list.execution_log_list.get("resolver_fix", [])) + 1
     if attempt > MAX_RETRIES:
         print('aborting')
+        logger.info(
+            "ResolverAgent aborted after MAX TRIES",
+            extra={
+            "agent": "ResolverAgent",
+        }
+    )
         return {
             "action": "abort",
             "reason": f"Retry limit exceeded ({MAX_RETRIES})"
         }
 
-    # print(failed_step)
     log=execution_list.execution_log_list
-    print(' ')
-    print(f'CALLING RESOLVER AGENT WITH EXCEPTION🛠️')
-    print(log)
-    print(' ')
-    # print(step_log)
-    # current_exception=step_log.error_message if step_log.error_message is not None else step_log.error_message
-
-    @tool
-    def context_lookup(agent_name:str):
-        'A tool that can look up the context dictionary to inspect ids returned by the agents.'
-        print('CALLING WITH REPAIR')
-        print(agent_name)        
-        return context.dict
 
     agent=create_agent(model=llm, tools=[],response_format=ResolverOutput)
 
-    # result=agent.invoke({'messages':[{'role':'user', 'content':RESOLVER_AGENT_PROMPT.format(error_message=current_exception,failed_step=step_log, context=context, execution_log=execution_list.execution_log_list)}]})
     result=agent.invoke({'messages':[{'role':'user', 'content':RESOLVER_AGENT_PROMPT.format(log=log)}]})
     repair_response=(result['structured_response'])
-    print(' ')
-    print(repair_response)
-    print(' ')
+
     execution_list.execution_log_list.setdefault('resolver_fix', []).append(repair_response)
 
     return repair_response
