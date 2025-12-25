@@ -91,6 +91,17 @@ class ExecutionStateStore:
             s['final_obj_id']=None
             s["final_table_shape"]=None
 
+    def mark_running(self, session_id: str) -> None:
+        now = time.time()
+        with self._lock:
+            s = self._store.get(session_id)
+            if not s:
+                return
+            s["status"] = "running"
+            # optional: clear the old prompt once we resume
+            s["final_response"] = None
+            s["updated_at"] = now
+            
     def mark_failed(self, session_id: str, error: str) -> None:
         """
         'failed' is for internal error paths.

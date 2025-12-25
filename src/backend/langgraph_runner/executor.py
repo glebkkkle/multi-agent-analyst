@@ -18,6 +18,9 @@ def _run_graph(thread_id: str, session_id: str, requires_user_clarification: boo
     # Only init the execution_store once per session (new message)
     if init_execution_store:
         execution_store.init_session(session_id)
+    else:
+
+        execution_store.mark_running(session_id)
 
     # Register per-session emitter (ContextVar)
     def milestone_emitter(msg: str) -> None:
