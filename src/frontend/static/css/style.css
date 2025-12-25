@@ -1864,3 +1864,21 @@ td {
     color: #94a3b8;
     font-style: italic;
 }
+
+
+.exec-header {
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.exec-milestones {
+  margin-top: 6px;
+  font-size: 13px;
+  opacity: 0.9;
+  line-height: 1.35;
+}
+
+.exec-milestone-row {
+  margin: 2px 0;
+  color: #94a3b8;
+}

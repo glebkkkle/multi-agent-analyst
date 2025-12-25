@@ -19,6 +19,8 @@ from src.multi_agent_analyst.tools.visualization_agent_tools import (
 from src.multi_agent_analyst.utils.utils import context, object_store, execution_list, ExecutionLogEntry, generate_data_preview, load_and_validate_df
 from src.backend.llm.registry import  get_mini_llm
 from src.multi_agent_analyst.logging import logger
+from src.backend.storage.emitter import emit
+from src.backend.storage.execution_store import execution_store
 
 mini=get_mini_llm()
 
@@ -116,6 +118,7 @@ def visualization_agent(visualizer_query: str, current_plan_step: str, data_id: 
     msg['object_id']=object_id
     msg['exception']=exception
     execution_list.execution_log_list.setdefault(current_plan_step, []).append(log)
+
     if exception:
         logger.error(
             "VisualizationAgent tool execution failed",

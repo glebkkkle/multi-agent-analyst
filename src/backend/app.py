@@ -35,6 +35,7 @@ from src.backend.storage.thread_store import RedisSessionStore, RedisThreadMeta
 from src.multi_agent_analyst.db.conversation_store import ThreadConversationStore
 from src.backend.storage.redis_client import checkpointer
 from pydantic import BaseModel
+from src.backend.storage.execution_store import execution_store
 
 conversation_store = ThreadConversationStore()
 MAX_CLARIFICATIONS = 3
@@ -137,25 +138,36 @@ def login_page():
 async def app_page():
     return FileResponse("src/frontend/app.html")
 
+@app.get("/api/execution/{session_id}")
+async def get_execution(session_id: str, after_seq: int = 0, user: CurrentUser = Depends(get_current_user)):
+    snap = execution_store.get_snapshot(session_id, after_seq=after_seq)
+    if snap is None:  # ✅ ONLY None means unknown
+        raise HTTPException(404, "Unknown session")
+    return snap
+
+from fastapi import BackgroundTasks
+
 @app.post("/api/message")
-async def handle_message(payload: dict, user: CurrentUser = Depends(get_current_user)):
+async def handle_message(payload: dict, background_tasks: BackgroundTasks, user: CurrentUser = Depends(get_current_user)):
     thread_id = user.thread_id
     message = payload["message"]
     session_id = uuid4().hex
-    
+
     session_store.create_session(thread_id, session_id, message)
     thread_meta.set_active_session(thread_id, session_id)
 
-    result = run_initial_graph(thread_id=thread_id, session_id=session_id)
-    
-    status = 'completed' if result['status'] == 'completed' else 'clarification_required'
-    conv_context = {"content": message, "created_at": time.time(), "status": status}
+    # Start execution asynchronously
+    background_tasks.add_task(run_initial_graph, thread_id, session_id)
+
+    # Store convo context (optional: mark running)
+    conv_context = {"content": message, "created_at": time.time(), "status": "running"}
     conversation_store.append(thread_id=thread_id, role="user", content=json.dumps(conv_context))
 
-    return {"session_id": session_id, **result}
+    return {"session_id": session_id, "status": "processing"}
+
 
 @app.post("/api/clarify")
-async def handle_clarify(payload: dict, user: CurrentUser = Depends(get_current_user)):
+async def handle_clarify(payload: dict, background_tasks: BackgroundTasks, user: CurrentUser = Depends(get_current_user)):
     thread_id = user.thread_id
     clarification = payload["clarification"]
 
@@ -172,17 +184,17 @@ async def handle_clarify(payload: dict, user: CurrentUser = Depends(get_current_
     if count >= MAX_CLARIFICATIONS:
         session_store.mark_aborted(thread_id, session_id)
         thread_meta.clear_active_session(thread_id)
-        return {
-            "status": "aborted",
-            "message_to_user": "I’m still missing required information. Please rephrase your request."
-        }
+        execution_store.mark_aborted(session_id, "I’m still missing required information. Please rephrase your request.")
+        return {"session_id": session_id, "status": "aborted"}
 
-    result = clarify_graph(thread_id=thread_id, session_id=session_id)
-    status = 'completed' if result['status'] == 'completed' else 'clarification_required'
-    conv_context = {"content": clarification, "created_at": time.time(), "status": status}
+    # Resume execution asynchronously
+    background_tasks.add_task(clarify_graph, thread_id, session_id)
+
+    conv_context = {"content": clarification, "created_at": time.time(), "status": "running"}
     conversation_store.append(thread_id=thread_id, role="user", content=json.dumps(conv_context))
 
-    return {"session_id": session_id, **result}
+    return {"session_id": session_id, "status": "processing"}
+
 
 @app.get("/api/object/{object_id}")
 async def get_object(object_id: str):

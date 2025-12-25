@@ -16,7 +16,6 @@ class RedisObjectStore:
     Redis-backed object store for intermediate artifacts.
     Used for DataFrames, analysis results, visualization specs, etc.
     """
-
     def __init__(self):
         self.redis = redis.Redis(
             host=settings.redis_app_host,
@@ -136,3 +135,4 @@ def normalize_dataframe_types(df: pd.DataFrame) -> pd.DataFrame:
             df[col] = s.astype("string")
 
     return df
+

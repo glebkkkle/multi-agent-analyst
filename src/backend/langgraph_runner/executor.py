@@ -2,109 +2,128 @@ from src.multi_agent_analyst.graph.graph import g as compiled_graph
 from src.backend.storage.redis_client import redis_client
 from src.backend.storage.thread_store import RedisSessionStore, RedisThreadMeta
 from src.multi_agent_analyst.db.conversation_store import ThreadConversationStore
-
+from src.backend.storage.execution_store import execution_store
+from src.backend.storage.emitter import set_emitter, emit
 conversation_store = ThreadConversationStore()
+
 
 session_store = RedisSessionStore(redis_client)
 thread_meta = RedisThreadMeta(redis_client)
 
-def _run_graph(thread_id: str, session_id: str, requires_user_clarification: bool):
+import time
+from src.backend.storage.execution_store import execution_store
+from src.backend.storage.emitter import set_emitter, emit, clear_emitter
 
-    session = session_store.get_session(thread_id, session_id)
+def _run_graph(thread_id: str, session_id: str, requires_user_clarification: bool, init_execution_store: bool):
+    # Only init the execution_store once per session (new message)
+    if init_execution_store:
+        execution_store.init_session(session_id)
 
-    conversation_history = conversation_store.get_recent(
-        thread_id=thread_id,
-        max_age_seconds=300, 
-        limit=3,
-    )
-    print(' ')
-    print(conversation_history)
-    print(' ')
-    events = compiled_graph.stream(
-        {
-            "query": session.canonical_query,
-            "thread_id": thread_id,
-            "session_id": session_id,
-            "requires_user_clarification": requires_user_clarification,
-            "conversation_history":conversation_history
-        },
-        config={"configurable": {"thread_id": thread_id}}
-    )
+    # Register per-session emitter (ContextVar)
+    def milestone_emitter(msg: str) -> None:
+        execution_store.add_milestone(session_id, msg)
 
-    last_event = None
+    set_emitter(milestone_emitter)
 
-    for event in events:
-        last_event = event
+    try:
+        emit("Analyzing query…")
 
-        # 🟡 clarification requested
-        if "ask_user" in event:
-            session_store.mark_waiting(thread_id, session_id)
-            return {
-                "status": "needs_clarification",
-                "message_to_user": event["ask_user"]["message_to_user"],
-            }
+        session = session_store.get_session(thread_id, session_id)
 
-    # 🔒 Safety guard
-    if last_event is None:
-        session_store.mark_completed(thread_id, session_id)
-        thread_meta.clear_active_session(thread_id)
-        return {
-            "status": "error",
-            "result": {
-                "final_response": "The system produced no output.",
-                "final_obj_id": None,
-                "image_base64": None,
+        conversation_history = conversation_store.get_recent(
+            thread_id=thread_id,
+            max_age_seconds=300,
+            limit=3,
+        )
+
+        events = compiled_graph.stream(
+            {
+                "query": session.canonical_query,
+                "thread_id": thread_id,
+                "session_id": session_id,
+                "requires_user_clarification": requires_user_clarification,
+                "conversation_history": conversation_history,
             },
-        }
+            config={"configurable": {"thread_id": thread_id}},
+        )
 
-    # 🔴 execution error path
-    if "execution_error" in last_event:
+        last_event = None
+
+        for event in events:
+            last_event = event
+
+            # (Optional) map known events to milestones
+            if "clean_query" in event:
+                emit("Cleaned query.")
+            if "planner_node" in event:
+                emit("Drafting plan…")
+            if "data_agent" in event:
+                emit("Retrieving data…")
+            if "analysis_agent" in event:
+                emit("Running analysis…")
+            if "visualization_agent" in event:
+                emit("Generating visualization…")
+
+            # 🟡 clarification requested
+            if "ask_user" in event:
+                msg = event["ask_user"]["message_to_user"]
+
+                session_store.mark_waiting(thread_id, session_id)
+
+                # UI sees: status=waiting + final_response=prompt
+                execution_store.mark_waiting(session_id, msg)
+                emit("Waiting for clarification.")
+
+                return {"status": "waiting", "final_response": msg}
+
+        # Safety guard
+        if last_event is None:
+            session_store.mark_completed(thread_id, session_id)
+            thread_meta.clear_active_session(thread_id)
+
+            execution_store.mark_failed(session_id, "The system produced no output.")
+            return {"status": "failed", "final_response": "The system produced no output."}
+
+        # execution error path
+        if "execution_error" in last_event:
+            session_store.mark_completed(thread_id, session_id)
+            thread_meta.clear_active_session(thread_id)
+
+            err = str(last_event["execution_error"])
+            execution_store.mark_failed(session_id, err)
+            return {"status": "failed", "final_response": f"Internal error: {err}"}
+
+        # success path
+        if "final_result_node" in last_event:
+            session_store.mark_completed(thread_id, session_id)
+            thread_meta.clear_active_session(thread_id)
+
+            # Your final_result_node looks like dict with final_response etc.
+            result = last_event["final_result_node"]
+
+            execution_store.mark_done(session_id, {
+                "final_response": result.get("final_response"),
+                "final_obj_id": result.get("final_obj_id"),
+                "final_table_shape": result.get("final_table_shape"),
+            })
+            emit("Completed.")
+
+            return {"status": "completed", "final_response": result.get("final_response") }
+
+        # unexpected terminal state
         session_store.mark_completed(thread_id, session_id)
         thread_meta.clear_active_session(thread_id)
-        return {
-            "status": "error",
-            "result": last_event["execution_error"],
-        }
 
-    # 🟢 success path
-    if "final_result_node" in last_event:
-        session_store.mark_completed(thread_id, session_id)
-        thread_meta.clear_active_session(thread_id)
-        return {
-            "status": "completed",
-            "result": last_event["final_result_node"],
-        }
+        execution_store.mark_failed(session_id, "Unexpected terminal state.")
+        return {"status": "failed", "final_response": "The system ended in an unexpected state."}
 
-    # ❌ unexpected terminal state
-    session_store.mark_completed(thread_id, session_id)
-    thread_meta.clear_active_session(thread_id)
-    return {
-        "status": "error",
-        "result": {
-            "final_response": "The system ended in an unexpected state.",
-            "final_obj_id": None,
-            "image_base64": None,
-        },
-    }
-
+    finally:
+        # Hygiene: clear emitter so this task doesn't leak it
+        clear_emitter()
 
 def run_initial_graph(thread_id: str, session_id: str):
-    """
-    Run graph for a NEW session.
-    """
-    return _run_graph(
-        thread_id=thread_id,
-        session_id=session_id,
-        requires_user_clarification=False,
-    )
-
+    return _run_graph(thread_id, session_id, requires_user_clarification=False, init_execution_store=True)
 
 def clarify_graph(thread_id: str, session_id: str):
-    """
-    Resume graph for an EXISTING session after clarification.
-    """
-    return _run_graph(
-        thread_id=thread_id,
-        session_id=session_id,
-        requires_user_clarification=True,
-    )
+    # do NOT init store again; keep milestones and seq
+    return _run_graph(thread_id, session_id, requires_user_clarification=True, init_execution_store=False)

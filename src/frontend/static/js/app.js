@@ -32,6 +32,8 @@ let dataUploadBtn;
 let dataUploadStatus;
 let dataSourceList;
 
+
+
 function getToken() {
     return localStorage.getItem("access_token");
 }
@@ -54,7 +56,11 @@ async function authorizedFetch(url, options = {}) {
 }
 
 
-
+let activeSessionId = null;
+let pollTimer = null;
+let afterSeq = 0;
+let seenMilestoneSeq = new Set();
+let currentExecEl = null; // DOM ref for the "thinking + milestones" message
 
 document.addEventListener("click", function (e) {
     const target = e.target.closest("#data-upload-btn");
@@ -86,6 +92,152 @@ function initDataPageListeners() {
         dataUploadBtn.style.zIndex = "9999";
     }
 }
+
+
+function createExecutionMessage() {
+    // Creates a bot message that looks like "Thinking" + a milestone list under it
+    const wrapper = document.createElement("div");
+    wrapper.classList.add("message", "bot");
+    wrapper.id = `exec-${Date.now()}`;
+
+    const avatar = document.createElement("div");
+    avatar.classList.add("message-avatar");
+    avatar.textContent = "🤖";
+
+    const content = document.createElement("div");
+    content.classList.add("message-content");
+
+    const header = document.createElement("div");
+    header.classList.add("exec-header");
+    header.textContent = "Thinking…";
+
+    const list = document.createElement("div");
+    list.classList.add("exec-milestones");
+    list.innerHTML = ""; // will append rows
+
+    content.appendChild(header);
+    content.appendChild(list);
+
+    wrapper.appendChild(avatar);
+    wrapper.appendChild(content);
+    messagesDiv.appendChild(wrapper);
+    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+
+    return { wrapper, header, list };
+}
+
+function setExecutionHeader(execEl, text) {
+    if (!execEl) return;
+    execEl.header.textContent = text;
+}
+
+function appendMilestone(execEl, milestone) {
+    if (!execEl) return;
+
+    // Dedup
+    if (seenMilestoneSeq.has(milestone.seq)) return;
+    seenMilestoneSeq.add(milestone.seq);
+
+    const row = document.createElement("div");
+    row.classList.add("exec-milestone-row");
+    row.textContent = `• ${milestone.label}`;
+
+    execEl.list.appendChild(row);
+    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+}
+
+function stopPolling() {
+    if (pollTimer) {
+        clearTimeout(pollTimer);
+        pollTimer = null;
+    }
+}
+
+async function pollExecution(sessionId) {
+    stopPolling(); // prevent overlap
+
+    try {
+        const url = `${API_BASE}/execution/${sessionId}?after_seq=${afterSeq}`;
+        const resp = await authorizedFetch(url);
+
+        if (!resp || !resp.ok) {
+            // if unauthorized, authorizedFetch already redirects
+            throw new Error(`Polling failed: ${resp ? resp.status : "no response"}`);
+        }
+
+        const snap = await resp.json();
+
+        // Append any new milestones
+        const milestones = snap.milestones || [];
+        for (const m of milestones) {
+            appendMilestone(currentExecEl, m);
+            if (m.seq > afterSeq) afterSeq = m.seq;
+        }
+
+        const status = snap.status;
+
+        if (status === "running") {
+            pollTimer = setTimeout(() => pollExecution(sessionId), 300);
+            return;
+        }
+        // Terminal-ish states (stop polling)
+        stopPolling();
+
+        // Convert the "Thinking…" message into final response
+        if (snap.final_response) {
+            setExecutionHeader(currentExecEl, snap.final_response);
+        } else {
+            setExecutionHeader(currentExecEl, `Status: ${status}`);
+        }
+
+        // Clarification needed
+        if (status === "waiting") {
+            waitingForClarification = true;
+            return;
+        }
+
+        // Completed/failed/aborted
+        waitingForClarification = false;
+
+        // ✅ THIS IS THE MISSING PIECE:
+        await renderFinalArtifactIfAny(snap);
+
+        return;
+
+    } catch (err) {
+        stopPolling();
+        console.error("pollExecution error:", err);
+        if (currentExecEl) setExecutionHeader(currentExecEl, "Error while monitoring execution.");
+        waitingForClarification = false;
+    }
+}
+
+
+async function renderFinalArtifactIfAny(snap) {
+    // Only render artifacts when completed
+    if (snap.status !== "completed") return;
+    if (!snap.final_obj_id) return;
+
+    try {
+        const objectResult = await fetchObjectData(snap.final_obj_id);
+
+        if (!objectResult) return;
+
+        if (objectResult.type === "image") {
+            addImage(objectResult.data);
+        } else if (objectResult.type === "visualization") {
+            renderVisualization(objectResult.data);
+        } else if (objectResult.type === "data") {
+            const tableData = Array.isArray(objectResult.data)
+                ? objectResult.data
+                : (objectResult.data.data || []);
+            addDataTable(tableData, snap.final_table_shape || {});
+        }
+    } catch (e) {
+        console.error("Artifact render failed:", e);
+    }
+}
+
 async function loadDataSources() {
     if (!dataSourceList) return;
 
@@ -652,7 +804,6 @@ async function fetchObjectData(objId) {
         return null;
     }
 }
-
 async function sendMessage() {
     const msg = input.value.trim();
     if (!msg) return;
@@ -661,13 +812,24 @@ async function sendMessage() {
     input.value = "";
     sendBtn.disabled = true;
 
-    const loadingIndicator = addLoadingIndicator();
+    const isClarify = waitingForClarification;
+
+    // ✅ New message: create new exec bubble + reset seq tracking
+    // ✅ Clarify: reuse existing exec bubble + keep seq tracking
+    if (!isClarify) {
+        currentExecEl = createExecutionMessage();
+        stopPolling();
+        afterSeq = 0;
+        seenMilestoneSeq = new Set();
+    } else {
+        // optional: show you resumed
+        // appendMilestone(currentExecEl, { seq: afterSeq + 1, label: "Resuming…", ts: Date.now()/1000 });
+        stopPolling();
+    }
 
     try {
-        const endpoint = waitingForClarification ? "/clarify" : "/message";
-        const payload = waitingForClarification
-            ? { clarification: msg }
-            : { message: msg };
+        const endpoint = isClarify ? "/clarify" : "/message";
+        const payload = isClarify ? { clarification: msg } : { message: msg };
 
         const resp = await authorizedFetch(`${API_BASE}${endpoint}`, {
             method: "POST",
@@ -675,135 +837,28 @@ async function sendMessage() {
             body: JSON.stringify(payload)
         });
 
-        if (!resp.ok) {
-            throw new Error(`HTTP error! status: ${resp.status}`);
+        if (!resp || !resp.ok) {
+            const t = resp ? await resp.text() : "";
+            throw new Error(`HTTP error: ${resp ? resp.status : "no resp"} ${t}`);
         }
 
         const data = await resp.json();
 
-        removeLoadingIndicator();
+        activeSessionId = data.session_id;
+        // important: don't force waitingForClarification=false here;
+        // polling will set it based on snap.status
+        pollExecution(activeSessionId);
 
-        if (data.status === "needs_clarification") {
-            waitingForClarification = true;
-            addMessage(data.message_to_user, "bot");
-            return;
-        }
-
-        if (data.status === "aborted") {
-            waitingForClarification = false;
-
-            addMessage(
-                data.message_to_user ||
-                data.result?.final_response ||
-                "This task was aborted. Please rephrase your request.",
-                "bot"
-            );
-
-            return;
-        }
-
-        if (data.status === "error") {
-            waitingForClarification = false;
-            addMessage(
-                data.message_to_user ||
-                "Something went wrong while executing the task.",
-                "bot"
-            );
-            return;
-        }
-
-        waitingForClarification = false;
-
-        let finalResponse = null;
-        let imageBase64 = null;
-        let objId = null;
-
-        if (data.result?.summarizer_node) {
-            finalResponse = data.result.summarizer_node.final_response;
-            imageBase64 = data.result.summarizer_node.image_base64;
-            objId = data.result.summarizer_node.final_obj_id;
-        } else if (data.result) {
-            finalResponse = data.result.final_response;
-            imageBase64 = data.result.image_base64;
-            objId = data.result.final_obj_id;
-        } else if (data.final_response) {
-            finalResponse = data.final_response;
-            imageBase64 = data.image_base64;
-            objId = data.final_obj_id;
-        }
-
-        if (!objId && data.result) {
-            const allNodes = Object.values(data.result);
-            for (const node of allNodes) {
-                if (node && typeof node === "object") {
-                    if (node.object_id) {
-                        objId = node.object_id;
-                        break;
-                    }
-                    if (node.final_obj_id) {
-                        objId = node.final_obj_id;
-                        break;
-                    }
-                    if (node.structured_response?.object_id) {
-                        objId = node.structured_response.object_id;
-                        break;
-                    }
-                }
-            }
-        }
-
-        if (finalResponse) {
-            addMessage(finalResponse, "bot");
-        }
-        if (objId) {
-            const objectResult = await fetchObjectData(objId);
-
-            if (objectResult) {
-                if (objectResult.type === "image") {
-                    addImage(objectResult.data);
-                } else if (objectResult.type === "visualization") {
-                    renderVisualization(objectResult.data);
-                } else if (objectResult.type === "data") {
-                    // CRITICAL FIX: Ensure we are targeting the array
-                    // If the backend returns { data: [...], total_rows: X }, we need the inner 'data'
-                    const tableData = Array.isArray(objectResult.data) ? objectResult.data : (objectResult.data.data || []);
-                    
-                    // Extract shape from the controller's final result_details or summarizer
-                    const shapeSource = data.result?.summarizer_node?.final_table_shape || 
-                                        data.result?.result_details?.resulting_object_shape || 
-                                        data.final_table_shape || 
-                                        objectResult.data;
-
-                    const metadata = {
-                        total_rows: shapeSource?.rows || shapeSource?.[0] || tableData.length,
-                        total_cols: shapeSource?.columns || shapeSource?.[1] || (tableData[0] ? Object.keys(tableData[0]).length : 0)
-                    };
-
-                    addDataTable(tableData, metadata);
-                }
-            }
-        }
-
-        if (imageBase64) {
-            addImage(imageBase64);
-        }
-
-        if (
-            data.status === "completed" &&
-            !finalResponse &&
-            !objId &&
-            !imageBase64
-        ) {
-            addMessage("Task completed successfully.", "bot");
-        }
     } catch (error) {
-        removeLoadingIndicator();
         console.error("Error sending message:", error);
-        addMessage("Sorry, there was an error processing your request. Please try again.", "bot");
+        setExecutionHeader(currentExecEl, "Sorry, there was an error processing your request.");
+        waitingForClarification = false;
     } finally {
         sendBtn.disabled = false;
     }
 }
+
+
 
 async function uploadDataFile() {
     const file = dataFileInput.files[0];

@@ -16,6 +16,9 @@ from src.multi_agent_analyst.schemas.data_agent_schema import ExternalAgentSchem
 from src.backend.llm.registry import  get_mini_llm
 from src.multi_agent_analyst.logging import logger
 
+from src.backend.storage.emitter import emit
+from src.backend.storage.execution_store import execution_store
+
 mini=get_mini_llm()
 
 @tool
@@ -98,7 +101,6 @@ def data_agent(data_agent_query: str, current_plan_step: str):
     msg['exception']=exception
 
     context.set("DataAgent", current_plan_step, object_id)
-
     execution_list.execution_log_list.setdefault(current_plan_step, []).append(log)
     if exception:
         logger.error(
