@@ -96,7 +96,8 @@ def visualization_agent(visualizer_query: str, current_plan_step: str, data_id: 
 
     object_id=tool_json.get("object_id")
     exception=tool_json.get("exception")
-
+    plot_type=tool_json.get("plot_type")
+    emit(f'Generating {plot_type}')
     try:
         msg=json.loads(last_msg)
         

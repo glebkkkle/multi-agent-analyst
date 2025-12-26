@@ -45,7 +45,7 @@ def data_agent(data_agent_query: str, current_plan_step: str):
         system_prompt=DATA_AGENT_PROMPT.format(tables=list(current_tables.values())),
         response_format=ExternalAgentSchema,
     )
-
+    emit("Data Agent retrives data.")
     result = agent.invoke({"messages": [{"role": "user", "content": data_agent_query}]})
 
     last_msg = [m for m in result["messages"] if isinstance(m, AIMessage)][-1].content

@@ -30,6 +30,7 @@ def planner_node(state: GraphState):
     plan = llm.with_structured_output(DAGPlan).invoke(
         PLANNER_PROMPT.format(schemas=state.dataset_schemas,query=state.query, retrieval_mode=state.retrieval_mode)
     )
+    emit('Drafting Plan..')
     logger.info(
         "Planner finished",
         extra={

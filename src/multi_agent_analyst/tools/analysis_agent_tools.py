@@ -46,7 +46,9 @@ def make_correlation_tool(df):
         obj_id=object_store.save(result)
         
         return {'object_id':obj_id, 
-                'details':{'table_shape':table_shape}}
+                'details':{'table_shape':table_shape},
+                "operation_type":"Correlation"
+                }
 
     return StructuredTool.from_function(
         func=correlation,
@@ -102,7 +104,8 @@ def make_anomaly_tool(df):
 
             result = {
                 'object_id':obj_id,
-                'details':details
+                'details':details,
+                "operation_type":"Anomaly detection"
                 }
             
             print(result)
@@ -134,7 +137,9 @@ def make_summary_tool(df):
         obj_id=object_store.save(stats)
         
         result={'object_id':obj_id, 
-                'details':{'summary_table_shape':table_shape}}
+                'details':{'summary_table_shape':table_shape}, 
+                "operation_type":"Summary statistics"
+                }
         
         return result
 
@@ -187,7 +192,8 @@ def make_groupby_tool(df):
 
             result = {
                 "object_id": obj_id,
-                "details": details
+                "details": details, 
+                "operation_type":"Grouping"
             }
             print(result)
         except Exception as e:
@@ -240,11 +246,10 @@ def make_difference_tool(df):
                 }, 
                 "table_shape":table_shape
             }
-            print(obj_id)
-            print(details)
             return {
                 "object_id": obj_id,
-                "details": details
+                "details": details, 
+                "operation_type":"Difference Analysis"
             }
 
         except Exception as e:
@@ -308,7 +313,8 @@ def make_filter_tool(df):
                     "value": value,
                     "rows_after": len(filtered), 
                     "table_shape":table_shape
-                }
+                }, 
+                "operation_type":"Filtering"
             }
 
 
@@ -346,7 +352,8 @@ def make_sort_tool(df):
                     "order": order,
                     "limit": limit, 
                     "table_shape":table_shape
-                }
+                }, 
+                "operation_type":"Sorting"
             }
 
         except Exception as e:
@@ -420,7 +427,8 @@ def make_distribution_tool(df):
                     "normality_p_value": round(p_val, 4),
                     "distribution_shape": shape,
                     "table_shape": dist_df.shape
-                }
+                }, 
+                "operation_type":"Distribution Analysis"
             }
 
         except Exception as e:

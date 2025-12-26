@@ -23,7 +23,7 @@ from src.multi_agent_analyst.utils.utils import context, object_store, load_and_
 from src.multi_agent_analyst.utils.utils import execution_list, ExecutionLogEntry
 from src.backend.llm.registry import get_default_llm
 from src.multi_agent_analyst.logging import logger
-
+from src.backend.storage.emitter import emit
 llm=get_default_llm()
 
 class AnalysisAgentArgs(BaseModel):
@@ -66,7 +66,7 @@ def analysis_agent(analysis_query: str, current_plan_step: str, data_id: str):
         system_prompt=ANALYST_AGENT_PROMPT.format(data_preview=data_overview),
         response_format=ExternalAgentSchema,
     )
-
+    
     result = agent.invoke({"messages": [{"role": "user", "content": analysis_query}]})
     
     last_agent_message = [m for m in result["messages"] if isinstance(m, AIMessage)][-1].content
@@ -99,7 +99,9 @@ def analysis_agent(analysis_query: str, current_plan_step: str, data_id: str):
     
     obj_id=tool_output.get("object_id")
     exception=tool_output.get("exception")
+    operation_type=tool_output.get('operation_type', ' ')
 
+    emit(f'Computing {operation_type}')
     try:
         msg=json.loads(last_agent_message)
     

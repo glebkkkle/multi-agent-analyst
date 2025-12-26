@@ -29,7 +29,7 @@ def _run_graph(thread_id: str, session_id: str, requires_user_clarification: boo
     set_emitter(milestone_emitter)
 
     try:
-        emit("Analyzing query…")
+        
 
         session = session_store.get_session(thread_id, session_id)
 
@@ -51,22 +51,9 @@ def _run_graph(thread_id: str, session_id: str, requires_user_clarification: boo
         )
 
         last_event = None
-
+        emit("Analyzing query…")
         for event in events:
             last_event = event
-
-            # (Optional) map known events to milestones
-            if "clean_query" in event:
-                emit("Cleaned query.")
-            if "planner_node" in event:
-                emit("Drafting plan…")
-            if "data_agent" in event:
-                emit("Retrieving data…")
-            if "analysis_agent" in event:
-                emit("Running analysis…")
-            if "visualization_agent" in event:
-                emit("Generating visualization…")
-
             # 🟡 clarification requested
             if "ask_user" in event:
                 msg = event["ask_user"]["message_to_user"]

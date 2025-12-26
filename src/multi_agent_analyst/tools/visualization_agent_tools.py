@@ -35,7 +35,7 @@ def make_scatter_plot_tool(df):
                 "labels": {"x": x_col, "y": y_col},
             }
             obj_id = object_store.save(vis_json)
-            return {"object_id": obj_id, "status": "success", "type": "visualization"}
+            return {"object_id": obj_id, "status": "success", "plot_type":'Scatter Plot'}
         
         except Exception as e:
             return {'object_id':None, 
@@ -74,7 +74,7 @@ def make_histogram_tool(df):
             }
             
             obj_id = object_store.save(vis_json)
-            return {"object_id": obj_id, "status": "success", "type": "visualization"}
+            return {"object_id": obj_id, "status": "success", "plot_type":'Histogram'}
         
         except Exception as e:
             return {'object_id': None, 'exception': str(e)}
@@ -108,12 +108,12 @@ def make_line_plot_tool(df):
             }
         
             obj_id = object_store.save(vis_json)
-            return {"object_id": obj_id, "status": "success"}
+            return {"object_id": obj_id, "status": "success", "plot_type":'Line plot'}
         
         except Exception as e:
             return {'object_id':None, 
                     'details':'Failed',
-                    'plot_type':'line plot',
+                    'plot_type':'line_plot',
                     'exception':str(e)               
                 }
 
@@ -150,7 +150,8 @@ def make_pie_chart_tool(df):
             return {
                 "object_id": obj_id, 
                 "status": "success",
-                "details": f"Generated pie chart for: {', '.join(labels)}"
+                "details": f"Generated pie chart for: {', '.join(labels)}", 
+                "plot_type":'Pie Chart'
             }
 
         except Exception as e:
@@ -197,6 +198,7 @@ def make_bar_chart_tool(df):
                     f"Generated bar chart using '{category_column}' "
                     f"and '{value_column}'."
                 ),
+                "plot_type":'Bar Chart'
             }
         except Exception as e:
             return {
