@@ -19,7 +19,6 @@ def _run_graph(thread_id: str, session_id: str, requires_user_clarification: boo
     if init_execution_store:
         execution_store.init_session(session_id)
     else:
-
         execution_store.mark_running(session_id)
 
     # Register per-session emitter (ContextVar)
@@ -27,10 +26,8 @@ def _run_graph(thread_id: str, session_id: str, requires_user_clarification: boo
         execution_store.add_milestone(session_id, msg)
 
     set_emitter(milestone_emitter)
-
     try:
         
-
         session = session_store.get_session(thread_id, session_id)
 
         conversation_history = conversation_store.get_recent(

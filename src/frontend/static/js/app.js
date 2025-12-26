@@ -102,7 +102,13 @@ function createExecutionMessage() {
 
     const avatar = document.createElement("div");
     avatar.classList.add("message-avatar");
-    avatar.textContent = "🤖";
+
+    const img = document.createElement("img");
+    img.src = "/static/imgs/wired-gradient-426-brain.svg";
+    img.alt = "AI";
+    img.classList.add("thinking-brain");
+
+    avatar.appendChild(img);
 
     const content = document.createElement("div");
     content.classList.add("message-content");
@@ -408,7 +414,17 @@ function addMessage(text, sender) {
 
     const avatar = document.createElement("div");
     avatar.classList.add("message-avatar");
-    avatar.textContent = sender === "user" ? "👤" : "🤖";
+    
+    if (sender === "user") {
+        avatar.textContent = "👤";
+    } else {
+        const img = document.createElement("img");
+        img.src = "/static/imgs/wired-gradient-426-brain.svg";
+        img.alt = "AI";
+        img.classList.add("thinking-brain");
+        avatar.appendChild(img);
+    }
+
 
     const content = document.createElement("div");
     content.classList.add("message-content");
