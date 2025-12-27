@@ -1,26 +1,17 @@
-const token = localStorage.getItem("access_token");
-if (!localStorage.getItem("access_token")) {
-    window.location.href = "/";
-}
-
 const API_BASE = "http://localhost:8000/api";
 let waitingForClarification = false;
 
 const PUBLIC_PAGES = [
-    "/",
-    "/index.html",
-    "/register.html"
+  "/",          // landing or redirect-to-login
+  "/login",
+  "/index.html"
 ];
 
 const current = window.location.pathname;
 
-if (PUBLIC_PAGES.includes(current)) {
-    console.log("Public page loaded:", current);
-} else {
-    const token = localStorage.getItem("access_token");
-    if (!token) {
-        window.location.href = "/login";
-    }
+if (!PUBLIC_PAGES.includes(current)) {
+  const token = localStorage.getItem("access_token");
+  if (!token) window.location.href = "/login";
 }
 
 const messagesDiv = document.getElementById("messages");

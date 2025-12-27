@@ -125,10 +125,10 @@ app.add_middleware(
 app.mount("/static", StaticFiles(directory="src/frontend/static"), name="static")
 
 # --- Routes ---
-
-@app.get("/", response_class=HTMLResponse)
-async def root():
-    return FileResponse("src/frontend/register.html")
+from fastapi.responses import RedirectResponse
+@app.get("/", include_in_schema=False)
+def root():
+    return RedirectResponse(url="/login")
 
 @app.get("/login", response_class=HTMLResponse)
 def login_page():
@@ -262,25 +262,25 @@ def login_raw(data: LoginRequest):
     )
     return Token(access_token=access_token)
 
-@router.post("/register_raw", response_model=Token)
-def register_raw(data: LoginRequest):
-    email, password = data.email.strip().lower(), data.password.strip()
-    if len(password) < 6: raise HTTPException(400, "Password too short")
+# @router.post("/register_raw", response_model=Token)
+# def register_raw(data: LoginRequest):
+#     email, password = data.email.strip().lower(), data.password.strip()
+#     if len(password) < 6: raise HTTPException(400, "Password too short")
 
-    with get_conn() as conn:
-        with conn.cursor() as cur:
-            cur.execute("SELECT id FROM users WHERE email = %s", (email,))
-            if cur.fetchone(): raise HTTPException(400, "Email registered")
+#     with get_conn() as conn:
+#         with conn.cursor() as cur:
+#             cur.execute("SELECT id FROM users WHERE email = %s", (email,))
+#             if cur.fetchone(): raise HTTPException(400, "Email registered")
 
-            hashed = bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
-            cur.execute("INSERT INTO users(email, password_hash, thread_id) VALUES (%s, %s, %s) RETURNING id", (email, hashed, "temp"))
-            user_id = cur.fetchone()[0]
-            thread_id = f"thread_{user_id}"
-            cur.execute("UPDATE users SET thread_id = %s WHERE id = %s", (thread_id, user_id))
-            cur.execute(f"CREATE SCHEMA IF NOT EXISTS {thread_id}")
-            conn.commit()
+#             hashed = bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
+#             cur.execute("INSERT INTO users(email, password_hash, thread_id) VALUES (%s, %s, %s) RETURNING id", (email, hashed, "temp"))
+#             user_id = cur.fetchone()[0]
+#             thread_id = f"thread_{user_id}"
+#             cur.execute("UPDATE users SET thread_id = %s WHERE id = %s", (thread_id, user_id))
+#             cur.execute(f"CREATE SCHEMA IF NOT EXISTS {thread_id}")
+#             conn.commit()
 
-    return Token(access_token=create_access_token(data={"user_id": user_id, "thread_id": thread_id}))
+#     return Token(access_token=create_access_token(data={"user_id": user_id, "thread_id": thread_id}))
 
 @app.get("/api/data_sources")
 def list_data_sources(user: CurrentUser = Depends(get_current_user)):
