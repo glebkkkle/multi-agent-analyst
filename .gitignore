@@ -26,3 +26,10 @@ dump.rdb
 .vscode/
 .idea/
 .DS_Store
+
+# === dependencies ===
+node_modules/
+
+# === next.js build output ===
+.next/
+out/

@@ -95,7 +95,7 @@ function initDataPageListeners() {
 
 
 function createExecutionMessage() {
-    // Creates a bot message that looks like "Thinking" + a milestone list under it
+    console.log("🔥 createExecutionMessage called");
     const wrapper = document.createElement("div");
     wrapper.classList.add("message", "bot");
     wrapper.id = `exec-${Date.now()}`;
@@ -105,9 +105,14 @@ function createExecutionMessage() {
 
     const img = document.createElement("img");
     img.src = "/static/imgs/wired-gradient-426-brain.svg";
-    img.alt = "AI";
-    img.classList.add("thinking-brain");
-
+    img.alt = "AI thinking";
+    img.classList.add("thinking-brain"); // ← Make sure this class is here!
+    
+    img.onerror = function() {
+        console.error("Brain icon failed to load");
+        avatar.innerHTML = "🧠";
+    };
+    
     avatar.appendChild(img);
 
     const content = document.createElement("div");
@@ -119,7 +124,7 @@ function createExecutionMessage() {
 
     const list = document.createElement("div");
     list.classList.add("exec-milestones");
-    list.innerHTML = ""; // will append rows
+    list.innerHTML = "";
 
     content.appendChild(header);
     content.appendChild(list);
