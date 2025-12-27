@@ -95,14 +95,25 @@ function initDataPageListeners() {
 
 
 function createExecutionMessage() {
-    // Creates a bot message that looks like "Thinking" + a milestone list under it
+    console.log("🔥 createExecutionMessage called");
     const wrapper = document.createElement("div");
     wrapper.classList.add("message", "bot");
     wrapper.id = `exec-${Date.now()}`;
 
     const avatar = document.createElement("div");
     avatar.classList.add("message-avatar");
-    avatar.textContent = "🤖";
+
+    const img = document.createElement("img");
+    img.src = "/static/imgs/wired-gradient-426-brain.svg";
+    img.alt = "AI thinking";
+    img.classList.add("thinking-brain"); // ← Make sure this class is here!
+    
+    img.onerror = function() {
+        console.error("Brain icon failed to load");
+        avatar.innerHTML = "🧠";
+    };
+    
+    avatar.appendChild(img);
 
     const content = document.createElement("div");
     content.classList.add("message-content");
@@ -113,7 +124,7 @@ function createExecutionMessage() {
 
     const list = document.createElement("div");
     list.classList.add("exec-milestones");
-    list.innerHTML = ""; // will append rows
+    list.innerHTML = "";
 
     content.appendChild(header);
     content.appendChild(list);
@@ -408,7 +419,17 @@ function addMessage(text, sender) {
 
     const avatar = document.createElement("div");
     avatar.classList.add("message-avatar");
-    avatar.textContent = sender === "user" ? "👤" : "🤖";
+    
+    if (sender === "user") {
+        avatar.textContent = "👤";
+    } else {
+        const img = document.createElement("img");
+        img.src = "/static/imgs/wired-gradient-426-brain.svg";
+        img.alt = "AI";
+        img.classList.add("thinking-brain");
+        avatar.appendChild(img);
+    }
+
 
     const content = document.createElement("div");
     content.classList.add("message-content");

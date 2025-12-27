@@ -1882,3 +1882,35 @@ td {
   margin: 2px 0;
   color: #94a3b8;
 }
+
+/* HARD LOCK avatar size */
+.message-avatar {
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  overflow: visible; /* does NOT affect size */
+}
+
+/* PURE visual pulse — no scaling */
+.message-avatar img.thinking-brain {
+  width: 32px;
+  height: 32px;
+  animation: thinkingOpacity 1.4s ease-in-out infinite;
+  filter: drop-shadow(0 0 4px rgba(96,165,250,0.35));
+}
+
+/* ONLY opacity + glow */
+@keyframes thinkingOpacity {
+  0% {
+    opacity: 0.6;
+    filter: drop-shadow(0 0 3px rgba(96,165,250,0.25));
+  }
+  50% {
+    opacity: 1;
+    filter: drop-shadow(0 0 8px rgba(96,165,250,0.6));
+  }
+  100% {
+    opacity: 0.6;
+    filter: drop-shadow(0 0 3px rgba(96,165,250,0.25));
+  }
+}
