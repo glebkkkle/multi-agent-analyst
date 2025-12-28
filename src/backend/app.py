@@ -113,9 +113,14 @@ def health_check():
     }
 
 
+from src.backend.config import settings
 
-# Redis Setup
-redis_client = redis.Redis(host="localhost", port=6379, decode_responses=True)
+redis_client = redis.Redis(
+    host=settings.redis_app_host,
+    port=settings.redis_app_port,
+    db=settings.redis_app_db,
+    decode_responses=True
+)
 session_store = RedisSessionStore(redis_client)
 thread_meta = RedisThreadMeta(redis_client)
 execution_store=RedisExecutionStore(redis_client)

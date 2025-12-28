@@ -33,3 +33,25 @@ node_modules/
 # === next.js build output ===
 .next/
 out/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Docker volumes (persistent data)
+postgres-data/
+valkey-data/
+redis-stack-data/
+
+# Logs
+*.log
+logs/
+
+# Compiled files
+*.pyc
+*.pyo

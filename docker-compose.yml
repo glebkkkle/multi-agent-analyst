@@ -1,0 +1,48 @@
+services:
+  valkey:
+    image: valkey/valkey:latest
+    command: valkey-server --port 6379
+    ports:
+      - "6379:6379"
+    volumes:
+      - valkey-data:/data
+  
+  redis-stack:
+    image: redis/redis-stack:latest
+    ports:
+      - "6380:6379"
+      - "8001:8001"
+    volumes:
+      - redis-stack-data:/data
+  
+  backend:
+    image: localhost/multi-analyst-backend:latest
+    network_mode: host
+    depends_on:
+      - valkey
+      - redis-stack
+    environment:
+      - REDIS_APP_HOST=localhost
+      - REDIS_APP_PORT=6379
+      - REDIS_CHECKPOINTER_HOST=localhost
+      - REDIS_CHECKPOINTER_PORT=6380
+      - POSTGRES_HOST=localhost
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=multi_analyst
+      - POSTGRES_USER=glebkle
+      - POSTGRES_PASSWORD=123
+      - JWT_SECRET_KEY=RANDKEY123
+      - JWT_ALGORITHM=HS256
+      - JWT_ACCESS_TOKEN_EXPIRE_MINUTES=1440
+  
+  landing:
+    build: ./src/frontend/landing
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - NEXT_PUBLIC_API_URL=http://localhost:8000
+
+volumes:
+  valkey-data:
+  redis-stack-data:
