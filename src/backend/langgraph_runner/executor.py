@@ -2,17 +2,14 @@ from src.multi_agent_analyst.graph.graph import g as compiled_graph
 from src.backend.storage.redis_client import redis_client
 from src.backend.storage.thread_store import RedisSessionStore, RedisThreadMeta
 from src.multi_agent_analyst.db.conversation_store import ThreadConversationStore
-from src.backend.storage.execution_store import execution_store
 from src.backend.storage.emitter import set_emitter, emit
+from src.backend.storage.execution_store import RedisExecutionStore
+from src.backend.storage.emitter import set_emitter, emit, clear_emitter
+
 conversation_store = ThreadConversationStore()
-
-
 session_store = RedisSessionStore(redis_client)
 thread_meta = RedisThreadMeta(redis_client)
-
-import time
-from src.backend.storage.execution_store import execution_store
-from src.backend.storage.emitter import set_emitter, emit, clear_emitter
+execution_store=RedisExecutionStore(redis_client)
 
 def _run_graph(thread_id: str, session_id: str, requires_user_clarification: bool, init_execution_store: bool):
     # Only init the execution_store once per session (new message)
@@ -21,7 +18,6 @@ def _run_graph(thread_id: str, session_id: str, requires_user_clarification: boo
     else:
         execution_store.mark_running(session_id)
 
-    # Register per-session emitter (ContextVar)
     def milestone_emitter(msg: str) -> None:
         execution_store.add_milestone(session_id, msg)
 

@@ -13,7 +13,7 @@ from src.multi_agent_analyst.prompts.chat.chat_reply_prompt import CHAT_REPLY_PR
 from src.backend.llm.registry import get_default_llm, get_mini_llm
 from src.multi_agent_analyst.logging import logger, trace_logger
 from src.backend.storage.emitter import emit
-from src.backend.storage.execution_store import execution_store
+
 
 
 llm = get_default_llm()

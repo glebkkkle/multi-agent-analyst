@@ -1,138 +1,185 @@
 from __future__ import annotations
 
-from typing import Dict, List, Optional, Any
-from threading import Lock
 import time
-import copy
+import json
+from typing import Optional, Dict, Any
+import redis
 
 
-class ExecutionStateStore:
+class RedisExecutionStore:
     """
-    In-memory execution state store.
+    Redis-backed execution state for UI polling.
 
-    Invariants:
-    - milestones are append-only
-    - milestone seq is strictly increasing per session
-    - snapshot schema is stable (keys always present)
-    - get_snapshot returns a COPY (never internal dict)
+    This store is:
+    - ephemeral
+    - UI-facing
+    - NOT used for durability or replay
+    - intentionally simple and strict
+
+    Redis schema (hash):
+      execution:{session_id} -> {
+        session_id: str
+        status: str
+        final_response: str
+        final_obj_id: str
+        final_table_shape: str
+        milestones: JSON list
+        next_seq: int
+        updated_at: float
+      }
     """
 
-    def __init__(self):
-        self._store: Dict[str, dict] = {}
-        self._lock = Lock()
+    def __init__(self, redis_client: redis.Redis):
+        self.r = redis_client
+
+    # ---------- internal helpers ----------
+
+    def _key(self, session_id: str) -> str:
+        return f"execution:{session_id}"
+
+    @staticmethod
+    def _safe_str(value: Optional[Any]) -> str:
+        if value is None:
+            return ""
+        if isinstance(value, (dict, list)):
+            return json.dumps(value)
+        return str(value)
+
+    # ---------- lifecycle ----------
 
     def init_session(self, session_id: str) -> None:
         now = time.time()
-        with self._lock:
-            self._store[session_id] = {
+
+        self.r.hset(
+            self._key(session_id),
+            mapping={
                 "session_id": session_id,
                 "status": "running",
-                "final_response": None,
-                "final_obj_id": None,
-                "final_table_shape": None,
-                "milestones": [],
+                "final_response": "",
+                "final_obj_id": "",
+                "final_table_shape": "",
+                "milestones": "[]",
                 "next_seq": 1,
                 "updated_at": now,
-            }
+            },
+        )
+
+    # ---------- milestones ----------
 
     def add_milestone(self, session_id: str, label: str) -> Optional[int]:
+        label = label.strip()
+        if not label:
+            return None
+
+        key = self._key(session_id)
         now = time.time()
-        with self._lock:
-            s = self._store.get(session_id)
-            if not s:
-                return None
 
-            seq = s["next_seq"]
-            s["next_seq"] += 1
+        pipe = self.r.pipeline()
+        pipe.hget(key, "milestones")
+        pipe.hget(key, "next_seq")
+        milestones_json, next_seq = pipe.execute()
 
-            s["milestones"].append({"seq": seq, "label": label, "ts": now})
-            s["updated_at"] = now
-            return seq
+        if next_seq is None:
+            return None
 
-    def mark_waiting(self, session_id: str, prompt: str) -> None:
-        """
-        Pause execution awaiting user clarification.
-        final_response carries the prompt shown to the user.
-        """
-        now = time.time()
-        with self._lock:
-            s = self._store.get(session_id)
-            if not s:
-                return
-            s["status"] = "waiting"
-            s["final_response"] = prompt
-            s["updated_at"] = now
-            s['final_obj_id']=None
-            s["final_table_shape"]=None
+        seq = int(next_seq)
+        milestones = json.loads(milestones_json or "[]")
 
+        milestones.append(
+            {
+                "seq": seq,
+                "label": label,
+                "ts": now,
+            }
+        )
 
-    def mark_done(self, session_id: str, final_payload: dict) -> None:
-        now = time.time()
-        with self._lock:
-            s = self._store.get(session_id)
-            if not s:
-                return
-            s["status"] = "completed"
-            s["final_response"] = final_payload.get("final_response")
-            s["final_obj_id"] = final_payload.get("final_obj_id")
-            s["final_table_shape"] = final_payload.get("final_table_shape")
-            s["updated_at"] = now
+        self.r.hset(
+            key,
+            mapping={
+                "milestones": json.dumps(milestones),
+                "next_seq": seq + 1,
+                "updated_at": now,
+            },
+        )
 
+        return seq
 
-    def mark_aborted(self, session_id: str, message: str) -> None:
-        now = time.time()
-        with self._lock:
-            s = self._store.get(session_id)
-            if not s:
-                return
-            s["status"] = "aborted"
-            s["final_response"] = message
-            s["updated_at"] = now
-            s['final_obj_id']=None
-            s["final_table_shape"]=None
+    # ---------- state transitions ----------
 
     def mark_running(self, session_id: str) -> None:
-        now = time.time()
-        with self._lock:
-            s = self._store.get(session_id)
-            if not s:
-                return
-            s["status"] = "running"
-            # optional: clear the old prompt once we resume
-            s["final_response"] = None
-            s["updated_at"] = now
-            
-    def mark_failed(self, session_id: str, error: str) -> None:
-        """
-        'failed' is for internal error paths.
-        You may choose to map this to 'aborted' for users.
-        """
-        now = time.time()
-        with self._lock:
-            s = self._store.get(session_id)
-            if not s:
-                return
-            s["status"] = "failed"
-            s["final_response"] = f"Internal error: {error}"
-            s["updated_at"] = now
-            s['final_obj_id']=None
-            s["final_table_shape"]=None
-    def get_snapshot(self, session_id: str, after_seq: int = 0):
-        with self._lock:
-            s = self._store.get(session_id)
-            if s is None:
-                return None
+        self.r.hset(
+            self._key(session_id),
+            mapping={
+                "status": "running",
+                "final_response": "",
+                "updated_at": time.time(),
+            },
+        )
 
-            milestones = s.get("milestones", [])
-            new_milestones = [m for m in milestones if m["seq"] > after_seq]
+    def mark_waiting(self, session_id: str, prompt: Optional[str]) -> None:
+        self.r.hset(
+            self._key(session_id),
+            mapping={
+                "status": "waiting",
+                "final_response": self._safe_str(prompt),
+                "final_obj_id": "",
+                "final_table_shape": "",
+                "updated_at": time.time(),
+            },
+        )
+
+    def mark_done(self, session_id: str, final_payload: Dict[str, Any]) -> None:
+        self.r.hset(
+            self._key(session_id),
+            mapping={
+                "status": "completed",
+                "final_response": self._safe_str(final_payload.get("final_response")),
+                "final_obj_id": self._safe_str(final_payload.get("final_obj_id")),
+                "final_table_shape": self._safe_str(final_payload.get("final_table_shape")),
+                "updated_at": time.time(),
+            },
+        )
+
+    def mark_failed(self, session_id: str, error: str) -> None:
+        self.r.hset(
+            self._key(session_id),
+            mapping={
+                "status": "failed",
+                "final_response": f"Internal error: {error}",
+                "final_obj_id": "",
+                "final_table_shape": "",
+                "updated_at": time.time(),
+            },
+        )
+
+    def mark_aborted(self, session_id: str, message: str) -> None:
+        self.r.hset(
+            self._key(session_id),
+            mapping={
+                "status": "aborted",
+                "final_response": self._safe_str(message),
+                "final_obj_id": "",
+                "final_table_shape": "",
+                "updated_at": time.time(),
+            },
+        )
+
+    # ---------- reads ----------
+
+    def get_snapshot(self, session_id: str, after_seq: int = 0) -> Optional[Dict[str, Any]]:
+        data = self.r.hgetall(self._key(session_id))
+        if not data:
+            return None
+
+        milestones = json.loads(data.get("milestones", "[]"))
+        new_milestones = [m for m in milestones if m["seq"] > after_seq]
 
         return {
-        "session_id": session_id,
-        "status": s["status"],
-        "final_response": s.get("final_response"),
-        "final_obj_id": s.get("final_obj_id"),
-        "final_table_shape": s.get("final_table_shape"),
-        "milestones": new_milestones,
-        "updated_at": s["updated_at"],
+            "session_id": data.get("session_id", session_id),
+            "status": data.get("status", ""),
+            "final_response": data.get("final_response", ""),
+            "final_obj_id": data.get("final_obj_id", ""),
+            "final_table_shape": data.get("final_table_shape", ""),
+            "milestones": new_milestones,
+            "updated_at": float(data.get("updated_at", 0)),
         }
-execution_store = ExecutionStateStore()

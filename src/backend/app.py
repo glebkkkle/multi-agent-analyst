@@ -35,12 +35,23 @@ from src.backend.storage.thread_store import RedisSessionStore, RedisThreadMeta
 from src.multi_agent_analyst.db.conversation_store import ThreadConversationStore
 from src.backend.storage.redis_client import checkpointer
 from pydantic import BaseModel
-from src.backend.storage.execution_store import execution_store
+from src.backend.storage.execution_store import RedisExecutionStore
 
 conversation_store = ThreadConversationStore()
 MAX_CLARIFICATIONS = 3
 
-app = FastAPI()
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup    
+    try:
+        checkpointer.setup()
+        print("✅ LangGraph checkpointer indexes created")
+    except Exception as e:
+        print(f"⚠️ Checkpointer setup warning: {e}")
+    
+    yield
+
+app = FastAPI(lifespan=lifespan)
 
 def check_postgres():
     try:
@@ -102,16 +113,12 @@ def health_check():
     }
 
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    # startup
-    checkpointer.setup()
-    yield
 
 # Redis Setup
 redis_client = redis.Redis(host="localhost", port=6379, decode_responses=True)
 session_store = RedisSessionStore(redis_client)
 thread_meta = RedisThreadMeta(redis_client)
+execution_store=RedisExecutionStore(redis_client)
 
 # Middleware
 app.add_middleware(
