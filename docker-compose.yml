@@ -63,26 +63,26 @@ services:
       JWT_ALGORITHM: HS256
       JWT_ACCESS_TOKEN_EXPIRE_MINUTES: 1440
 
-  landing:
-    build: ./src/frontend/landing
-    ports:
-      - "3000:3000"
-    environment:
-      NODE_ENV: development
-      NEXT_PUBLIC_API_URL: /api
+    landing:
+      build: ./src/frontend/landing
+      ports:
+        - "3000:3000"
+      environment:
+        NODE_ENV: production
+        NEXT_PUBLIC_API_URL: /api
 
-  proxy:
-    image: caddy:2
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro,Z
-      - caddy-data:/data
-      - caddy-config:/config
-    depends_on:
-      - backend
-      - landing
+    proxy:
+      image: caddy:2
+      ports:
+        - "80:80"
+        - "443:443"
+      volumes:
+        - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+        - caddy-data:/data
+        - caddy-config:/config
+      depends_on:
+        - backend
+        - landing
 
 volumes:
   valkey-data:
