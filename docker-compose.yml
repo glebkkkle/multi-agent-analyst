@@ -2,31 +2,65 @@ services:
   valkey:
     image: valkey/valkey:latest
     command: valkey-server --port 6379
-    ports:
-      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "valkey-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
     volumes:
       - valkey-data:/data
-  
+
   redis-stack:
     image: redis/redis-stack:latest
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
     ports:
-      - "6380:6379"
-      - "8001:8001"
+      - "127.0.0.1:8001:8001"   # RedisInsight UI (dev-only, local)
     volumes:
       - redis-stack-data:/data
-  
+
+  postgres:
+    image: postgres:16
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U glebkle -d multi_analyst"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    environment:
+      POSTGRES_DB: multi_analyst
+      POSTGRES_USER: glebkle
+      POSTGRES_PASSWORD: 123
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+  proxy:
+    image: caddy:2
+    ports:
+      - "80:80"
+    volumes:
+      - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+    depends_on:
+      - backend
+      - landing
+      
   backend:
     image: localhost/multi-analyst-backend:latest
-    network_mode: host
-    depends_on:
-      - valkey
-      - redis-stack
+    ports:
+      - "8000:8000"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
     environment:
-      - REDIS_APP_HOST=localhost
+      - REDIS_APP_HOST=valkey
       - REDIS_APP_PORT=6379
-      - REDIS_CHECKPOINTER_HOST=localhost
-      - REDIS_CHECKPOINTER_PORT=6380
-      - POSTGRES_HOST=localhost
+      - REDIS_CHECKPOINTER_HOST=redis-stack
+      - REDIS_CHECKPOINTER_PORT=6379
+      - POSTGRES_HOST=postgres
       - POSTGRES_PORT=5432
       - POSTGRES_DB=multi_analyst
       - POSTGRES_USER=glebkle
@@ -34,7 +68,7 @@ services:
       - JWT_SECRET_KEY=RANDKEY123
       - JWT_ALGORITHM=HS256
       - JWT_ACCESS_TOKEN_EXPIRE_MINUTES=1440
-  
+
   landing:
     build: ./src/frontend/landing
     ports:
@@ -46,3 +80,4 @@ services:
 volumes:
   valkey-data:
   redis-stack-data:
+  postgres-data:
