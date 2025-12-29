@@ -18,7 +18,7 @@ async function login() {
     btnText.innerHTML = '<span class="loading-spinner"></span>Signing in...';
 
     try {
-        const res = await fetch("http://localhost:8000/login_raw", {
+        const res = await fetch("/api/login", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json"

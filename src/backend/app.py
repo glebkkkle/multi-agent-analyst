@@ -150,6 +150,9 @@ def login_page():
 async def app_page():
     return FileResponse("src/frontend/app.html")
 
+
+
+
 @app.get("/api/execution/{session_id}")
 async def get_execution(session_id: str, after_seq: int = 0, user: CurrentUser = Depends(get_current_user)):
     snap = execution_store.get_snapshot(session_id, after_seq=after_seq)
@@ -258,21 +261,41 @@ class LoginRequest(BaseModel):
     email: str
     password: str
 
-@router.post("/login_raw", response_model=Token)
-def login_raw(data: LoginRequest):
+@app.post("/api/login", response_model=Token)
+def login(data: LoginRequest):
     with get_conn() as conn:
         with conn.cursor() as cur:
-            cur.execute("SELECT id, email, password_hash, thread_id FROM users WHERE email = %s", (data.email,))
+            cur.execute(
+                "SELECT id, email, password_hash, thread_id FROM users WHERE email = %s",
+                (data.email,)
+            )
             row = cur.fetchone()
-    
+
     if not row or not bcrypt.checkpw(data.password.encode(), row[2].encode()):
         raise HTTPException(401, "Invalid email or password")
-    
+
     access_token = create_access_token(
         data={"user_id": row[0], "thread_id": row[3]},
-        expires_delta=timedelta(minutes=60 * 24),
+        expires_delta=timedelta(days=1),
     )
-    return Token(access_token=access_token)
+
+    return {"access_token": access_token}
+
+# @router.post("/login_raw", response_model=Token)
+# def login_raw(data: LoginRequest):
+#     with get_conn() as conn:
+#         with conn.cursor() as cur:
+#             cur.execute("SELECT id, email, password_hash, thread_id FROM users WHERE email = %s", (data.email,))
+#             row = cur.fetchone()
+    
+#     if not row or not bcrypt.checkpw(data.password.encode(), row[2].encode()):
+#         raise HTTPException(401, "Invalid email or password")
+    
+#     access_token = create_access_token(
+#         data={"user_id": row[0], "thread_id": row[3]},
+#         expires_delta=timedelta(minutes=60 * 24),
+#     )
+#     return Token(access_token=access_token)
 
 # @router.post("/register_raw", response_model=Token)
 # def register_raw(data: LoginRequest):

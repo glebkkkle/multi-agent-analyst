@@ -1,0 +1,33 @@
+agent-analyst.dev {
+
+  encode gzip
+
+  # API
+  handle /api/* {
+    reverse_proxy backend:8000
+  }
+
+  # Backend static assets
+  handle /static/* {
+    reverse_proxy backend:8000
+  }
+
+  # Auth pages
+  handle /login* {
+    reverse_proxy backend:8000
+  }
+
+  handle /logout* {
+    reverse_proxy backend:8000
+  }
+
+  # App shell
+  handle /app* {
+    reverse_proxy backend:8000
+  }
+
+  # Landing page
+  handle {
+    reverse_proxy landing:3000
+  }
+}

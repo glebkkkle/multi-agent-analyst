@@ -18,7 +18,7 @@ import {
 } from "lucide-react"
 
 const goToLogin = () => {
-  window.location.href = "http://localhost:8000/login"
+  window.location.href = "/login";
 }
 
 

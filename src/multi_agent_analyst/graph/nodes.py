@@ -85,7 +85,7 @@ def revision_node(state: GraphState):
         "Critic finished evaluation",
         extra={
             "thread_id": state.thread_id,
-            "valid": response.valid,
+            "valid": state.valid,
             "requires_user_input": response.requires_user_input,
         }
     )
