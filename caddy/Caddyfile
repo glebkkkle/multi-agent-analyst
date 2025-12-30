@@ -21,7 +21,6 @@ agent-analyst.dev {
     reverse_proxy backend:8000
   }
 
-  # App shell
   handle /app* {
     reverse_proxy backend:8000
   }

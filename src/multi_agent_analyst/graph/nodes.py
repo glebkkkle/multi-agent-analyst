@@ -15,7 +15,6 @@ from src.multi_agent_analyst.logging import logger, trace_logger
 from src.backend.storage.emitter import emit
 
 
-
 llm = get_default_llm()
 mini = get_mini_llm()
 
@@ -86,7 +85,6 @@ def revision_node(state: GraphState):
         extra={
             "thread_id": state.thread_id,
             "valid": state.valid,
-            "requires_user_input": response.requires_user_input,
         }
     )
 
@@ -264,5 +262,3 @@ def final_result_node(state:GraphState):
             "trace":state.trace
         }
 
-
-#add scope guard to intent classsifier 

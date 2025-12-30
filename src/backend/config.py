@@ -26,14 +26,14 @@ class Settings(BaseModel):
     # ======================
     # REDIS
     # ======================
-    redis_app_host: str = "localhost"
+    redis_app_host: str 
     redis_app_port: int = 6379
     redis_app_db: int = 0
 
     # ======================
     # REDIS (LANGGRAPH)
     # ======================
-    redis_checkpointer_host: str = "localhost"
+    redis_checkpointer_host: str 
     redis_checkpointer_port: int = 6380
     redis_checkpointer_db: int = 0
 
