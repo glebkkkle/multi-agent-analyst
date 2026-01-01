@@ -17,10 +17,9 @@ services:
       interval: 10s
       timeout: 3s
       retries: 5
-    ports:
-      - "127.0.0.1:8001:8001"
     volumes:
       - redis-stack-data:/data
+    # ❌ no ports in prod unless you actually need Redis UI
 
   postgres:
     image: postgres:16
@@ -41,8 +40,6 @@ services:
       context: .
       dockerfile: Dockerfile
     image: localhost/multi-analyst-backend:latest
-    ports:
-      - "8000:8000"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
       interval: 10s
@@ -62,24 +59,27 @@ services:
       JWT_SECRET_KEY: RANDKEY123
       JWT_ALGORITHM: HS256
       JWT_ACCESS_TOKEN_EXPIRE_MINUTES: 1440
+    # ❌ no ports in prod
 
   landing:
     build: ./src/frontend/landing
-    ports:
-      - "3000:3000"
     environment:
       NODE_ENV: production
       NEXT_PUBLIC_API_URL: /api
+    # ❌ no ports in prod
 
   proxy:
-   image: caddy:2
-   volumes:
-     - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
-     - caddy-data:/data
-     - caddy-config:/config
-   depends_on:
-     - backend
-     - landing
+    image: caddy:2
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      - backend
+      - landing
 
 volumes:
   valkey-data:
