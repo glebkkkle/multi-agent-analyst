@@ -84,6 +84,26 @@ function initDataPageListeners() {
     }
 }
 
+function disableChatInput(reasonText) {
+    input.disabled = true;
+    sendBtn.disabled = true;
+
+    input.placeholder = "Free usage limit reached";
+    input.classList.add("input-disabled");
+
+    // System message in chat
+    const wrapper = document.createElement("div");
+    wrapper.classList.add("message", "system");
+
+    const content = document.createElement("div");
+    content.classList.add("message-content");
+    content.textContent = reasonText;
+
+    wrapper.appendChild(content);
+    messagesDiv.appendChild(wrapper);
+    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+}
+
 
 function createExecutionMessage() {
     console.log("🔥 createExecutionMessage called");
@@ -849,9 +869,36 @@ async function sendMessage() {
             body: JSON.stringify(payload)
         });
 
-        if (!resp || !resp.ok) {
-            const t = resp ? await resp.text() : "";
-            throw new Error(`HTTP error: ${resp ? resp.status : "no resp"} ${t}`);
+        if (!resp) {
+            throw new Error("No response from server");
+        }
+
+        if (resp.status === 429) {
+            const data = await resp.json();
+
+            // Stop polling / execution
+            stopPolling();
+            waitingForClarification = false;
+
+            // Replace exec header if exists
+            if (currentExecEl) {
+                setExecutionHeader(
+                    currentExecEl,
+                    "Usage limit reached"
+                );
+            }
+
+            disableChatInput(
+                data.message ||
+                "Free usage limit reached for today. It will be renewed automatically."
+            );
+
+            return;
+        }
+
+        if (!resp.ok) {
+            const t = await resp.text();
+            throw new Error(`HTTP error ${resp.status}: ${t}`);
         }
 
         const data = await resp.json();

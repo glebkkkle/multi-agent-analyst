@@ -1,18 +1,15 @@
-agent-analyst.dev {
+:8080 {
 
   encode gzip
 
-  # API
   handle /api/* {
     reverse_proxy backend:8000
   }
 
-  # Backend static assets
   handle /static/* {
     reverse_proxy backend:8000
   }
 
-  # Auth pages
   handle /login* {
     reverse_proxy backend:8000
   }
@@ -25,13 +22,7 @@ agent-analyst.dev {
     reverse_proxy backend:8000
   }
 
-  # Landing page
   handle {
     reverse_proxy landing:3000
   }
-
-  handle /register* {
-    reverse_proxy backend:8000
-  }
-
 }

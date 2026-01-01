@@ -1,52 +1,43 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Register - Data Analyst</title>
-
-    <!-- Load external CSS -->
-    <link rel="stylesheet" href="/static/css/register.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Register - Data Analyst</title>
+<link rel="stylesheet" href="/static/css/register.css">
 </head>
-
 <body>
-    <div class="background-animation"></div>
-    <div class="orb orb1"></div>
-    <div class="orb orb2"></div>
-
-    <div class="register-container">
-        <div class="logo-section">
-            <div class="logo-icon">A</div>
-            <div class="logo-text">Data Analyst</div>
-        </div>
-
-        <h2>Create your account</h2>
-
-        <div id="error" class="error-message"></div>
-
-        <div class="form-group">
-            <label for="email">Email address</label>
-            <div class="input-wrapper">
-                <input type="email" id="email" placeholder="you@example.com" autocomplete="email">
-            </div>
-        </div>
-
-        <div class="form-group">
-            <label for="password">Password</label>
-            <div class="input-wrapper">
-                <input type="password" id="password" placeholder="••••••••••" autocomplete="new-password">
-            </div>
-        </div>
-
-        <button class="register-button" id="registerBtn" onclick="registerUser()">
-            <span id="btnText">Create account</span>
-        </button>
-
-        <div class="login-link">
+<div class="background-animation"></div>
+<div class="orb orb1"></div>
+<div class="orb orb2"></div>
+<div class="register-container">
+<div class="logo-section">
+<div class="logo-icon">A</div>
+<div class="logo-text">Data Analyst</div>
+</div>
+<h2>Create your account</h2>
+<div id="error" class="error-message"></div>
+<form id="registerForm" onsubmit="event.preventDefault(); registerUser();">
+<div class="form-group">
+<label for="email">Email address</label>
+<div class="input-wrapper">
+<input type="email" id="email" placeholder="you@example.com" autocomplete="email" required>
+</div>
+</div>
+<div class="form-group">
+<label for="password">Password</label>
+<div class="input-wrapper">
+<input type="password" id="password" placeholder="••••••••••" autocomplete="new-password" required>
+</div>
+</div>
+<button type="submit" class="register-button" id="registerBtn">
+<span id="btnText">Create account</span>
+</button>
+</form>
+<div class="login-link">
             Already have an account? <a href="/login">Sign in</a>
-        </div>
-    </div>
-
-    <script src="static/js/register.js"></script>
+</div>
+</div>
+<script src="/static/js/register.js"></script>
 </body>
 </html>

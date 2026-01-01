@@ -13,7 +13,6 @@ class SessionState:
     status: SessionStatus
     clarification_count: int
 
-
 class RedisSessionStore:
     def __init__(self, redis_client: redis.Redis):
         self.r = redis_client
@@ -106,6 +105,9 @@ class RedisThreadMeta:
     def _key(self, thread_id: str):
         return f"thread:{thread_id}"
 
+    def _quota_key(self, thread_id: str):
+        return f"quota:thread:{thread_id}:message"
+
     def set_active_session(self, thread_id: str, session_id: str):
         self.r.hset(self._key(thread_id), "active_session_id", session_id)
 
@@ -114,3 +116,18 @@ class RedisThreadMeta:
 
     def clear_active_session(self, thread_id: str):
         self.r.hdel(self._key(thread_id), "active_session_id")
+
+
+    def incr_message_quota(self, thread_id: str, window_seconds: int | None) -> int:
+        key = self._quota_key(thread_id)
+        current = self.r.incr(key)  
+        if current == 1 and window_seconds:
+            self.r.expire(key, window_seconds)
+        return int(current)
+
+    def get_message_quota_used(self, thread_id: str) -> int:
+        val = self.r.get(self._quota_key(thread_id))
+        return int(val or 0)
+
+    def reset_message_quota(self, thread_id: str):
+        self.r.delete(self._quota_key(thread_id))

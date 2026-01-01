@@ -21,7 +21,6 @@ const goToLogin = () => {
   window.location.href = "/login";
 }
 
-
 export default function LandingPage() {
 
   return (
@@ -425,103 +424,106 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="border-t border-border/30 mt-20">
-        <div className="container mx-auto px-4 py-12">
-          <div className="grid md:grid-cols-4 gap-8">
-            <div className="space-y-4">
-              <div className="flex items-center gap-2">
-                <img 
-                  src="/imgs/icon.svg" 
-                  alt="Multi-Agent Analyst Logo" 
-                  className="w-8 h-8"
-                />
-                <span className="text-lg font-semibold text-foreground">Multi-Agent Analyst</span>
-              </div>
-              <p className="text-sm text-muted-foreground leading-relaxed">
-                AI-powered data analysis through collaborating agents.
-              </p>
-            </div>
-
-            <div className="space-y-4">
-              <h4 className="font-semibold text-foreground">Product</h4>
-              <ul className="space-y-2 text-sm text-muted-foreground">
-                <li>
-                  <a href="#" className="hover:text-foreground transition-colors">
-                    Features
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="hover:text-foreground transition-colors">
-                    Pricing
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="hover:text-foreground transition-colors">
-                    Documentation
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="hover:text-foreground transition-colors">
-                    API
-                  </a>
-                </li>
-              </ul>
-            </div>
-
-            <div className="space-y-4">
-              <h4 className="font-semibold text-foreground">Company</h4>
-              <ul className="space-y-2 text-sm text-muted-foreground">
-                <li>
-                  <a href="#" className="hover:text-foreground transition-colors">
-                    About
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="hover:text-foreground transition-colors">
-                    Blog
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="hover:text-foreground transition-colors">
-                    Careers
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="hover:text-foreground transition-colors">
-                    Contact
-                  </a>
-                </li>
-              </ul>
-            </div>
-
-            <div className="space-y-4">
-              <h4 className="font-semibold text-foreground">Legal</h4>
-              <ul className="space-y-2 text-sm text-muted-foreground">
-                <li>
-                  <a href="#" className="hover:text-foreground transition-colors">
-                    Privacy
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="hover:text-foreground transition-colors">
-                    Terms
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="hover:text-foreground transition-colors">
-                    Security
-                  </a>
-                </li>
-              </ul>
-            </div>
-          </div>
-
-          <div className="border-t border-border/30 mt-12 pt-8 text-center text-sm text-muted-foreground">
-            <p>© 2025 Multi-Agent Analyst. All rights reserved.</p>
-          </div>
+{/* Footer */}
+<footer className="border-t border-border/30 mt-20">
+  <div className="container mx-auto px-4 py-12">
+    <div className="grid md:grid-cols-4 gap-8">
+      <div className="space-y-4">
+        <div className="flex items-center gap-2">
+          <img 
+            src="/imgs/icon.svg" 
+            alt="Multi-Agent Analyst Logo" 
+            className="w-8 h-8"
+          />
+          <span className="text-lg font-semibold text-foreground">Multi-Agent Analyst</span>
         </div>
-      </footer>
+        <p className="text-sm text-muted-foreground leading-relaxed">
+          AI-powered data analysis through collaborating agents.
+        </p>
+      </div>
+
+      <div className="space-y-4">
+        <h4 className="font-semibold text-foreground">Product</h4>
+        <ul className="space-y-2 text-sm text-muted-foreground">
+          <li>
+            <a href="#features" className="hover:text-foreground transition-colors">
+              Features
+            </a>
+          </li>
+          <li>
+            <a href="#how-it-works" className="hover:text-foreground transition-colors">
+              How it Works
+            </a>
+          </li>
+          <li>
+            <a href="#transparency" className="hover:text-foreground transition-colors">
+              Transparency
+            </a>
+          </li>
+        </ul>
+      </div>
+
+      <div className="space-y-4">
+        <h4 className="font-semibold text-foreground">Company</h4>
+        <ul className="space-y-2 text-sm text-muted-foreground">
+          <li>
+            <a href="#" className="hover:text-foreground transition-colors">
+              About
+            </a>
+          </li>
+          <li>
+            <a href="#" className="hover:text-foreground transition-colors">
+              Blog
+            </a>
+          </li>
+          <li>
+            <a href="#" className="hover:text-foreground transition-colors">
+              Careers
+            </a>
+          </li>
+        </ul>
+      </div>
+
+      <div className="space-y-4">
+        <h4 className="font-semibold text-foreground">Contact</h4>
+        <ul className="space-y-2 text-sm text-muted-foreground">
+          <li>
+            <a 
+              href="https://www.linkedin.com/in/gleb-klymenko-6b5b18290" 
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-foreground transition-colors"
+            >
+              LinkedIn
+            </a>
+          </li>
+          <li>
+            <a 
+              href="https://github.com/glebkkkle" 
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-foreground transition-colors"
+            >
+              GitHub
+            </a>
+          </li>
+          <li>
+            <a 
+              href="mailto:multi.agent.analyst@gmail.com" 
+              className="hover:text-foreground transition-colors"
+            >
+              Email
+            </a>
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <div className="border-t border-border/30 mt-12 pt-8 text-center text-sm text-muted-foreground">
+      <p>© 2025 Multi-Agent Analyst. All rights reserved.</p>
+    </div>
+  </div>
+</footer>
     </div>
   )
 }

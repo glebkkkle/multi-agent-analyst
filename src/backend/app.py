@@ -12,7 +12,6 @@ from uuid import uuid4
 from datetime import timedelta
 from contextlib import asynccontextmanager
 from dotenv import load_dotenv
-
 # DB Imports
 from src.multi_agent_analyst.db.db_core import (
     engine, 
@@ -39,6 +38,8 @@ from src.backend.storage.execution_store import RedisExecutionStore
 
 conversation_store = ThreadConversationStore()
 MAX_CLARIFICATIONS = 3
+MESSAGE_LIMIT = 4
+QUOTA_WINDOW_SECONDS= 24 * 60 * 60
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -61,7 +62,6 @@ def check_postgres():
         return True
     except Exception:
         return False
-
 
 def check_redis(redis_client):
     try:
@@ -151,8 +151,6 @@ async def app_page():
     return FileResponse("src/frontend/app.html")
 
 
-
-
 @app.get("/api/execution/{session_id}")
 async def get_execution(session_id: str, after_seq: int = 0, user: CurrentUser = Depends(get_current_user)):
     snap = execution_store.get_snapshot(session_id, after_seq=after_seq)
@@ -164,7 +162,25 @@ from fastapi import BackgroundTasks
 
 @app.post("/api/message")
 async def handle_message(payload: dict, background_tasks: BackgroundTasks, user: CurrentUser = Depends(get_current_user)):
+    
     thread_id = user.thread_id
+    used = thread_meta.incr_message_quota(thread_id, QUOTA_WINDOW_SECONDS)
+    if used > MESSAGE_LIMIT:
+        raise HTTPException(
+            status_code=429,
+            detail={
+                "error": "quota_exceeded",
+                "message": f"Beta limit reached. You can send up to {MESSAGE_LIMIT} messages.",
+                "limit": MESSAGE_LIMIT,
+                "used": used,
+            },
+        )
+    print(' ')
+    print(f'QUATA USED :{used}')
+    print(' ')
+
+
+
     message = payload["message"]
     session_id = uuid4().hex
 
@@ -201,8 +217,7 @@ async def handle_clarify(payload: dict, background_tasks: BackgroundTasks, user:
         thread_meta.clear_active_session(thread_id)
         execution_store.mark_aborted(session_id, "I’m still missing required information. Please rephrase your request.")
         return {"session_id": session_id, "status": "aborted"}
-
-    # Resume execution asynchronously
+    
     background_tasks.add_task(clarify_graph, thread_id, session_id)
 
     conv_context = {"content": clarification, "created_at": time.time(), "status": "running"}
@@ -255,7 +270,7 @@ async def upload_data(file: UploadFile = File(...), user: CurrentUser = Depends(
 
     return {"status": "success", "rows": len(df), "table_name": table_name}
 
-router = APIRouter()
+router = APIRouter(prefix="/api")
 
 class LoginRequest(BaseModel):
     email: str
@@ -281,41 +296,57 @@ def login(data: LoginRequest):
 
     return {"access_token": access_token}
 
-# @router.post("/login_raw", response_model=Token)
-# def login_raw(data: LoginRequest):
-#     with get_conn() as conn:
-#         with conn.cursor() as cur:
-#             cur.execute("SELECT id, email, password_hash, thread_id FROM users WHERE email = %s", (data.email,))
-#             row = cur.fetchone()
-    
-#     if not row or not bcrypt.checkpw(data.password.encode(), row[2].encode()):
-#         raise HTTPException(401, "Invalid email or password")
-    
-#     access_token = create_access_token(
-#         data={"user_id": row[0], "thread_id": row[3]},
-#         expires_delta=timedelta(minutes=60 * 24),
-#     )
-#     return Token(access_token=access_token)
+@app.get("/register", response_class=HTMLResponse)
+def register_page():
+    return FileResponse("src/frontend/register.html")
 
-# @router.post("/register_raw", response_model=Token)
-# def register_raw(data: LoginRequest):
-#     email, password = data.email.strip().lower(), data.password.strip()
-#     if len(password) < 6: raise HTTPException(400, "Password too short")
+@router.post("/register_raw", response_model=Token)
+def register_raw(data: LoginRequest):
+    email = data.email.strip().lower()
+    password = data.password.strip()
 
-#     with get_conn() as conn:
-#         with conn.cursor() as cur:
-#             cur.execute("SELECT id FROM users WHERE email = %s", (email,))
-#             if cur.fetchone(): raise HTTPException(400, "Email registered")
+    if len(password) < 6:
+        raise HTTPException(400, "Password must be at least 6 characters")
 
-#             hashed = bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
-#             cur.execute("INSERT INTO users(email, password_hash, thread_id) VALUES (%s, %s, %s) RETURNING id", (email, hashed, "temp"))
-#             user_id = cur.fetchone()[0]
-#             thread_id = f"thread_{user_id}"
-#             cur.execute("UPDATE users SET thread_id = %s WHERE id = %s", (thread_id, user_id))
-#             cur.execute(f"CREATE SCHEMA IF NOT EXISTS {thread_id}")
-#             conn.commit()
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            # Check existing user
+            cur.execute(
+                "SELECT id FROM users WHERE email = %s",
+                (email,)
+            )
+            if cur.fetchone():
+                raise HTTPException(400, "Email already registered")
 
-#     return Token(access_token=create_access_token(data={"user_id": user_id, "thread_id": thread_id}))
+            hashed = bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
+
+            # Generate thread_id up front
+            cur.execute("SELECT nextval(pg_get_serial_sequence('users','id'))")
+            user_id = cur.fetchone()[0]
+            thread_id = f"thread_{user_id}"
+
+            # Insert fully valid row
+            cur.execute(
+                """
+                INSERT INTO users (id, email, password_hash, thread_id)
+                VALUES (%s, %s, %s, %s)
+                """,
+                (user_id, email, hashed, thread_id),
+            )
+
+            # Create schema
+            cur.execute(f'CREATE SCHEMA IF NOT EXISTS "{thread_id}"')
+
+            conn.commit()
+
+    return Token(
+        access_token=create_access_token(
+            data={"user_id": user_id, "thread_id": thread_id},
+            expires_delta=timedelta(days=1),
+        )
+    )
+
+
 
 @app.get("/api/data_sources")
 def list_data_sources(user: CurrentUser = Depends(get_current_user)):
