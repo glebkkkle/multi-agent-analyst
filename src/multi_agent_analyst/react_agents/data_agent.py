@@ -44,6 +44,14 @@ def data_agent(data_agent_query: str, current_plan_step: str):
         system_prompt=DATA_AGENT_PROMPT.format(tables=list(current_tables.values())),
         response_format=ExternalAgentSchema,
     )
+    logger.info(
+            f"Current tables under the thread:{list(current_tables.values())}",
+            extra={
+                "agent": "DataAgent",
+                "step_id": current_plan_step,
+                "object_id": object_id,
+            }
+        )
     emit("Data Agent retrives data.")
     result = agent.invoke({"messages": [{"role": "user", "content": data_agent_query}]})
 

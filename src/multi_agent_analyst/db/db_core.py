@@ -48,17 +48,19 @@ def get_conn():
 
 from sqlalchemy import text 
 
+from contextlib import contextmanager
+
+@contextmanager
 def get_thread_conn(thread_id: str):
     """
-    Agent-only connection.
-    The thread schema is the entire database.
+    Agent-only, thread-isolated connection.
     """
-    conn = agent_engine.connect()
-    if thread_id:
+    with agent_engine.begin() as conn:
         conn.execute(
-            text(f'SET search_path TO "{thread_id}", pg_catalog')
+            text(f'SET LOCAL search_path TO "{thread_id}", pg_catalog')
         )
-    return conn
+        yield conn
+
 
 def create_table(schema_name, table_name, columns):
     cols = ", ".join([f'"{col}" {dtype}' for col, dtype in columns.items()])
