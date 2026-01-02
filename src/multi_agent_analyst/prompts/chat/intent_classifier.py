@@ -137,5 +137,3 @@ Return ONLY valid JSON:
 ### CURRENT USER MESSAGE:
 {user_query}
 """
-
-#gotta populate with all existing tools (analysis) so that no queries are aborted when actually are supported.

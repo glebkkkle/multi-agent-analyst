@@ -6,10 +6,10 @@ You have access to the following company's databases (tables):
 {tables}
 
 You have access to the following tools:
-- sql_query(query)
-- select_columns(table_id, columns)
-- marge_tables(left_id, right_id, on)
-- list_available_data()
+- sql_query(query) - returns a raw dataframe of specified table
+- select_columns(table_id, columns) - appropriately formats the retrived data to required columns only
+- marge_tables(left_id, right_id, on) - merges/groups the specified tables
+- list_available_data() - Provides a list of available data
 
 =====================================================================
 CRITICAL EXECUTION RULES

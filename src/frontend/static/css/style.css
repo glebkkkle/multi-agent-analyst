@@ -1914,3 +1914,190 @@ td {
     filter: drop-shadow(0 0 3px rgba(96,165,250,0.25));
   }
 }
+
+/* ============================================
+   MOBILE FIXES
+   ============================================ */
+
+/* Mobile-specific improvements */
+@media (max-width: 768px) {
+  /* Prevent body scroll when keyboard opens */
+  body.keyboard-open {
+    position: fixed;
+    width: 100%;
+    overflow: hidden;
+  }
+
+  /* Chat page mobile layout */
+  #chat-page {
+    height: 100vh;
+    height: 100dvh; /* Dynamic viewport height for mobile */
+    display: flex;
+    flex-direction: column;
+  }
+
+  .chat-container {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Messages area - allow scrolling */
+  #messages {
+    flex: 1;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch; /* Smooth iOS scrolling */
+    padding: 16px;
+    min-height: 0; /* Important for flex */
+  }
+
+  /* Fix input at bottom */
+  .input-container {
+    position: sticky;
+    bottom: 0;
+    padding: 12px 16px;
+    background: var(--bg-primary);
+    border-top: 1px solid var(--border-subtle);
+    z-index: 100;
+  }
+
+  /* Larger input for mobile (prevents iOS zoom) */
+  #chat-input {
+    font-size: 16px !important; /* Critical - prevents iOS zoom */
+    min-height: 44px;
+    padding: 12px 16px;
+  }
+
+  /* Larger touch targets */
+  #send-btn {
+    min-width: 44px;
+    min-height: 44px;
+    padding: 12px;
+  }
+
+  /* Message spacing */
+  .message {
+    margin-bottom: 20px;
+  }
+
+  .message-content {
+    max-width: 90%;
+    font-size: 15px;
+  }
+
+  /* Stack suggestion cards vertically */
+  .chat-suggestions {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .suggestion-card {
+    width: 100%;
+  }
+
+  /* Better table scrolling */
+  .table-scroll-wrapper {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    max-width: 100%;
+  }
+
+  .table-scroll-wrapper table {
+    font-size: 13px;
+  }
+
+  /* Data page mobile */
+  .data-page-wrapper {
+    padding: 16px;
+  }
+
+  .data-content-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .data-card {
+    padding: 20px;
+  }
+
+  .data-page-title {
+    font-size: 24px;
+  }
+
+  #data-upload-btn {
+    width: 100%;
+    padding: 16px;
+    font-size: 15px;
+  }
+
+  .data-source-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  /* Chat header mobile */
+  .chat-header {
+    padding: 16px;
+  }
+
+  .chat-title {
+    font-size: 18px;
+  }
+
+  .chat-subtitle {
+    font-size: 12px;
+  }
+
+  /* Empty state mobile */
+  .chat-empty-state {
+    padding: 24px 16px;
+  }
+
+  .chat-empty-title {
+    font-size: 22px;
+  }
+
+  .chat-empty-subtitle {
+    font-size: 14px;
+  }
+
+  /* Viz container mobile */
+  .viz-container {
+    height: 400px !important;
+  }
+
+  /* Hide nav text on very small screens */
+  @media (max-width: 480px) {
+    .nav-text {
+      display: none;
+    }
+    
+    .nav-item {
+      justify-content: center;
+      padding: 12px;
+    }
+
+    .sidebar {
+      width: 80px;
+    }
+  }
+}
+
+/* Smooth transitions for mobile interactions */
+.suggestion-card,
+.nav-item,
+#send-btn,
+.upload-btn {
+  transition: transform 0.15s ease, opacity 0.2s ease;
+}
+
+#send-btn:active,
+.upload-btn:active {
+  transform: scale(0.95);
+}
+
+.suggestion-card:active {
+  transform: scale(0.98);
+}

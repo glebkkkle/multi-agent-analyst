@@ -23,7 +23,74 @@ let dataUploadBtn;
 let dataUploadStatus;
 let dataSourceList;
 
+let isKeyboardOpen = false;
 
+function initMobileKeyboard() {
+  if (window.innerWidth > 768) return; // Only on mobile
+
+  const input = document.getElementById('chat-input');
+  if (!input) return;
+
+  // When keyboard opens
+  input.addEventListener('focus', () => {
+    isKeyboardOpen = true;
+    document.body.classList.add('keyboard-open');
+    
+    // Scroll to input after keyboard animation
+    setTimeout(() => {
+      input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 300);
+  });
+
+  // When keyboard closes
+  input.addEventListener('blur', () => {
+    isKeyboardOpen = false;
+    document.body.classList.remove('keyboard-open');
+  });
+
+  // Detect keyboard via viewport height changes
+  let lastHeight = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+  
+  const handleResize = () => {
+    const currentHeight = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+    
+    // Keyboard opened (height decreased significantly)
+    if (currentHeight < lastHeight - 150) {
+      isKeyboardOpen = true;
+      document.body.classList.add('keyboard-open');
+    }
+    // Keyboard closed (height increased significantly)
+    else if (currentHeight > lastHeight + 150) {
+      isKeyboardOpen = false;
+      document.body.classList.remove('keyboard-open');
+    }
+    
+    lastHeight = currentHeight;
+  };
+
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', handleResize);
+  } else {
+    window.addEventListener('resize', handleResize);
+  }
+}
+
+// Enhanced scroll to bottom for mobile
+function scrollToBottom() {
+  const messagesDiv = document.getElementById('messages');
+  if (!messagesDiv) return;
+  
+  requestAnimationFrame(() => {
+    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+  });
+  
+  // If keyboard is open, ensure input stays visible
+  if (isKeyboardOpen && window.innerWidth <= 768) {
+    setTimeout(() => {
+      input?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }, 100);
+  }
+}
 
 function getToken() {
     return localStorage.getItem("access_token");
@@ -411,11 +478,43 @@ function showChatEmptyState() {
     `;
 
     messagesDiv.querySelectorAll(".suggestion-card").forEach(card => {
-        card.addEventListener("click", () => {
-            const suggestion = card.dataset.suggestion;
-            input.value = suggestion;
-            input.focus();
-        });
+    let touchStartY = 0;
+    let touchStartTime = 0;
+    
+    // Touch start
+    card.addEventListener('touchstart', (e) => {
+        touchStartY = e.touches[0].clientY;
+        touchStartTime = Date.now();
+        card.style.transform = 'scale(0.98)';
+    });
+    
+    // Touch end
+    card.addEventListener('touchend', (e) => {
+        const touchEndY = e.changedTouches[0].clientY;
+        const touchDuration = Date.now() - touchStartTime;
+        card.style.transform = 'scale(1)';
+        
+        // Only trigger if not scrolling and quick tap
+        if (Math.abs(touchEndY - touchStartY) < 10 && touchDuration < 300) {
+        const suggestion = card.dataset.suggestion;
+        input.value = suggestion;
+        input.focus();
+        }
+    });
+    
+    // Touch cancel
+    card.addEventListener('touchcancel', () => {
+        card.style.transform = 'scale(1)';
+    });
+    
+    // Keep click for desktop
+    card.addEventListener('click', () => {
+        if (window.innerWidth > 768) {
+        const suggestion = card.dataset.suggestion;
+        input.value = suggestion;
+        input.focus();
+        }
+    });
     });
 }
 
@@ -455,7 +554,7 @@ function addMessage(text, sender) {
     wrapper.appendChild(avatar);
     wrapper.appendChild(content);
     messagesDiv.appendChild(wrapper);
-    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    scrollToBottom();
 }
 function addDataTable(data, metadata = {}) {
     // 1. HARD LIMIT - Set your max rows here
@@ -523,7 +622,7 @@ function addDataTable(data, metadata = {}) {
     wrapper.appendChild(avatar);
     wrapper.appendChild(content);
     messagesDiv.appendChild(wrapper);
-    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    scrollToBottom();
 }
 
 function addImage(base64OrBlob) {
@@ -548,7 +647,7 @@ function addImage(base64OrBlob) {
     wrapper.appendChild(avatar);
     wrapper.appendChild(content);
     messagesDiv.appendChild(wrapper);
-    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    scrollToBottom();
 }
 function renderVisualization(vis) {
     console.log("VIS RECEIVED:", vis);
@@ -577,7 +676,7 @@ function renderVisualization(vis) {
     wrapper.appendChild(avatar);
     wrapper.appendChild(content);
     messagesDiv.appendChild(wrapper);
-    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    scrollToBottom();
 
     // ---------- DYNAMIC TRACE BUILDING ----------
     let plotData = [];
@@ -795,7 +894,7 @@ function addLoadingIndicator() {
     wrapper.appendChild(avatar);
     wrapper.appendChild(content);
     messagesDiv.appendChild(wrapper);
-    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    scrollToBottom();
     return wrapper;
 }
 
@@ -969,7 +1068,14 @@ input.addEventListener("keypress", e => {
 });
 
 window.addEventListener("load", () => {
-    input.focus();
+    // Initialize mobile keyboard handling
+    initMobileKeyboard();
+    
+    // Only auto-focus on desktop
+    if (window.innerWidth > 768) {
+        input.focus();
+    }
+    
     showChatEmptyState();
     initDataPageListeners();
     loadDataSources(); 
