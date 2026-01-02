@@ -1,5 +1,5 @@
 import pandas as pd
-from src.multi_agent_analyst.db.db_core import engine # Import the engine directly
+from src.multi_agent_analyst.db.db_core import engine
 
 def load_user_tables(thread_id: str):
     schema = thread_id
