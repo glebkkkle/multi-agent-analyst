@@ -48,8 +48,6 @@ def data_agent(data_agent_query: str, current_plan_step: str):
             f"Current tables under the thread:{list(current_tables.values())}",
             extra={
                 "agent": "DataAgent",
-                "step_id": current_plan_step,
-                "object_id": object_id,
             }
         )
     emit("Data Agent retrives data.")
