@@ -72,16 +72,13 @@ def copy_dataframe(schema_name, table_name, df):
     df.to_csv(csv_buffer, index=False, header=False)
     csv_buffer.seek(0)
 
-    conn = get_conn()
-    try:
+    with get_conn() as conn:
         with conn.cursor() as cur:
             cur.copy_expert(
                 f'COPY "{schema_name}"."{table_name}" FROM STDIN WITH CSV',
                 csv_buffer
             )
         conn.commit()
-    finally:
-        conn.close() 
 
 def register_data_source(thread_id: str, table_name: str, filename: str):
     sql = """
