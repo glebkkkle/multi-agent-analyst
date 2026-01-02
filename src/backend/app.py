@@ -175,11 +175,6 @@ async def handle_message(payload: dict, background_tasks: BackgroundTasks, user:
                 "used": used,
             },
         )
-    print(' ')
-    print(f'QUATA USED :{used}')
-    print(' ')
-
-
 
     message = payload["message"]
     session_id = uuid4().hex
@@ -325,7 +320,7 @@ def register_raw(data: LoginRequest):
             user_id = cur.fetchone()[0]
             thread_id = f"thread_{user_id}"
 
-            # Insert fully valid row
+            # Insert user record
             cur.execute(
                 """
                 INSERT INTO users (id, email, password_hash, thread_id)
@@ -334,10 +329,11 @@ def register_raw(data: LoginRequest):
                 (user_id, email, hashed, thread_id),
             )
 
-            # Create schema
-            cur.execute(f'CREATE SCHEMA IF NOT EXISTS "{thread_id}"')
-
             conn.commit()
+    
+    # ✅ Initialize thread schema with proper security
+    from src.multi_agent_analyst.db.db_core import initialize_thread
+    initialize_thread(thread_id)
 
     return Token(
         access_token=create_access_token(

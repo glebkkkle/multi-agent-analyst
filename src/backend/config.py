@@ -19,8 +19,8 @@ class Settings(BaseModel):
     postgres_db: str
     postgres_user: str
     postgres_password: str
+    agent_role_password: str 
 
-    # Optional full URL override
     database_url: str | None = None
 
     # ======================
@@ -50,6 +50,9 @@ class Settings(BaseModel):
     openai_api_key: str | None = None
     openai_default_model: str = "gpt-5.2"
     openai_mini_model: str = "gpt-5-mini"
+    
+    
+
 
 def load_settings() -> Settings:
     try:
@@ -63,6 +66,7 @@ def load_settings() -> Settings:
             postgres_user=os.getenv("POSTGRES_USER"),
             postgres_password=os.getenv("POSTGRES_PASSWORD"),
             database_url=os.getenv("DATABASE_URL"),
+            agent_role_password=os.getenv("AGENT_ROLE_PASS"),
 
             redis_app_host=os.getenv("REDIS_APP_HOST", "localhost"),
             redis_app_port=int(os.getenv("REDIS_APP_PORT", 6379)),
