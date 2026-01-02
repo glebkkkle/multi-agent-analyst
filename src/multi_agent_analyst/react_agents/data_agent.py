@@ -13,13 +13,12 @@ import json
 from src.multi_agent_analyst.prompts.react_agents.data_agent import DATA_AGENT_PROMPT
 from src.multi_agent_analyst.utils.utils import context, current_tables,ExecutionLogEntry, execution_list, object_store, create_log
 from src.multi_agent_analyst.schemas.data_agent_schema import ExternalAgentSchema
-from src.backend.llm.registry import  get_mini_llm
+from src.backend.llm.registry import get_default_llm
 from src.multi_agent_analyst.logging import logger
 
 from src.backend.storage.emitter import emit
 
-
-mini=get_mini_llm()
+llm=get_default_llm()
 
 @tool
 def data_agent(data_agent_query: str, current_plan_step: str):
@@ -40,7 +39,7 @@ def data_agent(data_agent_query: str, current_plan_step: str):
     ]
 
     agent = create_agent(
-        mini,
+        llm,
         tools=tools,
         system_prompt=DATA_AGENT_PROMPT.format(tables=list(current_tables.values())),
         response_format=ExternalAgentSchema,
