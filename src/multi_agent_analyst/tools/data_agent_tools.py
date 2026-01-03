@@ -34,7 +34,7 @@ def make_sql_query_tool():
 
                 return {
                     "object_id": obj_id,
-                    "details": {"row_count": len(df)},
+                    "details": {"row_count": len(df), "columns":df.columns},
                     "exception": None  
                 }
 
