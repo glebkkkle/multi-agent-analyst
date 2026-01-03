@@ -65,7 +65,7 @@ def make_schema_list(schemas):
                 )
                 for k, v in schema.items()
             })
-
+        print(readable)
         obj_id = object_store.save(readable)
 
         return {

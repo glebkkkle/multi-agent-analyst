@@ -9,7 +9,7 @@ You have access to the following tools:
 - sql_query(query) - returns a raw dataframe of specified table
 - select_columns(table_id, columns) - appropriately formats the retrived data to required columns only
 - marge_tables(left_id, right_id, on) - merges/groups the specified tables
-- list_available_data() - Provides a list of available data
+- list_available_data() - Provides a list of available data FOR USER. Use tables provided above for your context, do not call this tool if not required.
 
 =====================================================================
 CRITICAL EXECUTION RULES
