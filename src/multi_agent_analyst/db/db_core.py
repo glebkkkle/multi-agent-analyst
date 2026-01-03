@@ -57,7 +57,7 @@ def get_thread_conn(thread_id: str):
     """
     with agent_engine.begin() as conn:
         conn.execute(
-            text(f'SET LOCAL search_path TO "{thread_id}"')
+            text(f'SET LOCAL search_path TO "{thread_id}", pg_catalog')
         )
         yield conn
 
