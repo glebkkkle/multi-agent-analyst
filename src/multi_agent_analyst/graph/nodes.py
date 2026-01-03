@@ -12,7 +12,8 @@ from src.multi_agent_analyst.prompts.chat.context_agent import cleaned_query
 from src.multi_agent_analyst.prompts.chat.chat_reply_prompt import CHAT_REPLY_PROMPT
 from src.backend.llm.registry import get_default_llm, get_mini_llm
 from src.multi_agent_analyst.logging import logger, trace_logger
-from src.backend.storage.emitter import emit
+from src.backend.storage.emitter import emit, init_thread_tables, get_current_tables
+
 
 
 llm = get_default_llm()
@@ -157,7 +158,14 @@ def chat_node(state: GraphState):
 
     schemas = load_user_tables(state.thread_id)
     current_tables.setdefault(state.thread_id, schemas)
-
+    
+    print(' ')
+    print(schemas)
+    print(' ')
+    print(' ')
+    print(init_thread_tables(state.thread_id))
+    print(' ')
+    print(get_current_tables())
     intent = mini.with_structured_output(IntentSchema).invoke(
         INTENT_CLASSIFIER_PROMPT.format(
             user_query=user_msg,

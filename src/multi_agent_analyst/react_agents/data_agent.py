@@ -16,7 +16,7 @@ from src.multi_agent_analyst.schemas.data_agent_schema import ExternalAgentSchem
 from src.backend.llm.registry import get_default_llm
 from src.multi_agent_analyst.logging import logger
 
-from src.backend.storage.emitter import emit
+from src.backend.storage.emitter import emit, get_current_tables
 
 llm=get_default_llm()
 
@@ -37,7 +37,10 @@ def data_agent(data_agent_query: str, current_plan_step: str):
         make_merge_tool(),
         make_schema_list(list(current_tables.values()))
     ]
-
+    print(' ')
+    print(get_current_tables())
+    print(' ')
+    
     agent = create_agent(
         llm,
         tools=tools,

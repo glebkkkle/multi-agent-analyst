@@ -1,5 +1,6 @@
 from contextvars import ContextVar
-from typing import Callable, Optional
+from typing import Callable, Optional, Dict, Any
+from src.multi_agent_analyst.db.loaders import load_user_tables
 
 MilestoneEmitter = Callable[[str], None]
 
@@ -20,3 +21,30 @@ def emit(msg: str) -> None:
     emitter = _current_emitter.get()
     if emitter is not None:
         emitter(msg)
+
+
+ThreadTables = Dict[str, Dict[str, Any]]
+
+_current_thread_tables: ContextVar[Optional[ThreadTables]] = ContextVar(
+    "current_thread_tables",
+    default=None
+)
+
+def init_thread_tables(thread_id: str):
+    tables = load_user_tables(thread_id)
+    _current_thread_tables.set(tables)
+
+def get_current_tables() -> ThreadTables:
+    tables = _current_thread_tables.get()
+    return tables
+
+
+def refresh_thread_tables(thread_id: str):
+    tables = _current_thread_tables.get()
+    if tables is None:
+        return  
+
+    updated = load_user_tables(thread_id)
+ 
+    tables.clear()
+    tables.update(updated)

@@ -16,8 +16,14 @@ from langchain_core.tools import StructuredTool
 from src.multi_agent_analyst.db.db_core import engine, get_thread_conn
 from src.multi_agent_analyst.utils.utils import object_store, current_tables, normalize_dataframe_types
 
+
 def make_sql_query_tool():
     thread_id = list(current_tables.keys())[0]
+    print(' ')
+    print(list(current_tables.values()))
+    print(' ')
+    print(thread_id)
+    print(' ')
 
     def sql_query(query: str):
 
@@ -26,7 +32,8 @@ def make_sql_query_tool():
         try:
             df = pd.read_sql_query(query, conn)
             df=normalize_dataframe_types(df)
-                        
+            print(df)
+            
             obj_id = object_store.save(df)
             return {
                 "object_id": obj_id,
@@ -34,8 +41,7 @@ def make_sql_query_tool():
             }
         except Exception as e:
             return {'error_message': str(e)}
-        finally:
-            conn.close()
+
 
     return StructuredTool.from_function(
         func=sql_query,
