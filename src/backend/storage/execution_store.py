@@ -164,8 +164,6 @@ class RedisExecutionStore:
             },
         )
 
-    # ---------- reads ----------
-
     def get_snapshot(self, session_id: str, after_seq: int = 0) -> Optional[Dict[str, Any]]:
         data = self.r.hgetall(self._key(session_id))
         if not data:

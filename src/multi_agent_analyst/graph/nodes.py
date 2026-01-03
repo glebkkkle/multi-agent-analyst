@@ -14,8 +14,6 @@ from src.backend.llm.registry import get_default_llm, get_mini_llm
 from src.multi_agent_analyst.logging import logger, trace_logger
 from src.backend.storage.emitter import emit, init_thread_tables, get_current_tables
 
-
-
 llm = get_default_llm()
 mini = get_mini_llm()
 
@@ -118,6 +116,9 @@ def router_node(state: GraphState):
             "status":"completed", 
         }
     
+    object_id=d.get("object_id")
+    print(object_id)
+    print(' ')
     return {
         "desicion":"ok",
         "final_obj_id": d["object_id"],
@@ -158,14 +159,11 @@ def chat_node(state: GraphState):
 
     schemas = load_user_tables(state.thread_id)
     current_tables.setdefault(state.thread_id, schemas)
-    
-    print(' ')
-    print(schemas)
-    print(' ')
-    print(' ')
-    print(init_thread_tables(state.thread_id))
+
+    init_thread_tables(state.thread_id)
     print(' ')
     print(get_current_tables())
+
     intent = mini.with_structured_output(IntentSchema).invoke(
         INTENT_CLASSIFIER_PROMPT.format(
             user_query=user_msg,

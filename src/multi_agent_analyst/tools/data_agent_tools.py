@@ -19,11 +19,6 @@ from src.multi_agent_analyst.utils.utils import object_store, current_tables, no
 
 def make_sql_query_tool():
     thread_id = list(current_tables.keys())[0]
-    print(' ')
-    print(list(current_tables.values()))
-    print(' ')
-    print(thread_id)
-    print(' ')
 
     def sql_query(query: str):
 
@@ -35,6 +30,10 @@ def make_sql_query_tool():
             print(df)
             
             obj_id = object_store.save(df)
+            print(' ')
+            print(obj_id)
+            print(' ')
+
             return {
                 "object_id": obj_id,
                 "details": {"row_count": len(df)}
@@ -91,7 +90,8 @@ def make_select_columns_tool():
             }
         
         obj_id = object_store.save(result)
-
+        print(obj_id)
+        
         return {
                 "object_id": obj_id,
                 "details": {

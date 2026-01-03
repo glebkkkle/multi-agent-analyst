@@ -38,13 +38,13 @@ def data_agent(data_agent_query: str, current_plan_step: str):
         make_schema_list(list(current_tables.values()))
     ]
     print(' ')
-    print(get_current_tables())
+    tables=get_current_tables()
     print(' ')
     
     agent = create_agent(
         llm,
         tools=tools,
-        system_prompt=DATA_AGENT_PROMPT.format(tables=list(current_tables.values())),
+        system_prompt=DATA_AGENT_PROMPT.format(tables=tables),
         response_format=ExternalAgentSchema,
     )
     logger.info(
@@ -127,5 +127,9 @@ def data_agent(data_agent_query: str, current_plan_step: str):
                 "step_id": current_plan_step,
                 "object_id": object_id,
             }
+
         )
+    print(' ')
+    print(msg)
+    print(' ')
     return msg
