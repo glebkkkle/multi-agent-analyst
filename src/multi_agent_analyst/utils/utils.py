@@ -140,7 +140,7 @@ def normalize_dataframe_types(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def guarded():
+def guarded(node_name: str):
     def deco(fn):
         @wraps(fn)
         def wrapper(state, *args, **kwargs):
