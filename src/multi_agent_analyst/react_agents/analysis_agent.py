@@ -19,7 +19,7 @@ from src.multi_agent_analyst.tools.analysis_agent_tools import (
 from pydantic import BaseModel
 from src.multi_agent_analyst.prompts.react_agents.analysis_agent import ANALYST_AGENT_PROMPT
 from src.multi_agent_analyst.schemas.analysis_agent_schema import ExternalAgentSchema
-from src.multi_agent_analyst.utils.utils import context, object_store, load_and_validate_df, generate_data_preview
+from src.multi_agent_analyst.utils.utils import context, object_store, load_and_validate_df, generate_data_preview, agent_error, agent_success
 from src.multi_agent_analyst.utils.utils import execution_list, ExecutionLogEntry
 from src.backend.llm.registry import get_default_llm
 from src.multi_agent_analyst.logging import logger
@@ -46,10 +46,7 @@ def analysis_agent(analysis_query: str, current_plan_step: str, data_id: str):
     data_overview=generate_data_preview(data_id)
 
     if error:
-        return {"status":"error",
-                "object_id":None,
-                "exception":error
-                }
+        return agent_error(error)
 
     correlation_tool = make_correlation_tool(df)
     anomaly_tool = make_anomaly_tool(df)
@@ -80,7 +77,7 @@ def analysis_agent(analysis_query: str, current_plan_step: str, data_id: str):
                 "step_id": current_plan_step,
             }
         )
-        return {"object_id":None, "summary":'Agent did not call any tools', "exception":'No tool call'}
+        return agent_error("Agent did not call any tools")
     
     last_tool_output = tool_msgs[-1].content
     try:
@@ -95,7 +92,7 @@ def analysis_agent(analysis_query: str, current_plan_step: str, data_id: str):
             }
         )
             
-        return {"object_id":None, "summary":'Failed to parse tool output', "exception":'Failed parsing'}
+        return agent_error("Failed to parse tool output")
     
     obj_id=tool_output.get("object_id")
     exception=tool_output.get("exception")

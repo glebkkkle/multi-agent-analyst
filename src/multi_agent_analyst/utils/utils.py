@@ -7,6 +7,9 @@ import uuid
 import pickle
 from typing import Any
 import redis
+import traceback
+from functools import wraps
+from src.multi_agent_analyst.logging import logger
 
 from src.backend.config import settings
 
@@ -136,3 +139,51 @@ def normalize_dataframe_types(df: pd.DataFrame) -> pd.DataFrame:
 
     return df
 
+
+def guarded():
+    def deco(fn):
+        @wraps(fn)
+        def wrapper(state, *args, **kwargs):
+            try:
+                # Clear previous error so it doesn't leak forward
+                patch = fn(state, *args, **kwargs)
+
+                # Ensure dict patch
+                if patch is None:
+                    patch = {}
+                elif not isinstance(patch, dict):
+                    raise TypeError(f" must return dict patch, got {type(patch)}")
+
+                return patch
+
+            except Exception as e:
+                tb = traceback.format_exc()
+                logger.exception("Node crashed", extra={"thread_id": getattr(state, "thread_id", None)})
+
+                # Convert crash → error state
+                return {
+                    "desicion": "error",
+                    "has_error": True,
+                    "execution_exception": f"{type(e).__name__}: {str(e)}",
+                    # optional: keep full traceback in trace/logs only (don't show to users)
+                    # "execution_traceback": tb,  # only if your GraphState has it
+                }
+        return wrapper
+    return deco
+
+
+def agent_error(msg: str, *, object_id=None):
+    return {
+        "status": "error",
+        "object_id": object_id,
+        "summary": None,
+        "exception": msg,
+    }
+
+def agent_success(object_id: str, summary: str):
+    return {
+        "status": "success",
+        "object_id": object_id,
+        "summary": summary,
+        "exception": None,
+    }

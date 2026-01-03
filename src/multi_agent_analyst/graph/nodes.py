@@ -13,10 +13,12 @@ from src.multi_agent_analyst.prompts.chat.chat_reply_prompt import CHAT_REPLY_PR
 from src.backend.llm.registry import get_default_llm, get_mini_llm
 from src.multi_agent_analyst.logging import logger, trace_logger
 from src.backend.storage.emitter import emit, init_thread_tables, get_current_tables
+from src.multi_agent_analyst.utils import guarded
 
 llm = get_default_llm()
 mini = get_mini_llm()
 
+@guarded("planner")
 def planner_node(state: GraphState):
     logger.info(
         "Planner started",
@@ -38,8 +40,9 @@ def planner_node(state: GraphState):
     if state.trace:
         state.trace.plan = plan
 
-    return {"plan": plan, "trace":state.trace}
+    return {"plan": plan, "trace":state.trace, }
 
+@guarded("critic")
 def critic(state: GraphState):
     response = llm.with_structured_output(CriticStucturalResponse).invoke(
         CRITIC_PROMPT.format(
@@ -64,6 +67,7 @@ def critic(state: GraphState):
         "trace":state.trace
     }
 
+@guarded("revision_node")
 def revision_node(state: GraphState):
 
     logger.info(
@@ -94,6 +98,7 @@ def revision_node(state: GraphState):
         "valid": state.valid
     }
 
+@guarded("router_node")
 def router_node(state: GraphState):
     current_tables.setdefault(state.thread_id, load_user_tables(state.thread_id))
     try:
@@ -103,13 +108,13 @@ def router_node(state: GraphState):
             ]
         })
     except Exception as e:        
-        return {"desicion":'error', "execution_exception":str(e)}
+        return  {"desicion": "error", "has_error": True, "execution_exception": str(e)}
     
     last = [m for m in result["messages"] if isinstance(m, AIMessage)][-1].content
     try:
         d = json.loads(last)
     except Exception as e:
-        return {"desicion":'error', "execution_exception":str(e)}
+        return {"desicion": "error", "has_error": True, "execution_exception": str(e)}
 
     if state.trace:
         state.trace.final = {
@@ -127,6 +132,7 @@ def router_node(state: GraphState):
         "trace":state.trace
     }
 
+@guarded("revision_router")
 def revision_router(state: GraphState):
     if state.valid:
         return {"desicion": "valid"}
@@ -142,6 +148,7 @@ def revision_router(state: GraphState):
 
     return {"desicion": "END"}
 
+@guarded("ask_user")
 def ask_user_node(state: GraphState):
     logger.info("Graph suspended")
     return {
@@ -151,9 +158,30 @@ def ask_user_node(state: GraphState):
 def routing(state:GraphState):
     return state.desicion
 
-def allow_execution(state:GraphState):
-    return state
 
+def router_for(path_map: dict):
+    allowed = set(path_map.keys())
+
+    def _route(state: GraphState):
+        # ERROR ALWAYS WINS
+        if getattr(state, "has_error", False) and "error" in allowed:
+            return "error"
+
+        d = getattr(state, "desicion", None)
+        if d in allowed:
+            return d
+
+        if "error" in allowed:
+            return "error"
+
+        return next(iter(allowed))
+    return _route
+
+
+def allow_execution(state:GraphState):
+    return {}
+
+@guarded("chat_node")
 def chat_node(state: GraphState):
     user_msg = state.query
 
@@ -161,8 +189,6 @@ def chat_node(state: GraphState):
     current_tables.setdefault(state.thread_id, schemas)
 
     init_thread_tables(state.thread_id)
-    print(' ')
-    print(get_current_tables())
 
     intent = mini.with_structured_output(IntentSchema).invoke(
         INTENT_CLASSIFIER_PROMPT.format(
@@ -211,11 +237,13 @@ def chat_node(state: GraphState):
             "conversation_history": new_history,
             "dataset_schemas": schemas,
         }
-
+    
+@guarded("chat_reply")
 def chat_reply(state: GraphState):
     reply = mini.invoke(CHAT_REPLY_PROMPT.format(user_query=state.query, conversation_history=state.conversation_history, data_list=state.dataset_schemas))
     return {"final_response": reply.content}
 
+@guarded("execution_error")
 def execution_error_node(state: GraphState):
     return {
         "final_response": (
@@ -227,6 +255,7 @@ def execution_error_node(state: GraphState):
         "image_base64": None,
     }
 
+@guarded("clean_query")
 def clean_query(state:GraphState):
     conv_history=state.conversation_history
 
@@ -251,6 +280,7 @@ def clean_query(state:GraphState):
     return {"query":response.planner_query, "trace":trace}
 
 
+@guarded("final_result_node")
 def final_result_node(state:GraphState):
     if state.desicion == 'chat':
             return {'final_response':state.final_response, "image_base64":None, 'final_obj_id':None}

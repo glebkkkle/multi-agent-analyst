@@ -5,18 +5,19 @@ from src.multi_agent_analyst.db.conversation_store import ThreadConversationStor
 from src.backend.storage.emitter import set_emitter, emit
 from src.backend.storage.execution_store import RedisExecutionStore
 from src.backend.storage.emitter import set_emitter, emit, clear_emitter
-
+import time 
 conversation_store = ThreadConversationStore()
 session_store = RedisSessionStore(redis_client)
 thread_meta = RedisThreadMeta(redis_client)
 execution_store=RedisExecutionStore(redis_client)
 
 def _run_graph(thread_id: str, session_id: str, requires_user_clarification: bool, init_execution_store: bool):
+    MAX_EXECUTION_SECONDS = 180  
     # Only init the execution_store once per session (new message)
     if init_execution_store:
         execution_store.init_session(session_id)
     else:
-        execution_store.mark_running(session_id)
+        execution_store.mark_running(session_id, reset_clock=True)
 
     def milestone_emitter(msg: str) -> None:
         execution_store.add_milestone(session_id, msg)
@@ -46,6 +47,22 @@ def _run_graph(thread_id: str, session_id: str, requires_user_clarification: boo
         last_event = None
         emit("Analyzing query…")
         for event in events:
+            snap = execution_store.get_snapshot(session_id)
+            started_at = snap.get("started_at", time.time())
+
+            if time.time() - started_at > MAX_EXECUTION_SECONDS:
+                session_store.mark_completed(thread_id, session_id)
+                thread_meta.clear_active_session(thread_id)
+
+                execution_store.mark_aborted(
+                    session_id,
+                    "Execution timed out. Please try a simpler query."
+                )
+                return {
+                    "status": "aborted",
+                    "final_response": "Execution timed out. Please try a simpler query."
+                }
+            
             last_event = event
             # 🟡 clarification requested
             if "ask_user" in event:

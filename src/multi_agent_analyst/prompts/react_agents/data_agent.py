@@ -9,7 +9,7 @@ You have access to the following tools:
 - sql_query(query) - returns a raw dataframe of specified table
 - select_columns(table_id, columns) - appropriately formats the retrived data to required columns only
 - marge_tables(left_id, right_id, on) - merges/groups the specified tables
-- list_available_data() - Provides a list of available data FOR current USER. Use tables provided above for your queries, do not call this tool if not required.
+- list_available_data() - Provides a list of available data FOR current user. Use tables provided above for your queries (e.g SELECT * FROM table_name LIMIT 100), do NOT call this tool, unless requested by planner.
 
 =====================================================================
 CRITICAL EXECUTION RULES
@@ -44,6 +44,7 @@ OBJECT-ID RULE (CRITICAL)
 
 You MUST return the EXACT object_id returned by the tool.
 You MUST NOT invent, modify, or rename object_ids.
+Each tool returnes object_id (for internal use, NEVER supposed to be used by you), and details, that will help the execution.
 
 Treat object_ids as opaque tokens (like passwords).
 Do NOT create your own object identifiers.

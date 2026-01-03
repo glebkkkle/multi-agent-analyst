@@ -16,7 +16,7 @@ from src.multi_agent_analyst.tools.visualization_agent_tools import (
     make_bar_chart_tool, 
     make_histogram_tool
 )
-from src.multi_agent_analyst.utils.utils import context, object_store, execution_list, ExecutionLogEntry, generate_data_preview, load_and_validate_df
+from src.multi_agent_analyst.utils.utils import context, agent_error, agent_success, object_store, execution_list, ExecutionLogEntry, generate_data_preview, load_and_validate_df
 from src.backend.llm.registry import  get_mini_llm
 from src.multi_agent_analyst.logging import logger
 from src.backend.storage.emitter import emit
@@ -47,7 +47,7 @@ def visualization_agent(visualizer_query: str, current_plan_step: str, data_id: 
     df, error = load_and_validate_df(data_id)
 
     if error:
-        return {"status":"error", "object_id":None, "exception":error}
+        return agent_error(error)
 
     tools = [
         make_line_plot_tool(df),
@@ -78,7 +78,7 @@ def visualization_agent(visualizer_query: str, current_plan_step: str, data_id: 
                 "step_id": current_plan_step,
             }
         )
-        return {"object_id":None, "summary":'Agent did not call any tools', "exception":'No tool call'}
+        return agent_error("Agent did not call any tools")
     
     last_tool_output = tool_msgs[-1].content
     try:
@@ -92,8 +92,8 @@ def visualization_agent(visualizer_query: str, current_plan_step: str, data_id: 
                 "error": str(e),
             }
         )
-        return {"object_id":None, "summary":'Failed to parse tool output', "exception":'Failed parsing.'}
-
+        return agent_error("Failed to parse tool output")
+    
     object_id=tool_json.get("object_id")
     exception=tool_json.get("exception")
     plot_type=tool_json.get("plot_type")

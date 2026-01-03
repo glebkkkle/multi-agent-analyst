@@ -11,7 +11,7 @@ from src.multi_agent_analyst.tools.data_agent_tools import (
 )
 import json
 from src.multi_agent_analyst.prompts.react_agents.data_agent import DATA_AGENT_PROMPT
-from src.multi_agent_analyst.utils.utils import context, current_tables,ExecutionLogEntry, execution_list, object_store, create_log
+from src.multi_agent_analyst.utils.utils import context, current_tables,ExecutionLogEntry, execution_list, object_store, create_log, agent_success, agent_error
 from src.multi_agent_analyst.schemas.data_agent_schema import ExternalAgentSchema
 from src.backend.llm.registry import get_default_llm
 from src.multi_agent_analyst.logging import logger
@@ -56,7 +56,12 @@ def data_agent(data_agent_query: str, current_plan_step: str):
     emit("Data Agent retrives data.")
     result = agent.invoke({"messages": [{"role": "user", "content": data_agent_query}]})
 
-    last_msg = [m for m in result["messages"] if isinstance(m, AIMessage)][-1].content
+    last_msg = [m for m in result["messages"] if isinstance(m, AIMessage)]
+    if not last_msg:
+        return agent_error('Agent returned no AImessage')
+
+    last_msg=last_msg[-1].content
+
     tool_msgs = [m for m in result["messages"] if isinstance(m, ToolMessage)]
 
     if not tool_msgs:
@@ -68,7 +73,7 @@ def data_agent(data_agent_query: str, current_plan_step: str):
                 "step_id": current_plan_step,
             }
         )
-        return {"object_id":None, "summary":'Agent did not call any tools', "exception":'No tool call'}
+        return agent_error("Agent did not call any tools")
     
     last_tool_output = tool_msgs[-1].content
 
@@ -84,14 +89,14 @@ def data_agent(data_agent_query: str, current_plan_step: str):
             }
         )
         create_log('DataAgent', str(e), 'error', current_plan_step, None, data_agent_query)
-        return {"object_id":None, "summary":'failed to parse tool output', "exception":'Failed Parsing'}
+        return agent_error("Failed to parse tool output")
+
 
     object_id=tool_json.get("object_id")
     exception=tool_json.get("exception")
 
     try:
         msg=json.loads(last_msg)
-
     except Exception:
         return {"object_id":object_id, 
                 "summary":tool_json.get("details", " "), 

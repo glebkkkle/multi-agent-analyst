@@ -74,7 +74,6 @@ class GraphState(BaseModel):
     query: str
     clean_query: Optional[str] = None
     clarification: Optional[str] = None
-
     # MEMORY
     conversation_history: List[Dict[Any, Any]] = Field(default_factory=list)
     final_table_shape : Any=None
@@ -102,7 +101,7 @@ class GraphState(BaseModel):
     dataset_schemas:Optional[Dict[str, Any]] = None
 
     trace:RequestTrace = None
-
+    has_error: bool = False
     @staticmethod
     def reducers():
         return {

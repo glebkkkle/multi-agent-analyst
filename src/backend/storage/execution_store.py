@@ -60,6 +60,7 @@ class RedisExecutionStore:
                 "final_table_shape": "",
                 "milestones": "[]",
                 "next_seq": 1,
+                "started_at": now,
                 "updated_at": now,
             },
         )
@@ -106,15 +107,20 @@ class RedisExecutionStore:
 
     # ---------- state transitions ----------
 
-    def mark_running(self, session_id: str) -> None:
-        self.r.hset(
-            self._key(session_id),
-            mapping={
-                "status": "running",
-                "final_response": "",
-                "updated_at": time.time(),
-            },
-        )
+    def mark_running(self, session_id: str, reset_clock: bool = False) -> None:
+        now = time.time()
+
+        mapping = {
+            "status": "running",
+            "final_response": "",
+            "updated_at": now,
+        }
+
+        if reset_clock:
+            mapping["started_at"] = now   # ⏱️ reset execution timer
+
+        self.r.hset(self._key(session_id), mapping=mapping)
+
 
     def mark_waiting(self, session_id: str, prompt: Optional[str]) -> None:
         self.r.hset(
@@ -126,6 +132,7 @@ class RedisExecutionStore:
                 "final_table_shape": "",
                 "updated_at": time.time(),
             },
+
         )
 
     def mark_done(self, session_id: str, final_payload: Dict[str, Any]) -> None:
@@ -179,5 +186,6 @@ class RedisExecutionStore:
             "final_obj_id": data.get("final_obj_id", ""),
             "final_table_shape": data.get("final_table_shape", ""),
             "milestones": new_milestones,
+            "started_at": float(data.get("started_at", 0)),  # ✅ ADD
             "updated_at": float(data.get("updated_at", 0)),
         }

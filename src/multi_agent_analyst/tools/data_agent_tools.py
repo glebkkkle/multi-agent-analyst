@@ -70,7 +70,7 @@ def make_schema_list(schemas):
 
         return {
             "object_id": obj_id,
-            "details": {"schemas": "listed"}
+            "details": {"schemas": "listed", "available_data":readable}
         }
 
     return StructuredTool.from_function(
