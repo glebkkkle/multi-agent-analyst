@@ -21,26 +21,29 @@ def make_sql_query_tool():
     thread_id = list(current_tables.keys())[0]
 
     def sql_query(query: str):
-
-        conn = get_thread_conn(thread_id)
-        
         try:
-            df = pd.read_sql_query(query, conn)
-            df=normalize_dataframe_types(df)
-            print(df)
-            
-            obj_id = object_store.save(df)
-            print(' ')
-            print(obj_id)
-            print(' ')
+            with get_thread_conn(thread_id) as conn:  
+                df = pd.read_sql_query(query, conn)
+                df = normalize_dataframe_types(df)
+                print(df)
+                
+                obj_id = object_store.save(df)
+                print(' ')
+                print(obj_id)
+                print(' ')
 
-            return {
-                "object_id": obj_id,
-                "details": {"row_count": len(df)}
-            }
+                return {
+                    "object_id": obj_id,
+                    "details": {"row_count": len(df)},
+                    "exception": None  
+                }
+
         except Exception as e:
-            return {'error_message': str(e)}
-
+            return {
+                'object_id': None,
+                'exception': str(e),  
+                'details': {}
+            }
 
     return StructuredTool.from_function(
         func=sql_query,
@@ -91,7 +94,7 @@ def make_select_columns_tool():
         
         obj_id = object_store.save(result)
         print(obj_id)
-        
+
         return {
                 "object_id": obj_id,
                 "details": {
