@@ -7,6 +7,7 @@ from typing import Dict, List, Iterator, Optional
 import pandas as pd
 from sqlalchemy import create_engine, text
 from sqlalchemy.engine import Connection
+from sqlalchemy.pool import NullPool
 
 from src.backend.config import settings
 
@@ -19,20 +20,20 @@ APP_DATABASE_URL = (
     f"{settings.postgres_db}"
 )
 
+# Main app engine (privileged)
 engine = create_engine(
     APP_DATABASE_URL,
     pool_size=10,
     max_overflow=20,
 )
 
-agent_engine = create_engine(
-    f"postgresql://data_agent:"
-    f"{settings.data_agent_password}"
-    f"@{settings.postgres_host}:"
-    f"{settings.postgres_port}/"
-    f"{settings.postgres_db}",
+# Base agent engine for SET ROLE operations
+# Uses the main user but will SET ROLE to thread-specific roles
+agent_base_engine = create_engine(
+    APP_DATABASE_URL,
     pool_size=10,
     max_overflow=20,
+    poolclass=NullPool,  # Don't pool since each connection uses different roles
 )
 
 
@@ -44,6 +45,11 @@ def validate_identifier(name: str, param_name: str) -> str:
     if len(name) > 63:
         raise ValueError(f"{param_name} too long (max 63 chars)")
     return name
+
+def get_thread_role_name(thread_id: str) -> str:
+    """Generate the role name for a thread."""
+    safe_thread_id = validate_identifier(thread_id, "thread_id")
+    return f"thread_{safe_thread_id}"
 
 # ----------------------------
 # Privileged raw connection (COPY)
@@ -62,118 +68,148 @@ def get_conn():
         conn.close()
 
 # ----------------------------
-# Thread schema management (privileged)
+# Thread initialization (ONE TIME per thread)
+# ----------------------------
+
+def initialize_thread(thread_id: str) -> None:
+    """
+    ONE-TIME setup for a new thread:
+    1. Create the schema
+    2. Create a dedicated role for this thread
+    3. Grant the role access to its schema
+    
+    This is called once when a thread is created and never needs to be repeated.
+    """
+    safe_thread_id = validate_identifier(thread_id, "thread_id")
+    role_name = get_thread_role_name(thread_id)
+    
+    with engine.begin() as conn:
+        # Create schema
+        conn.execute(text(f'CREATE SCHEMA IF NOT EXISTS "{safe_thread_id}"'))
+        
+        # Create role (if it doesn't exist)
+        # Note: CREATE ROLE IF NOT EXISTS requires PostgreSQL 9.6+
+        # For older versions, catch the exception
+        try:
+            conn.execute(text(f'CREATE ROLE "{role_name}" NOLOGIN'))
+        except Exception as e:
+            if "already exists" not in str(e):
+                raise
+        
+        # Grant usage on schema
+        conn.execute(text(f'GRANT USAGE ON SCHEMA "{safe_thread_id}" TO "{role_name}"'))
+        
+        # Grant all privileges on all current and future tables in the schema
+        conn.execute(text(f'GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA "{safe_thread_id}" TO "{role_name}"'))
+        conn.execute(text(f'ALTER DEFAULT PRIVILEGES IN SCHEMA "{safe_thread_id}" GRANT ALL PRIVILEGES ON TABLES TO "{role_name}"'))
+        
+        # Grant all privileges on all current and future sequences
+        conn.execute(text(f'GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA "{safe_thread_id}" TO "{role_name}"'))
+        conn.execute(text(f'ALTER DEFAULT PRIVILEGES IN SCHEMA "{safe_thread_id}" GRANT ALL PRIVILEGES ON SEQUENCES TO "{role_name}"'))
+        
+        # Allow the main app user to SET ROLE to this thread role
+        conn.execute(text(f'GRANT "{role_name}" TO "{settings.postgres_user}"'))
+
+def cleanup_thread(thread_id: str) -> None:
+    """
+    Clean up a thread's resources (optional, for thread deletion).
+    """
+    safe_thread_id = validate_identifier(thread_id, "thread_id")
+    role_name = get_thread_role_name(thread_id)
+    
+    with engine.begin() as conn:
+        # Drop schema and all contents
+        conn.execute(text(f'DROP SCHEMA IF EXISTS "{safe_thread_id}" CASCADE'))
+        
+        # Drop the role
+        conn.execute(text(f'DROP ROLE IF EXISTS "{role_name}"'))
+
+# ----------------------------
+# Secure agent execution (NO LOCKS NEEDED!)
+# ----------------------------
+
+@contextmanager
+def get_thread_conn(thread_id: str) -> Iterator[Connection]:
+    """
+    Get a connection that operates as the thread's role.
+    
+    SECURITY MODEL:
+    - Connection assumes the thread-specific role using SET ROLE
+    - PostgreSQL enforces all permission checks
+    - No JIT grants/revokes needed
+    - Multiple threads can run concurrently
+    - Completely isolated by PostgreSQL's native permission system
+    """
+    safe_thread_id = validate_identifier(thread_id, "thread_id")
+    role_name = get_thread_role_name(thread_id)
+    
+    with agent_base_engine.connect() as conn:
+        with conn.begin():
+            # Assume the thread's role - THIS IS THE SECURITY BOUNDARY
+            conn.execute(text(f'SET ROLE "{role_name}"'))
+            
+            # Set search path for convenience
+            conn.execute(text(f'SET search_path TO "{safe_thread_id}", public'))
+            
+            # Enforce RLS where present (defense in depth)
+            conn.execute(text("SET row_security = on"))
+            
+            # Set thread_id for any RLS policies
+            conn.execute(text("SET app.current_thread_id = :tid"), {"tid": safe_thread_id})
+            
+            # Prevent runaway queries
+            conn.execute(text("SET statement_timeout = '30s'"))
+            
+            yield conn
+            
+            # Transaction is automatically committed or rolled back
+            # Role automatically resets when connection is returned to pool
+
+# For backward compatibility with the old API
+@contextmanager
+def agent_execution(thread_id: str) -> Iterator[None]:
+    """
+    Legacy compatibility wrapper.
+    With per-thread roles, this is just a no-op context manager.
+    """
+    validate_identifier(thread_id, "thread_id")
+    yield
+
+# ----------------------------
+# Legacy compatibility helpers
 # ----------------------------
 
 def ensure_schema(schema_name: str) -> None:
     """
     Ensure a schema exists.
-    This is a legacy compatibility helper used by app.py.
+    Note: For new code, use initialize_thread() instead.
     """
     safe_schema = validate_identifier(schema_name, "schema_name")
     with engine.begin() as conn:
         conn.execute(text(f'CREATE SCHEMA IF NOT EXISTS "{safe_schema}"'))
 
-def initialize_thread(thread_id: str) -> None:
-    safe_thread_id = validate_identifier(thread_id, "thread_id")
-    with engine.begin() as conn:
-        conn.execute(text("SELECT initialize_thread_schema(:thread_id)"), {"thread_id": safe_thread_id})
-
 def grant_thread_access(thread_id: str, conn: Optional[Connection] = None) -> None:
-    safe_thread_id = validate_identifier(thread_id, "thread_id")
-    if conn is None:
-        with engine.begin() as c:
-            c.execute(text("SELECT grant_thread_access(:thread_id)"), {"thread_id": safe_thread_id})
-    else:
-        conn.execute(text("SELECT grant_thread_access(:thread_id)"), {"thread_id": safe_thread_id})
+    """
+    Legacy no-op - access is now permanent via roles.
+    """
+    pass
 
 def revoke_thread_access(thread_id: str, conn: Optional[Connection] = None) -> None:
-    safe_thread_id = validate_identifier(thread_id, "thread_id")
-    if conn is None:
-        with engine.begin() as c:
-            c.execute(text("SELECT revoke_thread_access(:thread_id)"), {"thread_id": safe_thread_id})
-    else:
-        conn.execute(text("SELECT revoke_thread_access(:thread_id)"), {"thread_id": safe_thread_id})
-
-# ----------------------------
-# Advisory lock (prevents concurrent thread grants)
-# ----------------------------
-
-def _advisory_key(name: str) -> int:
     """
-    Convert a string into a stable 64-bit signed int key for pg_advisory_lock.
+    Legacy no-op - access is now permanent via roles.
     """
-    digest = hashlib.sha256(name.encode("utf-8")).digest()
-    # take first 8 bytes as signed int64
-    return int.from_bytes(digest[:8], "big", signed=True)
+    pass
 
 @contextmanager
 def global_agent_lock() -> Iterator[None]:
     """
-    Global lock: REQUIRED when using a single LOGIN role (data_agent) and JIT GRANT/REVOKE.
-    Ensures only one agent run is active at a time.
+    Legacy no-op - no longer needed with per-thread roles.
     """
-    lock_key = _advisory_key("global_data_agent_lock")
-
-    with engine.begin() as conn:
-        # Block until acquired
-        conn.execute(text("SELECT pg_advisory_lock(:k)"), {"k": lock_key})
-        try:
-            yield
-        finally:
-            conn.execute(text("SELECT pg_advisory_unlock(:k)"), {"k": lock_key})
+    yield
 
 # ----------------------------
-# Secure agent execution boundary
+# Data management (unchanged)
 # ----------------------------
-
-@contextmanager
-def agent_execution(thread_id: str) -> Iterator[None]:
-    """
-    HARD security boundary:
-      - Acquire a global lock (prevents concurrent grants)
-      - Grant access to exactly one thread schema
-      - Ensure revoke ALWAYS happens
-    """
-    safe_thread_id = validate_identifier(thread_id, "thread_id")
-
-    with global_agent_lock():
-        # Use a single privileged transaction for grant/revoke operations
-        with engine.begin() as priv_conn:
-            grant_thread_access(safe_thread_id, conn=priv_conn)
-
-        try:
-            yield
-        finally:
-            # Always revoke, even if the agent crashes/throws
-            with engine.begin() as priv_conn:
-                revoke_thread_access(safe_thread_id, conn=priv_conn)
-
-@contextmanager
-def get_thread_conn(thread_id: str) -> Iterator[Connection]:
-    """
-    Agent-only connection.
-    SECURITY NOTE:
-      - search_path is for convenience only (not a security boundary)
-      - privileges enforce isolation
-    """
-    safe_thread_id = validate_identifier(thread_id, "thread_id")
-
-    with agent_engine.begin() as conn:
-        # convenience for unqualified table names
-        conn.execute(text(f'SET LOCAL search_path TO "{safe_thread_id}"'))
-
-        # enforce RLS where present
-        conn.execute(text("SET LOCAL row_security = on;"))
-
-        # set the thread_id for your RLS policies (data_sources/thread_messages)
-        conn.execute(text("SET LOCAL app.current_thread_id = :tid"), {"tid": safe_thread_id})
-
-        # prevent runaway queries
-        conn.execute(text("SET LOCAL statement_timeout = '30s';"))
-
-        yield conn
-
 
 def create_table(schema_name: str, table_name: str, columns: Dict[str, str]) -> None:
     safe_schema = validate_identifier(schema_name, "schema_name")
