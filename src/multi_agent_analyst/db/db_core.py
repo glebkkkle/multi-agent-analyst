@@ -71,6 +71,15 @@ def get_conn():
 # Thread schema management (privileged)
 # ----------------------------
 
+def ensure_schema(schema_name: str) -> None:
+    """
+    Ensure a schema exists.
+    This is a legacy compatibility helper used by app.py.
+    """
+    safe_schema = validate_identifier(schema_name, "schema_name")
+    with engine.begin() as conn:
+        conn.execute(text(f'CREATE SCHEMA IF NOT EXISTS "{safe_schema}"'))
+
 def initialize_thread(thread_id: str) -> None:
     safe_thread_id = validate_identifier(thread_id, "thread_id")
     with engine.begin() as conn:
