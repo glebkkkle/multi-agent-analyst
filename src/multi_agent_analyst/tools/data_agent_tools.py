@@ -15,17 +15,31 @@ from langchain_core.tools import StructuredTool
 
 from src.multi_agent_analyst.db.db_core import engine, get_thread_conn, agent_execution
 from src.multi_agent_analyst.utils.utils import object_store, current_tables, normalize_dataframe_types
+import re
+
+def qualify_sql(sql: str, schema: str) -> str:
+    """
+    Naively qualifies unqualified table names with the thread schema.
+    Assumes simple SELECTs (which is exactly your agent use case).
+    """
+    # Example: FROM radial_data → FROM "thread_21".radial_data
+    return re.sub(
+        r'FROM\s+([a-zA-Z_][a-zA-Z0-9_]*)',
+        rf'FROM "{schema}".\1',
+        sql,
+        flags=re.IGNORECASE
+    )
 
 def make_sql_query_tool():
     thread_id = list(current_tables.keys())[0]
 
     def sql_query(query: str):
         try:
-            # 🔒 HARD SECURITY BOUNDARY
-            # This guarantees: GRANT → RUN → REVOKE + no concurrency
             with agent_execution(thread_id):
                 with get_thread_conn(thread_id) as conn:
-                    df = pd.read_sql_query(query, conn)
+                    qualified_query = qualify_sql(query, thread_id)
+
+                    df = pd.read_sql_query(qualified_query, conn)
                     df = normalize_dataframe_types(df)
 
                     obj_id = object_store.save(df)
