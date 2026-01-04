@@ -4,8 +4,10 @@ from src.backend.storage.thread_store import RedisSessionStore, RedisThreadMeta
 from src.multi_agent_analyst.db.conversation_store import ThreadConversationStore
 from src.backend.storage.emitter import set_emitter, emit
 from src.backend.storage.execution_store import RedisExecutionStore
-from src.backend.storage.emitter import set_emitter, emit, clear_emitter
+from src.backend.storage.emitter import set_emitter, emit, clear_emitter, init_thread_tables
 import time 
+from src.multi_agent_analyst.db.loaders import load_user_tables
+
 conversation_store = ThreadConversationStore()
 session_store = RedisSessionStore(redis_client)
 thread_meta = RedisThreadMeta(redis_client)
@@ -32,6 +34,8 @@ def _run_graph(thread_id: str, session_id: str, requires_user_clarification: boo
             max_age_seconds=300,
             limit=3,
         )
+        tables=init_thread_tables(thread_id)
+        print(tables)
 
         events = compiled_graph.stream(
             {
@@ -40,6 +44,7 @@ def _run_graph(thread_id: str, session_id: str, requires_user_clarification: boo
                 "session_id": session_id,
                 "requires_user_clarification": requires_user_clarification,
                 "conversation_history": conversation_history,
+                "dataset_schemas":tables,
             },
             config={"configurable": {"thread_id": thread_id}},
         )

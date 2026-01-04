@@ -189,10 +189,9 @@ def chat_node(state: GraphState):
     current_tables.setdefault(state.thread_id, schemas)
     
     print(' ')
-    print(current_tables)
+    print(state.dataset_schemas)
     print(' ')
-    init_thread_tables(state.thread_id)
-
+    print(get_current_tables())
     intent = mini.with_structured_output(IntentSchema).invoke(
         INTENT_CLASSIFIER_PROMPT.format(
             user_query=user_msg,
