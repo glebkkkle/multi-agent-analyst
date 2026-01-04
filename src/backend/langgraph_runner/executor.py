@@ -4,7 +4,7 @@ from src.backend.storage.thread_store import RedisSessionStore, RedisThreadMeta
 from src.multi_agent_analyst.db.conversation_store import ThreadConversationStore
 from src.backend.storage.emitter import set_emitter, emit
 from src.backend.storage.execution_store import RedisExecutionStore
-from src.backend.storage.emitter import set_emitter, emit, clear_emitter, init_thread_tables
+from src.backend.storage.emitter import set_emitter, emit, clear_emitter, get_current_tables,init_thread_tables
 import time 
 from src.multi_agent_analyst.db.loaders import load_user_tables
 
@@ -34,9 +34,12 @@ def _run_graph(thread_id: str, session_id: str, requires_user_clarification: boo
             max_age_seconds=300,
             limit=3,
         )
-        tables=init_thread_tables(thread_id)
+        init_thread_tables(thread_id)
+        tables=get_current_tables()
+        print(' ')
         print(tables)
-
+        print(' ')
+        
         events = compiled_graph.stream(
             {
                 "query": session.canonical_query,
