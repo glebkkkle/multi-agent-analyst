@@ -15,7 +15,6 @@ def load_user_tables(thread_id: str) -> dict:
         "tables": {}
     }
 
-    # 1) Tables in that schema
     tables_df = pd.read_sql(
         text("""
             SELECT table_name
@@ -32,7 +31,7 @@ def load_user_tables(thread_id: str) -> dict:
     result["available_tables"] = table_names
 
     for table_name in table_names:
-        # 2) Columns (ordered)
+
         cols_df = pd.read_sql(
             text("""
                 SELECT column_name, data_type
@@ -50,11 +49,16 @@ def load_user_tables(thread_id: str) -> dict:
             for _, r in cols_df.iterrows()
         ]
 
-        # 3) Row count (qualified)
-        row_count = pd.read_sql(
-            text(f'SELECT COUNT(*) AS c FROM "{schema}"."{table_name}"'),
-            engine,
-        ).iloc[0, 0]
+        with engine.begin() as conn:
+            conn.execute(text("SET LOCAL row_security = on"))
+            conn.execute(
+                text("SET LOCAL app.current_thread_id = :tid"),
+                {"tid": schema},
+            )
+
+            row_count = conn.execute(
+                text(f'SELECT COUNT(*) FROM "{schema}"."{table_name}"')
+            ).scalar()
 
         result["tables"][table_name] = {
             "row_count": int(row_count),

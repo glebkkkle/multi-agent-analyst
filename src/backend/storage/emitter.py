@@ -48,3 +48,6 @@ def refresh_thread_tables(thread_id: str):
  
     tables.clear()
     tables.update(updated)
+
+
+current_thread_id: ContextVar[str] = ContextVar("current_thread_id")

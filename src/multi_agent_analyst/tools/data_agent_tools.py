@@ -8,6 +8,7 @@ from src.multi_agent_analyst.schemas.data_agent_schema import (
 )
 
 from src.multi_agent_analyst.db.db_core import get_thread_conn
+from src.backend.storage.emitter import current_thread_id
 
 from src.multi_agent_analyst.utils.utils import object_store, current_tables
 import pandas as pd
@@ -31,7 +32,7 @@ def qualify_sql(sql: str, schema: str) -> str:
     )
 
 def make_sql_query_tool():
-    thread_id = list(current_tables.keys())[0]
+    thread_id = current_thread_id.get()
 
     def sql_query(query: str):
         try:
@@ -67,32 +68,56 @@ def make_sql_query_tool():
         args_schema=SQLQuerySchema,
     )
 
-def make_schema_list(schemas):
+def make_schema_list(schemas: dict):
+    """
+    schemas format (trusted input):
+    {
+      "available_tables": [...],
+      "tables": {
+        table_name: {
+          "row_count": int,
+          "columns": [{"name": str, "type": str}]
+        }
+      }
+    }
+    """
+
     def list_available_data():
         readable = []
 
-        for schema in schemas:
+        for table_name in schemas.get("available_tables", []):
+            meta = schemas["tables"].get(table_name, {})
+
+            columns = meta.get("columns", [])
+            column_strings = [
+                f"{col['name']} ({col['type']})"
+                for col in columns
+            ]
+
             readable.append({
-                k: (
-                    ", ".join(f"{ck}: {cv}" for ck, cv in v.items())
-                    if isinstance(v, dict)
-                    else v
-                )
-                for k, v in schema.items()
+                "table": table_name,
+                "row_count": meta.get("row_count", 0),
+                "columns": column_strings,
             })
-        print(readable)
+
         obj_id = object_store.save(readable)
 
         return {
             "object_id": obj_id,
-            "details": {"schemas": "listed", "available_data":readable}
+            "details": {
+                "table_count": len(readable),
+                "tables": [t["table"] for t in readable],
+            },
         }
 
     return StructuredTool.from_function(
         func=list_available_data,
         name="list_available_data",
-        description="A function that provides a list of available data",
-        args_schema=ListDataSchema
+        description=(
+            "Returns a human-readable catalog of available tables for the current user. "
+            "This does NOT query the database and should only be used when explicitly "
+            "requested by the Planner."
+        ),
     )
 
 def make_select_columns_tool():

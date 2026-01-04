@@ -31,12 +31,7 @@ def data_agent(data_agent_query: str, current_plan_step: str):
             "step_id": current_plan_step,
         }
     )
-    tools = [
-        make_sql_query_tool(),
-        make_select_columns_tool(),
-        make_merge_tool(),
-        make_schema_list(list(current_tables.values()))
-    ]
+
     print(' ')
     tables=get_current_tables()
     print(' ')
@@ -44,18 +39,27 @@ def data_agent(data_agent_query: str, current_plan_step: str):
     print(tables)
     print(' ')
     
+    tools = [
+        make_sql_query_tool(),
+        make_select_columns_tool(),
+        make_merge_tool(),
+        make_schema_list(tables)
+    ]    
+
     agent = create_agent(
         llm,
         tools=tools,
         system_prompt=DATA_AGENT_PROMPT.format(tables=tables),
         response_format=ExternalAgentSchema,
     )
+    
     logger.info(
             f"Current tables under the thread:{list(current_tables.values())}",
             extra={
                 "agent": "DataAgent",
             }
         )
+    
     emit("Data Agent retrives data.")
     result = agent.invoke({"messages": [{"role": "user", "content": data_agent_query}]})
 

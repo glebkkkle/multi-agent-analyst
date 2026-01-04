@@ -4,7 +4,7 @@ from src.backend.storage.thread_store import RedisSessionStore, RedisThreadMeta
 from src.multi_agent_analyst.db.conversation_store import ThreadConversationStore
 from src.backend.storage.emitter import set_emitter, emit
 from src.backend.storage.execution_store import RedisExecutionStore
-from src.backend.storage.emitter import set_emitter, emit, clear_emitter, get_current_tables,init_thread_tables
+from src.backend.storage.emitter import set_emitter, emit, clear_emitter, get_current_tables,init_thread_tables, current_thread_id
 import time 
 from src.multi_agent_analyst.db.loaders import load_user_tables
 
@@ -24,10 +24,13 @@ def _run_graph(thread_id: str, session_id: str, requires_user_clarification: boo
     def milestone_emitter(msg: str) -> None:
         execution_store.add_milestone(session_id, msg)
 
+
     set_emitter(milestone_emitter)
     try:
         
         session = session_store.get_session(thread_id, session_id)
+
+        token = current_thread_id.set(thread_id)
 
         conversation_history = conversation_store.get_recent(
             thread_id=thread_id,
@@ -39,11 +42,11 @@ def _run_graph(thread_id: str, session_id: str, requires_user_clarification: boo
         print(' ')
         print(tables)
         print(' ')
-        
+
         events = compiled_graph.stream(
             {
                 "query": session.canonical_query,
-                "thread_id": thread_id,
+                "thread_id": token,
                 "session_id": session_id,
                 "requires_user_clarification": requires_user_clarification,
                 "conversation_history": conversation_history,
