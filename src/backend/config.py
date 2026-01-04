@@ -20,6 +20,8 @@ class Settings(BaseModel):
     postgres_user: str
     postgres_password: str
     agent_role_password: str 
+    
+    data_agent_password : str
 
     database_url: str | None = None
 
@@ -67,6 +69,7 @@ def load_settings() -> Settings:
             postgres_password=os.getenv("POSTGRES_PASSWORD"),
             database_url=os.getenv("DATABASE_URL"),
             agent_role_password=os.getenv("AGENT_ROLE_PASS"),
+            data_agent_password=os.getenv("DATA_AGENT_PASS"),
 
             redis_app_host=os.getenv("REDIS_APP_HOST", "localhost"),
             redis_app_port=int(os.getenv("REDIS_APP_PORT", 6379)),

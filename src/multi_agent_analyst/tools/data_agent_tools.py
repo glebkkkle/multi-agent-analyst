@@ -13,36 +13,37 @@ from src.multi_agent_analyst.utils.utils import object_store, current_tables
 import pandas as pd
 from langchain_core.tools import StructuredTool
 
-from src.multi_agent_analyst.db.db_core import engine, get_thread_conn
+from src.multi_agent_analyst.db.db_core import engine, get_thread_conn, agent_execution
 from src.multi_agent_analyst.utils.utils import object_store, current_tables, normalize_dataframe_types
-
 
 def make_sql_query_tool():
     thread_id = list(current_tables.keys())[0]
 
     def sql_query(query: str):
         try:
-            with get_thread_conn(thread_id) as conn:  
-                df = pd.read_sql_query(query, conn)
-                df = normalize_dataframe_types(df)
-                print(df)
-                
-                obj_id = object_store.save(df)
-                print(' ')
-                print(obj_id)
-                print(' ')
+            # 🔒 HARD SECURITY BOUNDARY
+            # This guarantees: GRANT → RUN → REVOKE + no concurrency
+            with agent_execution(thread_id):
+                with get_thread_conn(thread_id) as conn:
+                    df = pd.read_sql_query(query, conn)
+                    df = normalize_dataframe_types(df)
 
-                return {
-                    "object_id": obj_id,
-                    "details": {"row_count": len(df), "columns":df.columns},
-                    "exception": None  
-                }
+                    obj_id = object_store.save(df)
+
+                    return {
+                        "object_id": obj_id,
+                        "details": {
+                            "row_count": len(df),
+                            "columns": list(df.columns),
+                        },
+                        "exception": None
+                    }
 
         except Exception as e:
             return {
-                'object_id': None,
-                'exception': str(e),  
-                'details': {}
+                "object_id": None,
+                "exception": str(e),
+                "details": {}
             }
 
     return StructuredTool.from_function(
