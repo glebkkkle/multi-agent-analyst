@@ -57,6 +57,7 @@ def make_sql_query_tool():
                     }
 
         except Exception as e:
+            print(e)
             return {
                 "object_id": None,
                 "exception": str(e),
