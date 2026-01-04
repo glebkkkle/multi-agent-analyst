@@ -187,7 +187,10 @@ def chat_node(state: GraphState):
 
     schemas = load_user_tables(state.thread_id)
     current_tables.setdefault(state.thread_id, schemas)
-
+    
+    print(' ')
+    print(current_tables)
+    print(' ')
     init_thread_tables(state.thread_id)
 
     intent = mini.with_structured_output(IntentSchema).invoke(
