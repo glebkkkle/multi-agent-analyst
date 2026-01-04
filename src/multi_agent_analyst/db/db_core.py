@@ -31,8 +31,6 @@ engine = create_engine(
 # Uses the main user but will SET ROLE to thread-specific roles
 agent_base_engine = create_engine(
     APP_DATABASE_URL,
-    pool_size=10,
-    max_overflow=20,
     poolclass=NullPool,  # Don't pool since each connection uses different roles
 )
 
