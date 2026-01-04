@@ -1,20 +1,22 @@
 import pandas as pd
-from src.multi_agent_analyst.db.db_core import engine
 from sqlalchemy import text
+from src.multi_agent_analyst.db.db_core import engine
 
-def load_user_tables() -> dict:
-    """
-    Load a deterministic description of all tables
-    visible in the current search_path.
 
-    PRIVILEGED BACKEND OPERATION.
+def load_user_tables(thread_id: str) -> dict:
     """
+    Load table metadata for the CURRENT search_path.
+
+    thread_id is accepted for compatibility with the graph/state,
+    but is NOT used directly (search_path already enforces isolation).
+    """
+
     result = {
         "available_tables": [],
         "tables": {}
     }
 
-    # 1️⃣ List tables visible via search_path
+    # Tables visible via current search_path
     tables_df = pd.read_sql(
         text("""
             SELECT table_name
@@ -29,7 +31,7 @@ def load_user_tables() -> dict:
     for table_name in tables_df["table_name"].tolist():
         result["available_tables"].append(table_name)
 
-        # 2️⃣ Column metadata (ordered)
+        # Columns
         cols_df = pd.read_sql(
             text("""
                 SELECT column_name, data_type
@@ -43,14 +45,11 @@ def load_user_tables() -> dict:
         )
 
         columns = [
-            {
-                "name": str(row["column_name"]),
-                "type": str(row["data_type"]),
-            }
+            {"name": row["column_name"], "type": row["data_type"]}
             for _, row in cols_df.iterrows()
         ]
 
-        # 3️⃣ Row count (unqualified table name uses search_path)
+        # Row count
         row_count = pd.read_sql(
             text(f'SELECT COUNT(*) FROM "{table_name}"'),
             engine,
