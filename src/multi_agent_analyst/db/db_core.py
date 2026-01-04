@@ -257,3 +257,11 @@ def get_table_info(thread_id: str, table_name: str) -> List[Dict[str, str]]:
             {"column": r[0], "type": r[1], "nullable": (r[2] == "YES")}
             for r in res.fetchall()
         ]
+def ensure_schema(schema_name: str) -> None:
+    """
+    Ensure a schema exists.
+    This is a legacy compatibility helper used by app.py.
+    """
+    safe_schema = validate_identifier(schema_name, "schema_name")
+    with engine.begin() as conn:
+        conn.execute(text(f'CREATE SCHEMA IF NOT EXISTS "{safe_schema}"'))
