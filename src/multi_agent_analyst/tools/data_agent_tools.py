@@ -33,8 +33,10 @@ def qualify_sql(sql: str, schema: str) -> str:
 
 def make_sql_query_tool():
     thread_id = current_thread_id.get()
-
+    print(thread_id)
+    
     def sql_query(query: str):
+        print(query)
         try:
             with agent_execution(thread_id):
                 with get_thread_conn(thread_id) as conn:
@@ -42,7 +44,7 @@ def make_sql_query_tool():
 
                     df = pd.read_sql_query(qualified_query, conn)
                     df = normalize_dataframe_types(df)
-
+                    print(df)
                     obj_id = object_store.save(df)
 
                     return {
@@ -118,6 +120,7 @@ def make_schema_list(schemas: dict):
             "This does NOT query the database and should only be used when explicitly "
             "requested by the Planner."
         ),
+        args_schema=ListDataSchema,
     )
 
 def make_select_columns_tool():

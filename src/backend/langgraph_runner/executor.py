@@ -30,7 +30,7 @@ def _run_graph(thread_id: str, session_id: str, requires_user_clarification: boo
         
         session = session_store.get_session(thread_id, session_id)
 
-        token = current_thread_id.set(thread_id)
+        current_thread_id.set(thread_id)
 
         conversation_history = conversation_store.get_recent(
             thread_id=thread_id,
@@ -46,7 +46,7 @@ def _run_graph(thread_id: str, session_id: str, requires_user_clarification: boo
         events = compiled_graph.stream(
             {
                 "query": session.canonical_query,
-                "thread_id": token,
+                "thread_id": current_thread_id.get(),
                 "session_id": session_id,
                 "requires_user_clarification": requires_user_clarification,
                 "conversation_history": conversation_history,

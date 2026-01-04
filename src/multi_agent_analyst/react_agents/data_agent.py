@@ -52,7 +52,7 @@ def data_agent(data_agent_query: str, current_plan_step: str):
         system_prompt=DATA_AGENT_PROMPT.format(tables=tables),
         response_format=ExternalAgentSchema,
     )
-    
+
     logger.info(
             f"Current tables under the thread:{list(current_tables.values())}",
             extra={
@@ -62,7 +62,7 @@ def data_agent(data_agent_query: str, current_plan_step: str):
     
     emit("Data Agent retrives data.")
     result = agent.invoke({"messages": [{"role": "user", "content": data_agent_query}]})
-
+    print(result)
     last_msg = [m for m in result["messages"] if isinstance(m, AIMessage)]
     if not last_msg:
         return agent_error('Agent returned no AImessage')
