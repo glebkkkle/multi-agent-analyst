@@ -1,48 +1,64 @@
 import pandas as pd
 from src.multi_agent_analyst.db.db_core import engine
+from sqlalchemy import text
 
-def load_user_tables(thread_id: str):
-    schema = thread_id
-
-    query_tables = f"""
-        SELECT table_name
-        FROM information_schema.tables
-        WHERE table_schema = '{schema}';
+def load_user_tables() -> dict:
     """
+    Load a deterministic description of all tables
+    visible in the current search_path.
 
-    tables = pd.read_sql(query_tables, engine)['table_name'].tolist()
+    PRIVILEGED BACKEND OPERATION.
+    """
+    result = {
+        "available_tables": [],
+        "tables": {}
+    }
 
-    output = {}
-    for table in tables:
-        try:
-            col_query = f"""
+    # 1️⃣ List tables visible via search_path
+    tables_df = pd.read_sql(
+        text("""
+            SELECT table_name
+            FROM information_schema.tables
+            WHERE table_schema = ANY (current_schemas(false))
+              AND table_type = 'BASE TABLE'
+            ORDER BY table_name
+        """),
+        engine,
+    )
+
+    for table_name in tables_df["table_name"].tolist():
+        result["available_tables"].append(table_name)
+
+        # 2️⃣ Column metadata (ordered)
+        cols_df = pd.read_sql(
+            text("""
                 SELECT column_name, data_type
                 FROM information_schema.columns
-                WHERE table_schema = '{schema}'
-                AND table_name = '{table}';
-            """
-            col_df = pd.read_sql(col_query, engine)
+                WHERE table_schema = ANY (current_schemas(false))
+                  AND table_name = :table
+                ORDER BY ordinal_position
+            """),
+            engine,
+            params={"table": table_name},
+        )
 
-            column_map = {
-                str(row["column_name"]): str(row["data_type"])
-                for _, row in col_df.iterrows()
+        columns = [
+            {
+                "name": str(row["column_name"]),
+                "type": str(row["data_type"]),
             }
+            for _, row in cols_df.iterrows()
+        ]
 
-            row_count = pd.read_sql(
-                f'SELECT COUNT(*) FROM "{schema}"."{table}"',
-                engine
-            ).iloc[0, 0]
+        # 3️⃣ Row count (unqualified table name uses search_path)
+        row_count = pd.read_sql(
+            text(f'SELECT COUNT(*) FROM "{table_name}"'),
+            engine,
+        ).iloc[0, 0]
 
-            output[table] = {
-                "description": f"User table '{table}'",
-                "columns": column_map,
-                "row_count": int(row_count),
-            }
-        except Exception as e:
-            output[table] = {
-                "description": f"Error reading table '{table}'",
-                "columns": {},
-                "row_count": None,
-                "error": str(e)
-            }
-    return output
+        result["tables"][table_name] = {
+            "row_count": int(row_count),
+            "columns": columns,
+        }
+
+    return result

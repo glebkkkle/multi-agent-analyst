@@ -39,6 +39,7 @@ def data_agent(data_agent_query: str, current_plan_step: str):
     ]
     print(' ')
     tables=get_current_tables()
+    print(tables)
     print(' ')
     
     agent = create_agent(

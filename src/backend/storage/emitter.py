@@ -23,7 +23,7 @@ def emit(msg: str) -> None:
         emitter(msg)
 
 
-ThreadTables = Dict[str, Dict[str, Any]]
+ThreadTables = Dict[str, object]
 
 _current_thread_tables: ContextVar[Optional[ThreadTables]] = ContextVar(
     "current_thread_tables",
