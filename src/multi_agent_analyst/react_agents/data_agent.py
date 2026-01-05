@@ -44,14 +44,18 @@ def data_agent(data_agent_query: str, current_plan_step: str):
         make_select_columns_tool(),
         make_merge_tool(),
         make_schema_list(tables)
-    ]    
+    ]   
 
-    agent = create_agent(
-        llm,
-        tools=tools,
-        system_prompt=DATA_AGENT_PROMPT.format(tables=tables),
-        response_format=ExternalAgentSchema,
-    )
+    try:
+        agent = create_agent(
+            llm,
+            tools=tools,
+            system_prompt=DATA_AGENT_PROMPT.format(tables=tables),
+            response_format=ExternalAgentSchema,
+        )
+
+    except Exception as e:
+        print(e)
 
     logger.info(
             f"Current tables under the thread:{list(current_tables.values())}",
