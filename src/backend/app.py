@@ -24,6 +24,7 @@ from src.multi_agent_analyst.db.db_core import (
 from psycopg2 import OperationalError
 from src.multi_agent_analyst.db.loaders import load_user_tables
 from src.multi_agent_analyst.utils.utils import object_store
+import numpy as np 
 
 # Internal App Imports
 from src.backend.langgraph_runner.executor import run_initial_graph, clarify_graph
@@ -35,6 +36,7 @@ from src.multi_agent_analyst.db.conversation_store import ThreadConversationStor
 from src.backend.storage.redis_client import checkpointer
 from pydantic import BaseModel
 from src.backend.storage.execution_store import RedisExecutionStore
+from src.multi_agent_analyst.utils.utils import json_safe
 
 conversation_store = ThreadConversationStore()
 MAX_CLARIFICATIONS = 3
@@ -220,16 +222,23 @@ async def handle_clarify(payload: dict, background_tasks: BackgroundTasks, user:
 
     return {"session_id": session_id, "status": "processing"}
 
-
 @app.get("/api/object/{object_id}")
 async def get_object(object_id: str):
     obj = object_store.get(object_id)
+
+    # Binary / image objects
     if hasattr(obj, "read"):
         obj.seek(0)
         return StreamingResponse(obj, media_type="image/png")
+
+    # DataFrame → JSON-safe records
     if isinstance(obj, pd.DataFrame):
-        return obj.to_dict(orient="records")
-    return obj
+        df = obj.replace([np.inf, -np.inf], np.nan)
+        records = df.to_dict(orient="records")
+        return json_safe(records)
+
+    # Everything else
+    return json_safe(obj)
 
 @app.post("/api/upload_data")
 async def upload_data(file: UploadFile = File(...), user: CurrentUser = Depends(get_current_user)):
