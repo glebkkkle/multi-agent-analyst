@@ -15,6 +15,7 @@ import pandas as pd
 from datetime import datetime
 from src.backend.config import settings
 import json 
+import math 
 
 class RedisObjectStore:
     """
@@ -203,10 +204,13 @@ def json_safe(obj):
     if isinstance(obj, (np.integer,)):
         return int(obj)
 
-    if isinstance(obj, (np.floating,)):
-        return float(obj)
+    if isinstance(obj, (np.floating, float)):
+        val = float(obj)
+        if math.isnan(val) or math.isinf(val):
+            return None
+        return val
 
-    if isinstance(obj, (np.bool_,)):
+    if isinstance(obj, (np.bool_, bool)):
         return bool(obj)
 
     if isinstance(obj, (pd.Timestamp, datetime)):
@@ -215,8 +219,10 @@ def json_safe(obj):
     if obj is pd.NA or obj is None:
         return None
 
-    return obj
+    if isinstance(obj, (int, str)):
+        return obj
 
+    return str(obj)
 
 def parse_tool_output(raw):
     if isinstance(raw, dict):
