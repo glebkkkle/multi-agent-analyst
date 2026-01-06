@@ -193,7 +193,6 @@ def agent_success(object_id: str, summary: str):
 
 
 
-
 def json_safe(obj):
     if isinstance(obj, dict):
         return {k: json_safe(v) for k, v in obj.items()}

@@ -17,6 +17,21 @@ from langchain_core.tools import StructuredTool
 from src.multi_agent_analyst.db.db_core import engine, get_thread_conn, agent_execution
 from src.multi_agent_analyst.utils.utils import object_store, current_tables, normalize_dataframe_types
 import re
+import math 
+
+def sanitize_for_json(obj):
+    if isinstance(obj, dict):
+        return {k: sanitize_for_json(v) for k, v in obj.items()}
+    if isinstance(obj, list):
+        return [sanitize_for_json(v) for v in obj]
+    if isinstance(obj, (pd.Timestamp,)):
+        return obj.isoformat()
+    if isinstance(obj, float):
+        if math.isnan(obj) or math.isinf(obj):
+            return None
+        return obj
+    return obj
+
 
 def qualify_sql(sql: str, schema: str) -> str:
     """
@@ -172,14 +187,17 @@ def make_merge_tool():
             }
         
         obj_id = object_store.save(merged)
-        return {
+        payload = {
             "object_id": obj_id,
             "details": {
                 "row_count": len(merged),
-                "columns": list(merged.columns),
-                "preview": merged.head(5).to_dict(orient="records")
-            }
+                "columns": list(map(str, merged.columns)),
+                "preview": merged.head(5).to_dict(orient="records"),
+            },
+            "exception": None,
         }
+
+        return sanitize_for_json(payload)
 
     return StructuredTool.from_function(
         func=merge_tables,
