@@ -15,66 +15,41 @@ from src.multi_agent_analyst.schemas.analysis_agent_schema import (
 )
 from src.multi_agent_analyst.utils.utils import object_store
 from scipy import stats
+import math
 
 def sanitize_for_json(obj):
-    import numpy as np
-    import pandas as pd
-    import math
-    from datetime import datetime
-
-    if isinstance(obj, pd.DataFrame):
-        raise TypeError("sanitize_for_json must NOT be called on DataFrames")
-
-    if obj is pd.NA:
-        return None
-
     if isinstance(obj, dict):
         return {k: sanitize_for_json(v) for k, v in obj.items()}
-
-    if isinstance(obj, (list, tuple)):
+    elif isinstance(obj, list):
         return [sanitize_for_json(v) for v in obj]
-
-    if isinstance(obj, np.integer):
-        return int(obj)
-
-    if isinstance(obj, np.floating):
-        return None if math.isnan(obj) or math.isinf(obj) else float(obj)
-
-    if isinstance(obj, float):
-        return None if math.isnan(obj) or math.isinf(obj) else obj
-
-    if isinstance(obj, pd.Timestamp):
-        return obj.isoformat()
-
-    if isinstance(obj, datetime):
-        return obj.isoformat()
-
-    if obj is None:
+    elif isinstance(obj, float):
+        if math.isnan(obj) or math.isinf(obj):
+            return None  # → serialized as `null`
+        return obj
+    elif obj is None:
         return None
-
-    return obj
+    else:
+        return obj
 
 def make_correlation_tool(df):
     def correlation():
         try:
-            mat = df.corr(numeric_only=True)
-
-
-            table_shape=mat.shape
+            result = df.corr(numeric_only=True)
+            print(type(result))
+            result=sanitize_for_json(result)
+            table_shape=result.shape
         #format exception flag properly for the controller
         except Exception as e:
             return {
                 'exception': str(e)
             }        
-        obj_id=object_store.save(mat)
+        obj_id=object_store.save(result)
         
-        payload={'object_id':obj_id, 
+        return {'object_id':obj_id, 
                 'details':{'table_shape':table_shape},
                 "operation_type":"Correlation"
                 }
 
-        return sanitize_for_json(payload)
-    
     return StructuredTool.from_function(
         func=correlation,
         name="correlation_analysis",
@@ -112,6 +87,7 @@ def make_anomaly_tool(df):
             annotated_df = df.copy()
             annotated_df["outlier"] = mask.any(axis=1)
 
+            annotated_df=sanitize_for_json(annotated_df)
 
             table_shape=annotated_df.shape
 
@@ -119,11 +95,12 @@ def make_anomaly_tool(df):
 
             details = {
                 "outlier_count": outlier_count,
-                "outlier_rows": sanitize_for_json(outlier_rows_display) if len(outlier_rows_display) > 0 else 'No outliers detected',
+                "outlier_rows": outlier_rows_display if len(outlier_rows_display) > 0 else 'No outliers detected',
                 "columns_checked": list(numeric.columns),
                 "iqr_bounds": ", ".join(f"{k}: {v}" for k, v in iqr_bounds.items()),
                 'table_shape':table_shape
                 }            
+            # object_id=object_store.save(details)
 
             result = {
                 'object_id':obj_id,
@@ -138,7 +115,7 @@ def make_anomaly_tool(df):
                 'exception': str(e)
             }
         
-        return sanitize_for_json(result)
+        return result
 
     return StructuredTool.from_function(
         func=anomaly,
@@ -150,7 +127,9 @@ def make_anomaly_tool(df):
 def make_summary_tool(df):
     def summary():
         try:
-            stats = df.describe(include="all")
+            stats = df.describe(include="all").to_dict()
+            stats = sanitize_for_json(stats)
+            table_shape=stats.shape
         except Exception as e:
             return {
                 'exception': str(e)
@@ -158,11 +137,11 @@ def make_summary_tool(df):
         obj_id=object_store.save(stats)
         
         result={'object_id':obj_id, 
-                'details':{'summary_table_shape':stats.shape}, 
+                'details':{'summary_table_shape':table_shape}, 
                 "operation_type":"Summary statistics"
                 }
         
-        return sanitize_for_json(result)
+        return result
 
     return StructuredTool.from_function(
         func=summary,
@@ -196,6 +175,7 @@ def make_groupby_tool(df):
                 .agg(agg_function)
                 .reset_index()
             )
+            grouped=sanitize_for_json(grouped)
 
             table_shape=grouped.shape
 
@@ -215,11 +195,11 @@ def make_groupby_tool(df):
                 "details": details, 
                 "operation_type":"Grouping"
             }
-
+            print(result)
         except Exception as e:
             return {"exception": str(e)}
 
-        return sanitize_for_json(result)
+        return result
 
     return StructuredTool.from_function(
         func=groupby_aggregate,
@@ -266,7 +246,7 @@ def make_difference_tool(df):
                 }, 
                 "table_shape":table_shape
             }
-            payload={
+            return {
                 "object_id": obj_id,
                 "details": details, 
                 "operation_type":"Difference Analysis"
@@ -274,8 +254,6 @@ def make_difference_tool(df):
 
         except Exception as e:
             return {"exception": str(e)}
-
-        return sanitize_for_json(payload)
 
     return StructuredTool.from_function(
         func=difference_analysis,
@@ -319,13 +297,15 @@ def make_filter_tool(df):
                 raise ValueError(f"Unsupported operator '{operator}'")
 
             filtered = df[mask]
+            filtered=sanitize_for_json(filtered)
 
             obj_id = object_store.save(filtered)
+
             table_shape=filtered.shape
         except Exception as e:
             return {"exception":str(e)}
         
-        payload={
+        return {
                 "object_id": obj_id,
                 "details": {
                     "column": column,
@@ -337,7 +317,6 @@ def make_filter_tool(df):
                 "operation_type":"Filtering"
             }
 
-        return sanitize_for_json(payload)
 
     return StructuredTool.from_function(
         func=filter_rows,
@@ -361,12 +340,12 @@ def make_sort_tool(df):
                 df.sort_values(column, ascending=ascending)
                   .head(limit)
             )
-
+            sorted_df=sanitize_for_json(sorted_df)
 
             obj_id = object_store.save(sorted_df)
 
             table_shape=sorted_df.shape
-            payload={
+            return {
                 "object_id": obj_id,
                 "details": {
                     "column": column,
@@ -380,7 +359,6 @@ def make_sort_tool(df):
         except Exception as e:
             return {"exception": str(e)}
 
-        return sanitize_for_json(payload)
     return StructuredTool.from_function(
         func=sort_rows,
         name="sort_rows",
@@ -434,9 +412,10 @@ def make_distribution_tool(df):
                 "count": counts
             })
             
+            dist_df = sanitize_for_json(dist_df)
             obj_id = object_store.save(dist_df)
 
-            payload={
+            return {
                 "object_id": obj_id,
                 "details": {
                     "column": column,
@@ -455,8 +434,6 @@ def make_distribution_tool(df):
         except Exception as e:
             return {"exception": str(e)}
 
-        return sanitize_for_json(payload)
-    
     return StructuredTool.from_function(
         func=analyze_distribution,
         name="distribution_analysis",

@@ -15,7 +15,7 @@ import pandas as pd
 from langchain_core.tools import StructuredTool
 
 from src.multi_agent_analyst.db.db_core import engine, get_thread_conn, agent_execution
-from src.multi_agent_analyst.utils.utils import object_store, current_tables, normalize_dataframe_types, json_safe
+from src.multi_agent_analyst.utils.utils import object_store, current_tables, normalize_dataframe_types
 import re
 
 def qualify_sql(sql: str, schema: str) -> str:
@@ -50,8 +50,8 @@ def make_sql_query_tool():
                     return {
                         "object_id": obj_id,
                         "details": {
-                            "row_count": int(len(df)),
-                            "columns": [str(c) for c in df.columns],
+                            "row_count": len(df),
+                            "columns": list(df.columns),
                         },
                         "exception": None
                     }
@@ -143,7 +143,7 @@ def make_select_columns_tool():
                 "object_id": obj_id,
                 "details": {
                     "input_table_id": table_id,
-                    "selected_columns": [str(c) for c in columns],
+                    "selected_columns": columns,
                     "output_rows": len(result),
                     "output_cols": len(columns),
                     },
@@ -172,16 +172,12 @@ def make_merge_tool():
             }
         
         obj_id = object_store.save(merged)
-        preview = json_safe(
-            merged.head(5).to_dict(orient="records")
-        )   
-
         return {
             "object_id": obj_id,
             "details": {
-                "row_count": int(len(merged)),
-                "columns": [str(c) for c in merged.columns],
-                "preview": preview
+                "row_count": len(merged),
+                "columns": list(merged.columns),
+                "preview": merged.head(5).to_dict(orient="records")
             }
         }
 

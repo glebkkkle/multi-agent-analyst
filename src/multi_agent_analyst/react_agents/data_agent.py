@@ -11,7 +11,7 @@ from src.multi_agent_analyst.tools.data_agent_tools import (
 )
 import json
 from src.multi_agent_analyst.prompts.react_agents.data_agent import DATA_AGENT_PROMPT
-from src.multi_agent_analyst.utils.utils import context, current_tables,ExecutionLogEntry, parse_tool_output,execution_list, object_store, create_log, agent_success, agent_error
+from src.multi_agent_analyst.utils.utils import context, current_tables,ExecutionLogEntry, execution_list, object_store, create_log, agent_success, agent_error
 from src.multi_agent_analyst.schemas.data_agent_schema import ExternalAgentSchema
 from src.backend.llm.registry import get_default_llm
 from src.multi_agent_analyst.logging import logger
@@ -46,14 +46,16 @@ def data_agent(data_agent_query: str, current_plan_step: str):
         make_schema_list(tables)
     ]   
 
-
-    agent = create_agent(
+    try:
+        agent = create_agent(
             llm,
             tools=tools,
             system_prompt=DATA_AGENT_PROMPT.format(tables=tables),
             response_format=ExternalAgentSchema,
         )
 
+    except Exception as e:
+        print(e)
 
     logger.info(
             f"Current tables under the thread:{list(current_tables.values())}",
@@ -87,7 +89,7 @@ def data_agent(data_agent_query: str, current_plan_step: str):
     last_tool_output = tool_msgs[-1].content
 
     try:
-        tool_json=parse_tool_output(last_tool_output)
+        tool_json=json.loads(last_tool_output)
     except Exception as e:
         logger.error(
             "DataAgent failed to parse tool output",

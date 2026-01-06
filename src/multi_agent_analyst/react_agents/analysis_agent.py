@@ -19,7 +19,7 @@ from src.multi_agent_analyst.tools.analysis_agent_tools import (
 from pydantic import BaseModel
 from src.multi_agent_analyst.prompts.react_agents.analysis_agent import ANALYST_AGENT_PROMPT
 from src.multi_agent_analyst.schemas.analysis_agent_schema import ExternalAgentSchema
-from src.multi_agent_analyst.utils.utils import context, object_store,  parse_tool_output, load_and_validate_df, generate_data_preview, agent_error, agent_success
+from src.multi_agent_analyst.utils.utils import context, object_store, load_and_validate_df, generate_data_preview, agent_error, agent_success
 from src.multi_agent_analyst.utils.utils import execution_list, ExecutionLogEntry
 from src.backend.llm.registry import get_default_llm
 from src.multi_agent_analyst.logging import logger
@@ -81,7 +81,7 @@ def analysis_agent(analysis_query: str, current_plan_step: str, data_id: str):
     
     last_tool_output = tool_msgs[-1].content
     try:
-        tool_output=parse_tool_output(last_tool_output)
+        tool_output=json.loads(last_tool_output)
     except Exception as e:
         logger.error(
             "DataAgent failed to parse tool output",
