@@ -4,7 +4,7 @@ import hashlib
 import logging
 from contextlib import contextmanager
 from typing import Dict, List, Iterator, Optional
-
+import hashlib
 import pandas as pd
 from sqlalchemy import create_engine, text
 from sqlalchemy.engine import Connection
@@ -510,3 +510,4 @@ def get_table_info(thread_id: str, table_name: str) -> List[Dict[str, str]]:
             {"column": r[0], "type": r[1], "nullable": (r[2] == "YES")}
             for r in res.fetchall()
         ]
+
