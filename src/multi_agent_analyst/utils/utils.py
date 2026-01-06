@@ -61,7 +61,6 @@ class CurrentToolContext:
     def get(self,agent, step_id):
         return self.dict[agent][step_id]
     
-
 class ExecutionLogEntry(BaseModel):
     id: str
     agent: str
@@ -190,8 +189,6 @@ def agent_success(object_id: str, summary: str):
         "summary": summary,
         "exception": None,
     }
-
-
 
 def json_safe(obj):
     if isinstance(obj, dict):
