@@ -10,9 +10,11 @@ import redis
 import traceback
 from functools import wraps
 from src.multi_agent_analyst.logging import logger
-
+import numpy as np
+import pandas as pd
+from datetime import datetime
 from src.backend.config import settings
-
+import json 
 
 class RedisObjectStore:
     """
@@ -187,3 +189,41 @@ def agent_success(object_id: str, summary: str):
         "summary": summary,
         "exception": None,
     }
+
+
+
+
+def json_safe(obj):
+    if isinstance(obj, dict):
+        return {k: json_safe(v) for k, v in obj.items()}
+
+    if isinstance(obj, list):
+        return [json_safe(v) for v in obj]
+
+    if isinstance(obj, (np.integer,)):
+        return int(obj)
+
+    if isinstance(obj, (np.floating,)):
+        return float(obj)
+
+    if isinstance(obj, (np.bool_,)):
+        return bool(obj)
+
+    if isinstance(obj, (pd.Timestamp, datetime)):
+        return obj.isoformat()
+
+    if obj is pd.NA or obj is None:
+        return None
+
+    return obj
+
+
+def parse_tool_output(raw):
+    if isinstance(raw, dict):
+        return raw
+    if isinstance(raw, str):
+        try:
+            return json.loads(raw)
+        except json.JSONDecodeError:
+            raise ValueError("Tool output is not valid JSON")
+    raise TypeError(f"Unexpected tool output type: {type(raw)}")
