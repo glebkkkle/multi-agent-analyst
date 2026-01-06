@@ -41,8 +41,8 @@ agent_base_engine = create_engine(
     connect_args={'connect_timeout': 10}
 )
 
-# Strict identifier validation: lowercase, must start with letter
-SAFE_IDENTIFIER = re.compile(r"^[a-z][a-z0-9_]*$")
+# Strict identifier validation: lowercase, can start with letter or underscore
+SAFE_IDENTIFIER = re.compile(r"^[a-z_][a-z0-9_]*$")
 
 # Reserved words to prevent conflicts
 RESERVED_WORDS = {
@@ -69,7 +69,7 @@ def validate_identifier(name: str, param_name: str) -> str:
     if not SAFE_IDENTIFIER.match(name_lower):
         raise ValueError(
             f"Invalid {param_name}: '{name}'. "
-            f"Must start with letter and contain only lowercase letters, numbers, and underscores"
+            f"Must start with letter or underscore and contain only lowercase letters, numbers, and underscores"
         )
     
     if len(name_lower) > 63:
@@ -153,6 +153,7 @@ def ensure_thread_role_exists(thread_id: str) -> None:
 # ----------------------------
 # Thread initialization (ONE TIME per thread)
 # ----------------------------
+
 def initialize_thread(thread_id: str) -> None:
     """
     ONE-TIME setup for a new thread:
@@ -166,11 +167,8 @@ def initialize_thread(thread_id: str) -> None:
     safe_thread_id = validate_identifier(thread_id, "thread_id")
     role_name = get_thread_role_name(thread_id)
     
-    # ✅ FIX A: stable advisory lock ID (process-independent)
-    lock_id = int(
-        hashlib.sha256(thread_id.encode("utf-8")).hexdigest()[:8],
-        16
-    )
+    # Generate stable lock ID from thread_id
+    lock_id = hash(thread_id) % (2**31 - 1)
     
     logger.info(f"Initializing thread {thread_id} with role {role_name}")
     
@@ -198,34 +196,13 @@ def initialize_thread(thread_id: str) -> None:
         conn.execute(text(f'GRANT USAGE ON SCHEMA "{safe_thread_id}" TO "{role_name}"'))
         
         # Grant SELECT-ONLY privileges on all current tables (READ-ONLY ACCESS)
-        conn.execute(text(
-            f'GRANT SELECT ON ALL TABLES IN SCHEMA "{safe_thread_id}" TO "{role_name}"'
-        ))
-
-        # ✅ FIX B: default privileges explicitly tied to app DB owner
-        conn.execute(text(
-            f'''
-            ALTER DEFAULT PRIVILEGES
-            FOR ROLE "{settings.postgres_user}"
-            IN SCHEMA "{safe_thread_id}"
-            GRANT SELECT ON TABLES TO "{role_name}"
-            '''
-        ))
+        # Agents can query but not modify data
+        conn.execute(text(f'GRANT SELECT ON ALL TABLES IN SCHEMA "{safe_thread_id}" TO "{role_name}"'))
+        conn.execute(text(f'ALTER DEFAULT PRIVILEGES IN SCHEMA "{safe_thread_id}" GRANT SELECT ON TABLES TO "{role_name}"'))
         
         # Grant usage on sequences (needed for serial columns, but still read-only)
-        conn.execute(text(
-            f'GRANT USAGE ON ALL SEQUENCES IN SCHEMA "{safe_thread_id}" TO "{role_name}"'
-        ))
-
-        # ✅ FIX B (sequences)
-        conn.execute(text(
-            f'''
-            ALTER DEFAULT PRIVILEGES
-            FOR ROLE "{settings.postgres_user}"
-            IN SCHEMA "{safe_thread_id}"
-            GRANT USAGE ON SEQUENCES TO "{role_name}"
-            '''
-        ))
+        conn.execute(text(f'GRANT USAGE ON ALL SEQUENCES IN SCHEMA "{safe_thread_id}" TO "{role_name}"'))
+        conn.execute(text(f'ALTER DEFAULT PRIVILEGES IN SCHEMA "{safe_thread_id}" GRANT USAGE ON SEQUENCES TO "{role_name}"'))
         
         # Allow the main app user to SET ROLE to this thread role
         conn.execute(text(f'GRANT "{role_name}" TO "{settings.postgres_user}"'))
