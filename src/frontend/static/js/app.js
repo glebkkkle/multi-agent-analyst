@@ -74,6 +74,66 @@ function initMobileKeyboard() {
     window.addEventListener('resize', handleResize);
   }
 }
+// Add this near the top of your file, after the other initializations
+function initMobileSidebar() {
+  // Create overlay if it doesn't exist
+  let overlay = document.querySelector('.sidebar-overlay');
+  if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.className = 'sidebar-overlay';
+    document.body.appendChild(overlay);
+  }
+
+  // Create mobile menu button if it doesn't exist
+  let menuBtn = document.querySelector('.mobile-menu-btn');
+  if (!menuBtn) {
+    menuBtn = document.createElement('button');
+    menuBtn.className = 'mobile-menu-btn';
+    menuBtn.innerHTML = `
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <line x1="3" y1="12" x2="21" y2="12"></line>
+        <line x1="3" y1="6" x2="21" y2="6"></line>
+        <line x1="3" y1="18" x2="21" y2="18"></line>
+      </svg>
+    `;
+    // Insert at the beginning of body or in your header
+    document.body.insertBefore(menuBtn, document.body.firstChild);
+  }
+
+  // Toggle sidebar
+  menuBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    document.body.classList.toggle('sidebar-open');
+  });
+
+  // Close on overlay click
+  overlay.addEventListener('click', () => {
+    document.body.classList.remove('sidebar-open');
+  });
+
+  // Close on nav item click (mobile only)
+  if (window.innerWidth <= 900) {
+    navItems.forEach(item => {
+      item.addEventListener('click', () => {
+        document.body.classList.remove('sidebar-open');
+      });
+    });
+  }
+}
+
+// Call it in your window load event
+window.addEventListener("load", () => {
+    initMobileSidebar(); // Add this line
+    initMobileKeyboard();
+    
+    if (window.innerWidth > 768) {
+        input.focus();
+    }
+    
+    showChatEmptyState();
+    initDataPageListeners();
+    loadDataSources(); 
+});
 
 // Enhanced scroll to bottom for mobile
 function scrollToBottom() {
