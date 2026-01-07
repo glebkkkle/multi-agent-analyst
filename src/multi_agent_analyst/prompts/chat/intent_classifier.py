@@ -18,6 +18,7 @@ Given the CURRENT user message:
    - What result type is expected:
      * "analysis" — derived results (plots, stats, correlations, anomalies, aggregations)
      * "preview" — a small sample of rows
+     * "full" — an explicit request for the entire dataset
 ---
 ### AVAILABLE DATA SCHEMAS
 (These are the ONLY datasets and columns that exist.)
@@ -48,23 +49,33 @@ Analytical tasks are independent of dataset size.
 If intent is "plan", infer `result_mode`:
 
 * **analysis**
-  - The user asks for analysis, visualization, statistics, correlation, anomaly detection, aggregation. The limit is 1000 rows MAX!
+  - The user asks for analysis, visualization, statistics, correlation, anomaly detection, aggregation. The strict limits are not required, allow full retrieval.
 
 * **preview**
   - The user asks to "show", "display", or "see" data
   - No explicit request for all rows
 
-If unclear → default to **preview**
+* **full**
+  - The user explicitly asks for the entire dataset
+  - Examples: "all rows", "full table", "export everything"
+
+If unclear → default to **preview**, NOT full.
+
 ---
 
 ### DATA SIZE GUARD
-- Do NOT block analytical tasks due to size
-- Set a limit of 1000 for analysis tasks (or visualization), and 200 for preview (such as data retrieval)
 
-APPLY ONLY IF THE DATASET SIZE IS MORE THAN A 1000 ROWS:
+Apply ONLY if `result_mode == "full"`:
+
+- If the referenced dataset has more than 200 rows:
   - Set `intent = "clarification"`
   - Set `is_sufficient = false`
   - Explain that a limit or filter is required
+
+Rules:
+- "analysis" → ALWAYS allowed
+- "preview" → ALWAYS allowed
+- Do NOT block analytical tasks due to size
 
 ---
 
@@ -119,7 +130,7 @@ Return ONLY valid JSON:
 
   "intent": "plan" | "chat" | "clarification" | "abort",
   "is_sufficient": boolean,
-  "result_mode": "analysis" | "preview" |
+  "result_mode": "analysis" | "preview" | "full",
   "missing_info": string | null
 ---
 

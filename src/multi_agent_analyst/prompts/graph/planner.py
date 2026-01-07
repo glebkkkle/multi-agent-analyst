@@ -87,7 +87,7 @@ Only use conditional branching when the user’s request logically depends on an
 
   IF result_mode == 'analysis':
 
-    You MUST add a limit of 1000 rows.
+    You MUST NOT add a row limit.
 
   {retrieval_mode}
 ----------------------------------------------------------------------
