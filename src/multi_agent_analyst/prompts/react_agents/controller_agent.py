@@ -97,7 +97,7 @@ Once ALL nodes are finished, return:
   "summary": short, friendly explanation of what was produced for user (line plot, analysis, ect.), without heavy technical terms or list of executed steps, just produce a clean message to the user.
   "exception": null, 
   "result_details": {
-     "data_type": "analytical" | "visual" | "retrieval",
+     "data_type": "analyztical" | "visual" | "retrieval",
      "object_shape": <Only if NOT visual>
   }
 }

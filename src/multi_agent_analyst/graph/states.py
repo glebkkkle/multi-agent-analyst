@@ -50,7 +50,7 @@ class IntentSchema(BaseModel):
     intent:Literal['plan', 'clarification', 'chat', 'abort']
     is_sufficient:bool
     missing_info:str
-    result_mode:Literal['analysis', 'preview', 'full']
+    result_mode:Literal['analysis', 'preview']
 
 #REWRITE USER'S QUERY
 class ContextSchema(BaseModel):
