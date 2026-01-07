@@ -25,6 +25,11 @@ let dataSourceList;
 
 let isKeyboardOpen = false;
 
+
+const navItems = document.querySelectorAll(".nav-item");
+const pages = document.querySelectorAll(".page");
+
+
 function initMobileKeyboard() {
   if (window.innerWidth > 768) return; // Only on mobile
 
@@ -120,20 +125,6 @@ function initMobileSidebar() {
     });
   }
 }
-
-// Call it in your window load event
-window.addEventListener("load", () => {
-    initMobileSidebar(); // Add this line
-    initMobileKeyboard();
-    
-    if (window.innerWidth > 768) {
-        input.focus();
-    }
-    
-    showChatEmptyState();
-    initDataPageListeners();
-    loadDataSources(); 
-});
 
 // Enhanced scroll to bottom for mobile
 function scrollToBottom() {
@@ -435,9 +426,6 @@ async function loadDataSources() {
 }
 
 
-const navItems = document.querySelectorAll(".nav-item");
-const pages = document.querySelectorAll(".page");
-
 navItems.forEach(item => {
     item.addEventListener("click", () => {
         const pageName = item.getAttribute("data-page");
@@ -451,8 +439,17 @@ navItems.forEach(item => {
             pageEl.classList.add("active");
         }
 
+        // ✅ ADD THESE 3 LINES:
+        if (window.innerWidth <= 900) {
+            document.body.classList.remove("sidebar-open");
+        }
+
         if (pageName === "chat") {
-            setTimeout(() => input.focus(), 0);
+            setTimeout(() => {
+                if (window.innerWidth > 768) {
+                    input.focus();
+                }
+            }, 0);
         }
 
         if (pageName === "data") {
@@ -1128,7 +1125,8 @@ input.addEventListener("keypress", e => {
 });
 
 window.addEventListener("load", () => {
-    // Initialize mobile keyboard handling
+    // Initialize mobile features
+    initMobileSidebar();     // ← ADD THIS LINE
     initMobileKeyboard();
     
     // Only auto-focus on desktop

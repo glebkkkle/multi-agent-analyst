@@ -1915,13 +1915,8 @@ td {
   }
 }
 
+
 @media (max-width: 900px) {
-
-  /* Hide desktop sidebar layout */
-  .app-layout {
-    display: block;
-  }
-
   /* Sidebar becomes off-canvas drawer */
   .sidebar {
     position: fixed;
@@ -1932,13 +1927,26 @@ td {
     z-index: 3000;
     transform: translateX(-110%);
     transition: transform 0.25s ease;
+    pointer-events: auto;
   }
 
   body.sidebar-open .sidebar {
     transform: translateX(0);
+    pointer-events: auto;
   }
 
-  /* Dark overlay behind sidebar */
+  /* Nav items must be clickable */
+  .sidebar .nav-item {
+    pointer-events: auto !important;
+    cursor: pointer;
+    touch-action: manipulation;
+  }
+
+  .sidebar * {
+    pointer-events: auto;
+  }
+
+  /* Overlay */
   .sidebar-overlay {
     position: fixed;
     inset: 0;
@@ -1954,48 +1962,56 @@ td {
     pointer-events: auto;
   }
 
-  /* Main content becomes full-width */
-  .main,
-  .content,
+  /* Messages area */
+  #messages {
+    padding: 20px 16px 120px 16px;
+    pointer-events: auto;
+  }
+
+  /* Fixed input at bottom */
+  .input-container {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: var(--bg-primary);
+    border-top: 1px solid var(--border-subtle);
+    padding: 16px;
+    padding-bottom: max(16px, env(safe-area-inset-bottom));
+    z-index: 100;
+  }
+
+  /* Chat container full height */
   .chat-container {
-    width: 100%;
-    max-width: 100%;
-    margin-left: 0 !important;
+    height: 100vh;
+    padding-bottom: 0;
   }
 
-  /* Prevent background scroll when menu open */
-  body.sidebar-open {
-    overflow: hidden;
+  /* Touch-friendly inputs */
+  #chat-input {
+    font-size: 16px;
+    min-height: 44px;
+    padding: 12px;
   }
-}
 
-.mobile-menu-btn {
-  display: none;
-  position: fixed;
-  top: 1rem;
-  left: 1rem;
-  z-index: 3500;
-  background: rgba(30, 41, 59, 0.9);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(96, 165, 250, 0.2);
-  border-radius: 8px;
-  padding: 0.75rem;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
+  #send-btn {
+    min-width: 44px;
+    min-height: 44px;
+  }
 
-.mobile-menu-btn:hover {
-  background: rgba(30, 41, 59, 1);
-  border-color: rgba(96, 165, 250, 0.4);
-}
-
-.mobile-menu-btn svg {
-  display: block;
-  color: #60a5fa;
-}
-
-@media (max-width: 900px) {
+  /* Menu button */
   .mobile-menu-btn {
     display: block;
+  }
+
+  /* Main content full width */
+  .main-content {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  /* Prevent scroll when menu open */
+  body.sidebar-open {
+    overflow: hidden;
   }
 }
