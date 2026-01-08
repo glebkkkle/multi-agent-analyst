@@ -1939,6 +1939,7 @@ td {
     left: 0;
     width: min(85vw, 320px);
     height: 100dvh;
+    height: 100vh; /* Fallback */
     z-index: 3500;
     transform: translateX(-100%);
     transition: transform 0.3s ease;
@@ -1952,10 +1953,16 @@ td {
     transform: translateX(0);
   }
 
+  /* CRITICAL: Ensure all sidebar content is interactive */
+  .sidebar * {
+    position: relative;
+  }
+
   /* Sidebar header - no scroll */
   .sidebar-header {
     flex-shrink: 0;
-    z-index: 1;
+    z-index: 10;
+    position: relative;
   }
 
   /* Sidebar nav - scrollable middle section */
@@ -1964,6 +1971,8 @@ td {
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
     padding: 8px 12px;
+    position: relative;
+    z-index: 10;
   }
 
   .nav-section {
@@ -1977,6 +1986,14 @@ td {
     min-height: 44px; /* Touch-friendly */
     display: flex;
     align-items: center;
+    position: relative;
+    z-index: 10;
+    background: transparent;
+  }
+
+  /* Remove the ::before pseudo-element that causes darkening */
+  .sidebar .nav-item::before {
+    display: none;
   }
 
   /* Sidebar footer - stuck to bottom */
@@ -1984,9 +2001,11 @@ td {
     flex-shrink: 0;
     background: var(--bg-secondary);
     border-top: 1px solid var(--border-subtle);
+    position: relative;
+    z-index: 10;
   }
 
-  /* Overlay - Below sidebar */
+  /* Overlay - Below sidebar, click-through when sidebar items are used */
   .sidebar-overlay {
     position: fixed;
     inset: 0;
@@ -1995,6 +2014,7 @@ td {
     opacity: 0;
     visibility: hidden;
     transition: opacity 0.3s ease, visibility 0.3s ease;
+    -webkit-tap-highlight-color: transparent;
   }
 
   body.sidebar-open .sidebar-overlay {
@@ -2002,30 +2022,35 @@ td {
     visibility: visible;
   }
 
-  /* Main content - MUST stay scrollable */
+  /* Main content wrapper */
   .main-content {
     width: 100%;
     max-width: 100%;
     height: 100vh;
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
-  }
-
-  /* Chat container - scrollable */
-  .chat-container {
-    min-height: 100vh;
+    height: 100dvh;
+    overflow: hidden;
     display: flex;
     flex-direction: column;
-    padding-bottom: 100px; /* Space for input */
+  }
+
+  /* Chat container - takes remaining space */
+  .chat-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    overflow: hidden;
+    padding-bottom: 0; /* Remove padding, input is fixed */
   }
 
   /* Messages - scrollable area */
   #messages {
     flex: 1;
-    padding: 80px 16px 20px 16px; /* Top padding for menu button */
+    padding: 70px 16px 100px 16px; /* Top for menu, bottom for input */
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
     overscroll-behavior: contain;
+    min-height: 0;
   }
 
   /* Input - always visible at bottom */
@@ -2038,8 +2063,14 @@ td {
     border-top: 1px solid var(--border-subtle);
     padding: 12px 16px;
     padding-bottom: max(12px, env(safe-area-inset-bottom));
-    z-index: 2000; /* Above main content, below sidebar */
+    z-index: 2500; /* Above main content, below overlay */
     box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.5);
+    transform: translateZ(0); /* Force GPU layer */
+  }
+
+  /* Hide input when sidebar is open to prevent z-index conflicts */
+  body.sidebar-open .input-container {
+    z-index: 100; /* Drop below overlay when sidebar open */
   }
 
   .input-wrapper {
@@ -2048,27 +2079,58 @@ td {
     min-height: 52px;
     display: flex;
     align-items: center;
+    border-radius: 16px;
   }
 
   #chat-input {
-    font-size: 16px;
+    font-size: 16px; /* Prevents zoom on iOS */
     min-height: 52px;
     padding: 14px;
+    flex: 1;
+    border: none;
+    background: transparent;
   }
 
   #send-btn {
     min-width: 52px;
     min-height: 52px;
+    flex-shrink: 0;
   }
 
   /* Body scroll behavior - ONLY block when sidebar open */
   body.sidebar-open {
     overflow: hidden;
+    position: fixed;
+    width: 100%;
   }
 
-  /* But main-content can still scroll */
+  /* Main content should not scroll when sidebar is open */
   body.sidebar-open .main-content {
-    overflow-y: auto;
+    pointer-events: none;
+  }
+
+  /* But sidebar itself should be interactive */
+  body.sidebar-open .sidebar {
+    pointer-events: auto;
+  }
+
+  body.sidebar-open .sidebar-overlay {
+    pointer-events: auto;
+  }
+
+  /* Keyboard open state */
+  body.keyboard-open {
+    /* Don't lock position, let viewport handle it */
+  }
+
+  body.keyboard-open .input-container {
+    position: fixed;
+    bottom: 0;
+    /* Visual viewport will push this up automatically */
+  }
+
+  body.keyboard-open #messages {
+    padding-bottom: 120px;
   }
 
   /* Empty state */
@@ -2076,6 +2138,8 @@ td {
     padding: 20px 16px 120px 16px;
     display: flex;
     flex-direction: column;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
   }
 
   .chat-empty-icon-wrapper {
@@ -2097,7 +2161,7 @@ td {
     margin-bottom: 16px;
   }
 
-  /* Suggestions */
+  /* Suggestions - must be scrollable and clickable */
   .chat-suggestions {
     display: flex;
     flex-direction: column;
@@ -2107,6 +2171,8 @@ td {
   .suggestion-card {
     padding: 12px;
     min-height: 60px;
+    cursor: pointer;
+    touch-action: manipulation;
   }
 
   .suggestion-icon-wrapper {
@@ -2131,5 +2197,22 @@ td {
   /* Data page mobile adjustments */
   .data-page-wrapper {
     padding: 80px 16px 120px 16px; /* Space for button and input */
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Page wrapper needs to be scrollable */
+  .page.active {
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* Visual Viewport API support for keyboard */
+@supports (height: 100dvh) {
+  @media (max-width: 900px) {
+    .main-content {
+      height: 100dvh;
+    }
   }
 }

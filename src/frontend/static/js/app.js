@@ -34,50 +34,88 @@ function initMobileKeyboard() {
   if (window.innerWidth > 768) return; // Only on mobile
 
   const input = document.getElementById('chat-input');
+  const inputContainer = document.querySelector('.input-container');
+  const messagesDiv = document.getElementById('messages');
   if (!input) return;
+
+  // Track keyboard state
+  let keyboardHeight = 0;
 
   // When keyboard opens
   input.addEventListener('focus', () => {
     isKeyboardOpen = true;
     document.body.classList.add('keyboard-open');
     
-    // Scroll to input after keyboard animation
+    // Give keyboard time to appear, then adjust
     setTimeout(() => {
-      input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      if (window.visualViewport) {
+        keyboardHeight = window.innerHeight - window.visualViewport.height;
+        if (inputContainer) {
+          inputContainer.style.bottom = '0px';
+          inputContainer.style.transform = 'translateZ(0)';
+        }
+      }
+      // Scroll messages to bottom
+      if (messagesDiv) {
+        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+      }
     }, 300);
   });
 
   // When keyboard closes
   input.addEventListener('blur', () => {
-    isKeyboardOpen = false;
-    document.body.classList.remove('keyboard-open');
+    // Small delay to prevent flickering on tap-to-send
+    setTimeout(() => {
+      if (document.activeElement !== input) {
+        isKeyboardOpen = false;
+        document.body.classList.remove('keyboard-open');
+        keyboardHeight = 0;
+        if (inputContainer) {
+          inputContainer.style.bottom = '0px';
+        }
+      }
+    }, 100);
   });
 
-  // Detect keyboard via viewport height changes
-  let lastHeight = window.visualViewport ? window.visualViewport.height : window.innerHeight;
-  
-  const handleResize = () => {
-    const currentHeight = window.visualViewport ? window.visualViewport.height : window.innerHeight;
-    
-    // Keyboard opened (height decreased significantly)
-    if (currentHeight < lastHeight - 150) {
-      isKeyboardOpen = true;
-      document.body.classList.add('keyboard-open');
-    }
-    // Keyboard closed (height increased significantly)
-    else if (currentHeight > lastHeight + 150) {
-      isKeyboardOpen = false;
-      document.body.classList.remove('keyboard-open');
-    }
-    
-    lastHeight = currentHeight;
-  };
-
+  // Use Visual Viewport API for precise keyboard detection
   if (window.visualViewport) {
-    window.visualViewport.addEventListener('resize', handleResize);
-  } else {
-    window.addEventListener('resize', handleResize);
+    window.visualViewport.addEventListener('resize', () => {
+      if (!isKeyboardOpen) return;
+      
+      const currentHeight = window.visualViewport.height;
+      const newKeyboardHeight = window.innerHeight - currentHeight;
+      
+      // Only adjust if significant change (keyboard appearing/resizing)
+      if (Math.abs(newKeyboardHeight - keyboardHeight) > 50) {
+        keyboardHeight = newKeyboardHeight;
+      }
+    });
+
+    window.visualViewport.addEventListener('scroll', () => {
+      // Keep input fixed at visual viewport bottom
+      if (inputContainer && isKeyboardOpen) {
+        const offsetTop = window.visualViewport.offsetTop;
+        inputContainer.style.transform = `translateY(${-offsetTop}px) translateZ(0)`;
+      }
+    });
   }
+
+  // Prevent body scroll when keyboard is open but allow messages to scroll
+  document.addEventListener('touchmove', (e) => {
+    if (!isKeyboardOpen) return;
+    
+    // Allow scrolling inside messages div
+    const target = e.target;
+    if (messagesDiv && (messagesDiv.contains(target) || target === messagesDiv)) {
+      return; // Allow scroll
+    }
+    
+    // Allow scrolling inside chat-empty-state (for suggestion cards)
+    const emptyState = document.querySelector('.chat-empty-state');
+    if (emptyState && emptyState.contains(target)) {
+      return; // Allow scroll
+    }
+  }, { passive: true });
 }
 function initMobileSidebar() {
   let overlay = document.querySelector('.sidebar-overlay');
@@ -545,7 +583,7 @@ function showChatEmptyState() {
         touchStartY = e.touches[0].clientY;
         touchStartTime = Date.now();
         card.style.transform = 'scale(0.98)';
-    });
+    }, { passive: true });
     
     // Touch end
     card.addEventListener('touchend', (e) => {
@@ -555,9 +593,25 @@ function showChatEmptyState() {
         
         // Only trigger if not scrolling and quick tap
         if (Math.abs(touchEndY - touchStartY) < 10 && touchDuration < 300) {
-        const suggestion = card.dataset.suggestion;
-        input.value = suggestion;
-        input.focus();
+            const suggestion = card.dataset.suggestion;
+            input.value = suggestion;
+            
+            // On mobile, focus input but give time for layout to adjust
+            if (window.innerWidth <= 768) {
+                // Brief delay before focusing to allow any scroll to complete
+                setTimeout(() => {
+                    input.focus();
+                    // After keyboard opens, ensure input is visible
+                    setTimeout(() => {
+                        const inputContainer = document.querySelector('.input-container');
+                        if (inputContainer) {
+                            inputContainer.scrollIntoView({ behavior: 'smooth', block: 'end' });
+                        }
+                    }, 350);
+                }, 50);
+            } else {
+                input.focus();
+            }
         }
     });
     
@@ -569,9 +623,9 @@ function showChatEmptyState() {
     // Keep click for desktop
     card.addEventListener('click', () => {
         if (window.innerWidth > 768) {
-        const suggestion = card.dataset.suggestion;
-        input.value = suggestion;
-        input.focus();
+            const suggestion = card.dataset.suggestion;
+            input.value = suggestion;
+            input.focus();
         }
     });
     });
