@@ -1912,13 +1912,40 @@ td {
   }
 }
 @media (max-width: 900px) {
+  /* CRITICAL: Override base styles that break fixed positioning on iOS */
+  body {
+    overflow: visible !important;
+    height: 100%;
+    min-height: 100vh;
+    min-height: 100dvh;
+  }
+
+  html {
+    height: 100%;
+  }
+
+  .app-container {
+    height: 100%;
+    min-height: 100vh;
+    min-height: 100dvh;
+    overflow: visible;
+  }
+
+  .page {
+    overflow: visible !important;
+  }
+
+  .page.active {
+    overflow: visible !important;
+  }
+
   /* Mobile menu button - HIGHEST z-index */
   .mobile-menu-btn {
     display: block;
     position: fixed;
     top: 1rem;
     left: 1rem;
-    z-index: 4000; /* Above everything */
+    z-index: 4000;
     background: rgba(30, 41, 59, 0.95);
     backdrop-filter: blur(10px);
     border: 1px solid rgba(96, 165, 250, 0.3);
@@ -1929,28 +1956,32 @@ td {
   }
 
   body.sidebar-open .mobile-menu-btn {
-    left: calc(min(85vw, 320px) + 1rem); /* Move right when sidebar opens */
+    left: calc(min(85vw, 320px) + 1rem);
   }
 
-  /* Sidebar - Second highest */
+  /* Sidebar */
   .sidebar {
     position: fixed;
     top: 0;
     left: 0;
     width: min(85vw, 320px);
+    height: 100%;
     height: 100dvh;
-    height: 100vh;
     z-index: 3500;
     transform: translateX(-100%);
     transition: transform 0.3s ease;
     display: flex;
     flex-direction: column;
     background: var(--bg-secondary);
-    overflow: hidden; /* Prevent outer scroll */
+    overflow: hidden;
   }
 
-  /* CRITICAL: Disable the ::before overlay on mobile - it blocks touches */
+  /* Disable pseudo-elements that block touches */
   .sidebar::before {
+    display: none !important;
+  }
+
+  .sidebar .nav-item::before {
     display: none !important;
   }
 
@@ -1958,59 +1989,54 @@ td {
     transform: translateX(0);
   }
 
-  /* Sidebar header - no scroll */
   .sidebar-header {
     flex-shrink: 0;
     position: relative;
-    z-index: 10;
+    z-index: 5;
   }
 
-  /* Sidebar nav - scrollable middle section */
   .sidebar-nav {
     flex: 1;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
     padding: 8px 12px;
     position: relative;
-    z-index: 10;
+    z-index: 5;
   }
 
   .nav-section {
     margin-bottom: 20px;
   }
 
-  /* CRITICAL: Disable nav-item ::before on mobile - causes darkening */
-  .sidebar .nav-item::before {
-    display: none !important;
-  }
-
   .sidebar .nav-item {
     pointer-events: auto !important;
     cursor: pointer;
     touch-action: manipulation;
-    min-height: 44px; /* Touch-friendly */
+    min-height: 44px;
     display: flex;
     align-items: center;
     position: relative;
-    z-index: 10;
-    -webkit-tap-highlight-color: rgba(14, 165, 233, 0.2);
+    z-index: 5;
+    -webkit-tap-highlight-color: rgba(14, 165, 233, 0.3);
   }
 
-  /* Sidebar footer - stuck to bottom */
   .sidebar-footer {
     flex-shrink: 0;
     background: var(--bg-secondary);
     border-top: 1px solid var(--border-subtle);
     position: relative;
-    z-index: 10;
+    z-index: 5;
   }
 
-  /* Overlay - Below sidebar */
+  /* Overlay */
   .sidebar-overlay {
     position: fixed;
-    inset: 0;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
     background: rgba(0, 0, 0, 0.6);
-    z-index: 3000; /* Below sidebar */
+    z-index: 3000;
     opacity: 0;
     visibility: hidden;
     transition: opacity 0.3s ease, visibility 0.3s ease;
@@ -2022,47 +2048,52 @@ td {
     visibility: visible;
   }
 
-  /* Main content - MUST stay scrollable */
+  /* Main content */
   .main-content {
     width: 100%;
     max-width: 100%;
-    height: 100vh;
-    height: 100dvh;
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
-    padding-bottom: 90px; /* Space for fixed input */
-  }
-
-  /* Chat container - scrollable */
-  .chat-container {
-    min-height: calc(100vh - 90px);
-    min-height: calc(100dvh - 90px);
+    min-height: 100vh;
+    min-height: 100dvh;
+    overflow: visible !important;
     display: flex;
     flex-direction: column;
+    padding-bottom: 80px;
+  }
+
+  /* Chat container */
+  .chat-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
     padding-bottom: 0;
   }
 
-  /* Messages - scrollable area */
+  /* Messages */
   #messages {
     flex: 1;
-    padding: 80px 16px 20px 16px; /* Top padding for menu button */
+    padding: 70px 16px 20px 16px;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
     overscroll-behavior: contain;
   }
 
-  /* Input - always visible at bottom */
+  /* INPUT CONTAINER - Critical fixes */
   .input-container {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
+    position: fixed !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    top: auto !important;
     background: var(--bg-primary);
     border-top: 1px solid var(--border-subtle);
     padding: 12px 16px;
     padding-bottom: max(12px, env(safe-area-inset-bottom));
-    z-index: 2000; /* Above main content, below sidebar */
+    z-index: 2500 !important;
     box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.5);
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
   }
 
   .input-wrapper {
@@ -2072,29 +2103,45 @@ td {
     display: flex;
     align-items: center;
     border-radius: 16px;
+    position: relative;
+    z-index: 1;
   }
 
   #chat-input {
-    font-size: 16px; /* Prevents iOS zoom */
+    font-size: 16px !important;
     min-height: 52px;
     padding: 14px;
+    flex: 1;
+    background: transparent;
+    border: none;
+    color: var(--text-primary);
     -webkit-appearance: none;
-    border-radius: 0;
+    appearance: none;
+    border-radius: 16px 0 0 16px;
+  }
+
+  #chat-input:focus {
+    outline: none;
   }
 
   #send-btn {
     min-width: 52px;
     min-height: 52px;
+    flex-shrink: 0;
+    touch-action: manipulation;
   }
 
-  /* Body scroll behavior - ONLY block when sidebar open */
+  /* When sidebar is open, lower input z-index */
+  body.sidebar-open .input-container {
+    z-index: 100 !important;
+  }
+
+  /* Block body scroll only when sidebar open */
   body.sidebar-open {
-    overflow: hidden;
-  }
-
-  /* But main-content can still scroll */
-  body.sidebar-open .main-content {
-    overflow-y: auto;
+    overflow: hidden !important;
+    position: fixed;
+    width: 100%;
+    height: 100%;
   }
 
   /* Empty state */
@@ -2123,7 +2170,6 @@ td {
     margin-bottom: 16px;
   }
 
-  /* Suggestions */
   .chat-suggestions {
     display: flex;
     flex-direction: column;
@@ -2133,6 +2179,8 @@ td {
   .suggestion-card {
     padding: 12px;
     min-height: 60px;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: rgba(14, 165, 233, 0.3);
   }
 
   .suggestion-icon-wrapper {
@@ -2154,8 +2202,7 @@ td {
     line-height: 1.3;
   }
 
-  /* Data page mobile adjustments */
   .data-page-wrapper {
-    padding: 80px 16px 120px 16px; /* Space for button and input */
+    padding: 80px 16px 100px 16px;
   }
 }

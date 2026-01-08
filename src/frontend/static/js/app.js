@@ -1126,10 +1126,21 @@ input.addEventListener("keypress", e => {
     }
 });
 
+// Fix for iOS Safari - move input container to body on mobile
+function initMobileInputFix() {
+  if (window.innerWidth > 900) return;
+  
+  const inputContainer = document.querySelector('.input-container');
+  if (inputContainer && inputContainer.parentElement !== document.body) {
+    document.body.appendChild(inputContainer);
+  }
+}
+
 window.addEventListener("load", () => {
     // Initialize mobile features
     initMobileSidebar();     // ← ADD THIS LINE
     initMobileKeyboard();
+    initMobileInputFix();    // Fix input positioning on iOS
     
     // Only auto-focus on desktop
     if (window.innerWidth > 768) {
