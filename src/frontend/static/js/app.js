@@ -444,6 +444,12 @@ navItems.forEach(item => {
             document.body.classList.remove("sidebar-open");
         }
 
+        // Show/hide input container based on page (mobile fix)
+        const inputContainer = document.querySelector('.input-container');
+        if (inputContainer) {
+            inputContainer.style.display = (pageName === "chat") ? "" : "none";
+        }
+
         if (pageName === "chat") {
             setTimeout(() => {
                 if (window.innerWidth > 768) {
