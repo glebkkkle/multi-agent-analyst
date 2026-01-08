@@ -2051,7 +2051,7 @@ td {
   }
 
   body.sidebar-open .input-container {
-    z-index: 100;
+    display: none;
   }
 
   .input-wrapper {
