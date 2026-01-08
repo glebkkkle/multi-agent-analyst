@@ -509,8 +509,8 @@ function showChatEmptyState() {
                             <line x1="6" y1="20" x2="6" y2="14"></line>
                         </svg>
                     </div>
-                    <div class="suggestion-title">Analyze Trends</div>
-                    <div class="suggestion-description">Identify patterns and trends in your dataset</div>
+                    <div class="suggestion-title">Detect anomalies in my dataset</div>
+                    <div class="suggestion-description">Identify unusual values and outliers across columns</div>
                 </div>
                 <div class="suggestion-card" data-suggestion="Show me a summary of my data">
                     <div class="suggestion-icon-wrapper">
@@ -541,8 +541,8 @@ function showChatEmptyState() {
                             <polyline points="12 5 19 12 12 19"></polyline>
                         </svg>
                     </div>
-                    <div class="suggestion-title">Compare Data</div>
-                    <div class="suggestion-description">Side-by-side comparison of metrics</div>
+                    <div class="suggestion-title">Create visualizations for my data</div>
+                    <div class="suggestion-description">Generate charts and plots to explore patterns</div>
                 </div>
             </div>
         </div>
