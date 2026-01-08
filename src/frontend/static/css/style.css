@@ -546,12 +546,9 @@ body {
 
     /* FIX BELOW */
     min-height: 0;
-    pointer-events: none;
 }
 
-#messages * {
-    pointer-events: auto;
-}
+
 
 #messages::-webkit-scrollbar {
     width: 6px;
@@ -1915,7 +1912,6 @@ td {
   }
 }
 
-
 @media (max-width: 900px) {
   /* Sidebar becomes off-canvas drawer */
   .sidebar {
@@ -1962,13 +1958,13 @@ td {
     pointer-events: auto;
   }
 
-  /* Messages area */
-  #messages {
-    padding: 20px 16px 120px 16px;
-    pointer-events: auto;
+  /* Menu button - above input but below sidebar */
+  .mobile-menu-btn {
+    display: block;
+    z-index: 1500;
   }
 
-  /* Fixed input at bottom */
+  /* Fixed input at bottom - SINGLE DEFINITION */
   .input-container {
     position: fixed;
     bottom: 0;
@@ -1978,13 +1974,7 @@ td {
     border-top: 1px solid var(--border-subtle);
     padding: 16px;
     padding-bottom: max(16px, env(safe-area-inset-bottom));
-    z-index: 100;
-  }
-
-  /* Chat container full height */
-  .chat-container {
-    height: 100vh;
-    padding-bottom: 0;
+    z-index: 1000;
   }
 
   /* Touch-friendly inputs */
@@ -1999,9 +1989,18 @@ td {
     min-height: 44px;
   }
 
-  /* Menu button */
-  .mobile-menu-btn {
-    display: block;
+  /* Chat container full height */
+  .chat-container {
+    height: 100vh;
+    padding-bottom: 0;
+  }
+
+  /* Messages should scroll and not overlap input */
+  #messages {
+    padding: 20px 16px 140px 16px;
+    pointer-events: auto;
+    max-height: calc(100vh - 80px);
+    overflow-y: auto;
   }
 
   /* Main content full width */
@@ -2013,5 +2012,55 @@ td {
   /* Prevent scroll when menu open */
   body.sidebar-open {
     overflow: hidden;
+  }
+
+  /* Fix empty state to not block input */
+  .chat-empty-state {
+    padding-bottom: 140px;
+    max-height: calc(100vh - 140px);
+    overflow-y: auto;
+  }
+
+  /* Smaller, more compact empty state on mobile */
+  .chat-empty-title {
+    font-size: 20px;
+    margin-bottom: 8px;
+  }
+
+  .chat-empty-subtitle {
+    font-size: 13px;
+    margin-bottom: 20px;
+  }
+
+  .chat-empty-icon-wrapper {
+    margin-bottom: 16px;
+  }
+
+  .chat-empty-icon {
+    width: 48px;
+    height: 48px;
+  }
+
+  /* Make suggestion cards scrollable */
+  .chat-suggestions {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding-bottom: 20px;
+    max-height: 50vh;
+    overflow-y: auto;
+  }
+
+  /* Make suggestion cards more compact */
+  .suggestion-card {
+    padding: 12px;
+  }
+
+  .suggestion-title {
+    font-size: 14px;
+  }
+
+  .suggestion-description {
+    font-size: 12px;
   }
 }
