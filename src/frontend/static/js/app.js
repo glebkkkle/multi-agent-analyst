@@ -98,7 +98,7 @@ function initMobileSidebar() {
         <line x1="3" y1="18" x2="21" y2="18"></line>
       </svg>
     `;
-    document.body.insertBefore(menuBtn, document.body.firstChild);
+    document.body.appendChild(menuBtn);
   }
 
   menuBtn.addEventListener('click', (e) => {
@@ -110,18 +110,18 @@ function initMobileSidebar() {
     document.body.classList.remove('sidebar-open');
   });
 
+  // Move input container to body for iOS fixed positioning fix
   if (window.innerWidth <= 900) {
+    const inputContainer = document.querySelector('.input-container');
+    if (inputContainer) {
+      document.body.appendChild(inputContainer);
+    }
+    
     navItems.forEach(item => {
       item.addEventListener('click', () => {
         document.body.classList.remove('sidebar-open');
       });
     });
-
-    // iOS Safari fix: move input container to body for proper fixed positioning
-    const inputContainer = document.querySelector('.input-container');
-    if (inputContainer && inputContainer.parentElement !== document.body) {
-      document.body.appendChild(inputContainer);
-    }
   }
 }
 
