@@ -201,7 +201,11 @@ def chat_node(state: GraphState):
         )
     )
     if intent.error and intent.error.strip():
-
+        new_history = state.conversation_history + [
+        {"role":'user', "content":user_msg},
+        {"role": "system", "content": intent.missing_info}
+        ]
+        
         return {"desicion":'abort',
                 "conversation_history":new_history, 
                 "dataset_schemas":schemas, 
