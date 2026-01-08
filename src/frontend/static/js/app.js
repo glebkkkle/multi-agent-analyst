@@ -79,9 +79,7 @@ function initMobileKeyboard() {
     window.addEventListener('resize', handleResize);
   }
 }
-// Add this near the top of your file, after the other initializations
 function initMobileSidebar() {
-  // Create overlay if it doesn't exist
   let overlay = document.querySelector('.sidebar-overlay');
   if (!overlay) {
     overlay = document.createElement('div');
@@ -89,7 +87,6 @@ function initMobileSidebar() {
     document.body.appendChild(overlay);
   }
 
-  // Create mobile menu button if it doesn't exist
   let menuBtn = document.querySelector('.mobile-menu-btn');
   if (!menuBtn) {
     menuBtn = document.createElement('button');
@@ -101,22 +98,18 @@ function initMobileSidebar() {
         <line x1="3" y1="18" x2="21" y2="18"></line>
       </svg>
     `;
-    // Insert at the beginning of body or in your header
     document.body.insertBefore(menuBtn, document.body.firstChild);
   }
 
-  // Toggle sidebar
   menuBtn.addEventListener('click', (e) => {
     e.stopPropagation();
     document.body.classList.toggle('sidebar-open');
   });
 
-  // Close on overlay click
   overlay.addEventListener('click', () => {
     document.body.classList.remove('sidebar-open');
   });
 
-  // Close on nav item click (mobile only)
   if (window.innerWidth <= 900) {
     navItems.forEach(item => {
       item.addEventListener('click', () => {
@@ -125,6 +118,7 @@ function initMobileSidebar() {
     });
   }
 }
+
 
 // Enhanced scroll to bottom for mobile
 function scrollToBottom() {
@@ -462,23 +456,22 @@ navItems.forEach(item => {
 });
 const chatPage = document.getElementById("chat-page");
 
-chatPage.addEventListener("click", e => {
-    // Don't focus on mobile or if clicking interactive elements
-    if (window.innerWidth <= 900) return; // ← ADD THIS LINE
+if (chatPage) {
+  chatPage.addEventListener("click", e => {
+    if (window.innerWidth <= 900) return; // Don't auto-focus on mobile
     
-    if (e.target.closest("#chat-input") || e.target.closest("#send-btn")) {
-        return;
-    }
-    
-    // Don't focus if clicking on suggestion cards
-    if (e.target.closest(".suggestion-card")) {
-        return;
+    if (e.target.closest("#chat-input") || 
+        e.target.closest("#send-btn") ||
+        e.target.closest(".suggestion-card")) {
+      return;
     }
     
     if (chatPage.classList.contains("active")) {
-        input.focus();
+      input.focus();
     }
-});
+  });
+}
+
 
 
 function showChatEmptyState() {
