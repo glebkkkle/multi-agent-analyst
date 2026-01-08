@@ -85,6 +85,16 @@ body {
     z-index: 1;
 }
 
+/* Hide mobile menu button by default - shown only in mobile media query */
+.mobile-menu-btn {
+    display: none;
+}
+
+/* Hide sidebar overlay by default */
+.sidebar-overlay {
+    display: none;
+}
+
 /* Sidebar */
 .sidebar {
     width: 256px;
@@ -1912,22 +1922,21 @@ td {
   }
 }
 @media (max-width: 900px) {
-  /* CRITICAL: Override base styles that break fixed positioning on iOS */
-  body {
-    overflow: visible !important;
-    height: 100%;
-    min-height: 100vh;
-    min-height: 100dvh;
-  }
-
+  /* === CRITICAL iOS FIXES === */
   html {
     height: 100%;
+    overflow: hidden;
+  }
+
+  body {
+    height: 100%;
+    overflow: auto;
+    -webkit-overflow-scrolling: touch;
   }
 
   .app-container {
-    height: 100%;
-    min-height: 100vh;
-    min-height: 100dvh;
+    min-height: 100%;
+    height: auto;
     overflow: visible;
   }
 
@@ -1935,39 +1944,60 @@ td {
     overflow: visible !important;
   }
 
-  .page.active {
-    overflow: visible !important;
-  }
-
-  /* Mobile menu button - HIGHEST z-index */
+  /* === MOBILE MENU BUTTON === */
   .mobile-menu-btn {
-    display: block;
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
     position: fixed;
-    top: 1rem;
-    left: 1rem;
-    z-index: 4000;
+    top: 12px;
+    left: 12px;
+    z-index: 9999;
     background: rgba(30, 41, 59, 0.95);
     backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
     border: 1px solid rgba(96, 165, 250, 0.3);
     border-radius: 8px;
-    padding: 0.75rem;
+    padding: 12px;
     cursor: pointer;
-    transition: all 0.2s ease;
+    -webkit-tap-highlight-color: rgba(96, 165, 250, 0.3);
+    touch-action: manipulation;
   }
 
   body.sidebar-open .mobile-menu-btn {
-    left: calc(min(85vw, 320px) + 1rem);
+    left: calc(min(85vw, 320px) + 12px);
   }
 
-  /* Sidebar */
-  .sidebar {
+  /* === SIDEBAR OVERLAY === */
+  .sidebar-overlay {
+    display: block !important;
     position: fixed;
     top: 0;
     left: 0;
-    width: min(85vw, 320px);
+    width: 100%;
     height: 100%;
-    height: 100dvh;
-    z-index: 3500;
+    background: rgba(0, 0, 0, 0.6);
+    z-index: 9000;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s, visibility 0.3s;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+
+  body.sidebar-open .sidebar-overlay {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  /* === SIDEBAR === */
+  .sidebar {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: min(85vw, 320px) !important;
+    height: 100% !important;
+    z-index: 9500 !important;
     transform: translateX(-100%);
     transition: transform 0.3s ease;
     display: flex;
@@ -1976,12 +2006,9 @@ td {
     overflow: hidden;
   }
 
-  /* Disable pseudo-elements that block touches */
+  /* REMOVE the ::before that blocks touches */
   .sidebar::before {
-    display: none !important;
-  }
-
-  .sidebar .nav-item::before {
+    content: none !important;
     display: none !important;
   }
 
@@ -1991,8 +2018,6 @@ td {
 
   .sidebar-header {
     flex-shrink: 0;
-    position: relative;
-    z-index: 5;
   }
 
   .sidebar-nav {
@@ -2000,151 +2025,128 @@ td {
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
     padding: 8px 12px;
-    position: relative;
-    z-index: 5;
   }
 
   .nav-section {
     margin-bottom: 20px;
   }
 
-  .sidebar .nav-item {
+  /* REMOVE nav-item ::before that causes darkening */
+  .nav-item::before {
+    content: none !important;
+    display: none !important;
+  }
+
+  .nav-item {
+    position: relative;
+    z-index: 1;
     pointer-events: auto !important;
-    cursor: pointer;
-    touch-action: manipulation;
-    min-height: 44px;
+    cursor: pointer !important;
+    touch-action: manipulation !important;
+    -webkit-tap-highlight-color: rgba(14, 165, 233, 0.3) !important;
+    min-height: 48px;
     display: flex;
     align-items: center;
-    position: relative;
-    z-index: 5;
-    -webkit-tap-highlight-color: rgba(14, 165, 233, 0.3);
   }
 
   .sidebar-footer {
     flex-shrink: 0;
     background: var(--bg-secondary);
     border-top: 1px solid var(--border-subtle);
-    position: relative;
-    z-index: 5;
   }
 
-  /* Overlay */
-  .sidebar-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.6);
-    z-index: 3000;
-    opacity: 0;
-    visibility: hidden;
-    transition: opacity 0.3s ease, visibility 0.3s ease;
-    -webkit-tap-highlight-color: transparent;
-  }
-
-  body.sidebar-open .sidebar-overlay {
-    opacity: 1;
-    visibility: visible;
-  }
-
-  /* Main content */
+  /* === MAIN CONTENT === */
   .main-content {
     width: 100%;
-    max-width: 100%;
-    min-height: 100vh;
-    min-height: 100dvh;
-    overflow: visible !important;
-    display: flex;
-    flex-direction: column;
-    padding-bottom: 80px;
-  }
-
-  /* Chat container */
-  .chat-container {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
+    min-height: 100%;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
-    padding-bottom: 0;
+    padding-bottom: 100px;
   }
 
-  /* Messages */
+  .chat-container {
+    display: flex;
+    flex-direction: column;
+    min-height: 100%;
+  }
+
   #messages {
     flex: 1;
     padding: 70px 16px 20px 16px;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
-    overscroll-behavior: contain;
   }
 
-  /* INPUT CONTAINER - Critical fixes */
+  /* === INPUT CONTAINER - iOS FIXED POSITION FIX === */
   .input-container {
     position: fixed !important;
-    bottom: 0 !important;
     left: 0 !important;
     right: 0 !important;
+    bottom: 0 !important;
     top: auto !important;
-    background: var(--bg-primary);
+    z-index: 8000 !important;
+    background: var(--bg-primary) !important;
     border-top: 1px solid var(--border-subtle);
-    padding: 12px 16px;
-    padding-bottom: max(12px, env(safe-area-inset-bottom));
-    z-index: 2500 !important;
-    box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.5);
-    transform: translateZ(0);
-    -webkit-transform: translateZ(0);
+    padding: 12px 16px !important;
+    padding-bottom: max(12px, env(safe-area-inset-bottom)) !important;
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.6);
+    /* Force new stacking context */
+    transform: translate3d(0, 0, 0);
+    -webkit-transform: translate3d(0, 0, 0);
   }
 
-  .input-wrapper {
-    background: var(--bg-secondary);
-    border: 1px solid rgba(96, 165, 250, 0.3);
-    min-height: 52px;
-    display: flex;
-    align-items: center;
-    border-radius: 16px;
-    position: relative;
-    z-index: 1;
-  }
-
-  #chat-input {
-    font-size: 16px !important;
-    min-height: 52px;
-    padding: 14px;
-    flex: 1;
-    background: transparent;
-    border: none;
-    color: var(--text-primary);
-    -webkit-appearance: none;
-    appearance: none;
-    border-radius: 16px 0 0 16px;
-  }
-
-  #chat-input:focus {
-    outline: none;
-  }
-
-  #send-btn {
-    min-width: 52px;
-    min-height: 52px;
-    flex-shrink: 0;
-    touch-action: manipulation;
-  }
-
-  /* When sidebar is open, lower input z-index */
+  /* Lower z-index when sidebar is open */
   body.sidebar-open .input-container {
     z-index: 100 !important;
   }
 
-  /* Block body scroll only when sidebar open */
-  body.sidebar-open {
-    overflow: hidden !important;
-    position: fixed;
-    width: 100%;
-    height: 100%;
+  .input-wrapper {
+    display: flex !important;
+    align-items: center !important;
+    background: var(--bg-secondary);
+    border: 1px solid rgba(96, 165, 250, 0.3);
+    border-radius: 16px;
+    min-height: 52px;
   }
 
-  /* Empty state */
+  #chat-input {
+    flex: 1 !important;
+    min-height: 52px !important;
+    padding: 14px !important;
+    font-size: 16px !important; /* Prevent iOS zoom */
+    background: transparent !important;
+    border: none !important;
+    outline: none !important;
+    color: var(--text-primary) !important;
+    -webkit-appearance: none !important;
+    appearance: none !important;
+    border-radius: 16px 0 0 16px !important;
+    /* Make input tappable */
+    pointer-events: auto !important;
+    touch-action: manipulation !important;
+    -webkit-tap-highlight-color: transparent !important;
+    -webkit-user-select: text !important;
+    user-select: text !important;
+  }
+
+  #send-btn {
+    flex-shrink: 0 !important;
+    min-width: 52px !important;
+    min-height: 52px !important;
+    pointer-events: auto !important;
+    touch-action: manipulation !important;
+    -webkit-tap-highlight-color: rgba(14, 165, 233, 0.3) !important;
+  }
+
+  /* === LOCK BODY WHEN SIDEBAR OPEN === */
+  body.sidebar-open {
+    overflow: hidden !important;
+    position: fixed !important;
+    width: 100% !important;
+    height: 100% !important;
+  }
+
+  /* === EMPTY STATE === */
   .chat-empty-state {
     padding: 20px 16px 30px 16px;
     display: flex;
@@ -2179,8 +2181,9 @@ td {
   .suggestion-card {
     padding: 12px;
     min-height: 60px;
-    touch-action: manipulation;
-    -webkit-tap-highlight-color: rgba(14, 165, 233, 0.3);
+    pointer-events: auto !important;
+    touch-action: manipulation !important;
+    -webkit-tap-highlight-color: rgba(14, 165, 233, 0.3) !important;
   }
 
   .suggestion-icon-wrapper {
@@ -2203,6 +2206,6 @@ td {
   }
 
   .data-page-wrapper {
-    padding: 80px 16px 100px 16px;
+    padding: 80px 16px 120px 16px;
   }
 }
