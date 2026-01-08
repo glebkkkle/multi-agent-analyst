@@ -200,6 +200,13 @@ def chat_node(state: GraphState):
             conversation_history=state.conversation_history
         )
     )
+    if intent.error and intent.error.strip():
+
+        return {"desicion":'abort',
+                "conversation_history":new_history, 
+                "dataset_schemas":schemas, 
+                "message_to_user":intent.error 
+                }
     if intent.intent == 'abort':
         new_history = state.conversation_history + [
         {"role":'user', "content":user_msg},
@@ -250,8 +257,8 @@ def chat_reply(state: GraphState):
 def execution_error_node(state: GraphState):
     return {
         "final_response": (
-            "I ran into a problem while executing your request.\n\n"
-            f"Details: {state.execution_exception}\n\n"
+            "I ran into a problem while executing your request."
+            f"Details: {state.execution_exception}"
             "You can try rephrasing your request or choosing a different operation."
         ),
         "final_obj_id": None,
@@ -270,7 +277,15 @@ def clean_query(state:GraphState):
         )
 
     response=mini.with_structured_output(CleanQueryState).invoke(cleaned_query.format(original_query=state.query, session_context=conv_history))
-
+    
+    if response.error and response.error.strip():
+        return {
+            "query": state.query,
+            "trace": trace,
+            "desicion": "abort",
+            "message_to_user":response.error
+        }
+    
     logger.info(
         "Cleaned query generated",
         extra={
@@ -280,7 +295,7 @@ def clean_query(state:GraphState):
         }
     )
     trace.input['cleaned_query'] = response.planner_query
-    return {"query":response.planner_query, "trace":trace}
+    return {"query":response.planner_query, "trace":trace, "desicion":'chat_node'}
 
 
 @guarded("final_result_node")

@@ -501,7 +501,7 @@ function showChatEmptyState() {
                 Ask questions about your data, request analysis, or explore insights.
             </p>
             <div class="chat-suggestions">
-                <div class="suggestion-card" data-suggestion="What are the main trends in my data?">
+                <div class="suggestion-card" data-suggestion="Detect anomalies in my dataset">
                     <div class="suggestion-icon-wrapper">
                         <svg class="suggestion-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <line x1="18" y1="20" x2="18" y2="10"></line>
@@ -534,7 +534,7 @@ function showChatEmptyState() {
                     <div class="suggestion-title">Generate Insights</div>
                     <div class="suggestion-description">Discover hidden patterns and correlations</div>
                 </div>
-                <div class="suggestion-card" data-suggestion="Compare different metrics in my data">
+                <div class="suggestion-card" data-suggestion="Create visualizations for my data">
                     <div class="suggestion-icon-wrapper">
                         <svg class="suggestion-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <line x1="5" y1="12" x2="19" y2="12"></line>

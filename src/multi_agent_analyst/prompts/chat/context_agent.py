@@ -238,6 +238,11 @@ Current User Request:
 - Implicit Necessity?: [Yes/No - is the query incomplete without the metric?]
 - Semantic Fit: [High/Low - does the metric actually work with the new command?]
 
-### OUTPUT:
-(Output ONLY the final concise instruction sentence)
+### OUTPUT FORMAT (JSON ONLY)
+Return ONLY valid JSON:
+  "planner_query": "the normalized query string",
+  "error": null
+
+  If you cannot process the request due to content policy violations or other restrictions,
+set "planner_query" to null and provide a brief explanation in "error".
 """

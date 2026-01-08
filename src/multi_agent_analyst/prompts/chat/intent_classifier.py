@@ -117,13 +117,18 @@ In such cases:
 You must NOT use to 'abort' otherwise.
 ---
 ### OUTPUT FORMAT (JSON ONLY)
-
 Return ONLY valid JSON:
 
   "intent": "plan" | "chat" | "clarification" | "abort",
   "is_sufficient": boolean,
-  "result_mode": "analysis" | "preview" 
-  "missing_info": string | null
+  "result_mode": "analysis" | "preview",
+  "missing_info": string | null,
+  "error": null
+
+
+If you cannot classify the request due to content policy violations or other restrictions,
+set "intent" to null and provide a brief explanation in "error".
+
 ---
 
 ### CURRENT USER MESSAGE:

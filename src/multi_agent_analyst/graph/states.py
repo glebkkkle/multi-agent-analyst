@@ -35,6 +35,7 @@ class DAGEdge(BaseModel):
 
 class CleanQueryState(BaseModel):
     planner_query:str
+    error : str = None
 
 class DAGPlan(BaseModel):
     nodes: List[DAGNode]
@@ -51,6 +52,7 @@ class IntentSchema(BaseModel):
     is_sufficient:bool
     missing_info:str
     result_mode:Literal['analysis', 'preview']
+    error : str = None
 
 #REWRITE USER'S QUERY
 class ContextSchema(BaseModel):

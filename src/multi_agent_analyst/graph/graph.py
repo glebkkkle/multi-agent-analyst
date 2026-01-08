@@ -20,9 +20,17 @@ graph.add_node('execution_error', execution_error_node)
 graph.add_node('clean_query', clean_query)
 graph.add_node('final_result_node', final_result_node)
 
-
+clean_query_map = {
+    'chat_node': 'chat_node',
+    'abort': 'final_result_node',  # If cleaning fails
+}
 graph.set_entry_point('clean_query')
-graph.add_edge('clean_query', 'chat_node')
+
+graph.add_conditional_edges(
+    'clean_query',
+    router_for(clean_query_map),
+    clean_query_map
+)
 
 chat_map = {
     'chat': 'chat_reply',
