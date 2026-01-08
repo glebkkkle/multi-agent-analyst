@@ -460,17 +460,26 @@ navItems.forEach(item => {
         }
     });
 });
-
 const chatPage = document.getElementById("chat-page");
 
 chatPage.addEventListener("click", e => {
+    // Don't focus on mobile or if clicking interactive elements
+    if (window.innerWidth <= 900) return; // ← ADD THIS LINE
+    
     if (e.target.closest("#chat-input") || e.target.closest("#send-btn")) {
         return;
     }
+    
+    // Don't focus if clicking on suggestion cards
+    if (e.target.closest(".suggestion-card")) {
+        return;
+    }
+    
     if (chatPage.classList.contains("active")) {
         input.focus();
     }
 });
+
 
 function showChatEmptyState() {
     messagesDiv.innerHTML = `
