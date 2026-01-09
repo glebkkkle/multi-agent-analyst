@@ -300,7 +300,7 @@ def clean_query(state:GraphState):
             input={"raw_query": state.query}
         )
 
-    response=mini.with_structured_output(CleanQueryState).invoke(cleaned_query.format(original_query=state.query, session_context=conv_history))
+    response=llm.with_structured_output(CleanQueryState).invoke(cleaned_query.format(original_query=state.query, session_context=conv_history))
     
     if response.error and response.error.strip():
         return {
