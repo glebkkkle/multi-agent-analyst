@@ -201,11 +201,12 @@ def allow_execution(state:GraphState):
 @guarded("chat_node")
 def chat_node(state: GraphState):
     user_msg = state.query
+    print(state.query)
 
     schemas = load_user_tables(state.thread_id)
     current_tables.setdefault(state.thread_id, schemas)
 
-    intent = mini.with_structured_output(IntentSchema).invoke(
+    intent = llm.with_structured_output(IntentSchema).invoke(
         INTENT_CLASSIFIER_PROMPT.format(
             user_query=user_msg,
             data_schemas=schemas,
@@ -319,6 +320,7 @@ def clean_query(state:GraphState):
         }
     )
     trace.input['cleaned_query'] = response.planner_query
+    print(response.planner_query)
     return {"query":response.planner_query, "trace":trace, "desicion":'chat_node'}
 
 
