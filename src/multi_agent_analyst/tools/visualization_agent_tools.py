@@ -175,22 +175,24 @@ def make_bar_chart_tool(df):
         try:
             if category_column not in df.columns:
                 raise ValueError(f"Column '{category_column}' not found in dataframe.")
-
             if value_column not in df.columns:
                 raise ValueError(f"Column '{value_column}' not found in dataframe.")
-
             if not pd.api.types.is_numeric_dtype(df[value_column]):
                 raise ValueError(f"Column '{value_column}' must be numeric.")
-
+            
+            # Extract the actual data, not just column names
             vis_json = {
                 "type": "visualization",
                 "plot_type": "bar",
-                "x": category_column,
-                "y": value_column,
+                "x": df[category_column].tolist(),  # Convert to actual data
+                "y": df[value_column].tolist(),     # Convert to actual data
+                "title": f"{value_column} by {category_column}",
+                "labels": {
+                    "x": category_column,
+                    "y": value_column
+                }
             }
-
             obj_id = object_store.save(vis_json)
-
             return {
                 "object_id": obj_id,
                 "status": "success",
@@ -198,7 +200,7 @@ def make_bar_chart_tool(df):
                     f"Generated bar chart using '{category_column}' "
                     f"and '{value_column}'."
                 ),
-                "plot_type":'Bar Chart'
+                "plot_type": 'Bar Chart'
             }
         except Exception as e:
             return {
@@ -208,7 +210,7 @@ def make_bar_chart_tool(df):
                 "columns": [category_column, value_column],
                 "exception": str(e),
             }
-
+    
     return StructuredTool.from_function(
         func=bar_chart,
         name="bar_chart",
@@ -218,7 +220,6 @@ def make_bar_chart_tool(df):
         ),
         args_schema=BarPlotSchema,
     )
-
 def make_table_visualization_tool(df):
     """Factory: returns a table visualization tool bound to the given dataframe."""
 
