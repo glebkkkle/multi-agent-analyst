@@ -123,8 +123,6 @@ def router_node(state: GraphState):
         }
     
     object_id=d.get("object_id")
-    print(object_id)
-    print(' ')
     return {
         "desicion":"ok",
         "final_obj_id": d["object_id"],
@@ -206,11 +204,7 @@ def chat_node(state: GraphState):
 
     schemas = load_user_tables(state.thread_id)
     current_tables.setdefault(state.thread_id, schemas)
-    
-    print(' ')
-    print(state.dataset_schemas)
-    print(' ')
-    print(get_current_tables())
+
     intent = mini.with_structured_output(IntentSchema).invoke(
         INTENT_CLASSIFIER_PROMPT.format(
             user_query=user_msg,

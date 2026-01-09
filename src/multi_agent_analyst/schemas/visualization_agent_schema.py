@@ -27,8 +27,8 @@ class BarPlotSchema(BaseModel):
     value_column: str
 
 class ExternalAgentSchema(BaseModel):
-    object_id: str = Field(..., description="Final object ID after all modifications")
-    summary: str = Field(..., description="Short summary of steps performed and final result")
+    object_id: Optional[str] = Field(..., description="Final object ID after all modifications")
+    summary: Optional[str] = Field(..., description="Short summary of steps performed and final result")
     exception: Optional[str] = Field(None, description="Exception message if any")
 
 class HistogramSchema(BaseModel):

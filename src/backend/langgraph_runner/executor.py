@@ -39,9 +39,6 @@ def _run_graph(thread_id: str, session_id: str, requires_user_clarification: boo
         )
         init_thread_tables(thread_id)
         tables=get_current_tables()
-        print(' ')
-        print(tables)
-        print(' ')
 
         events = compiled_graph.stream(
             {

@@ -35,7 +35,6 @@ def make_correlation_tool(df):
     def correlation():
         try:
             result = df.corr(numeric_only=True)
-            print(type(result))
             result=sanitize_for_json(result)
             table_shape=result.shape
         #format exception flag properly for the controller
@@ -61,7 +60,6 @@ def make_anomaly_tool(df):
     def anomaly():
         try:
             numeric = df.select_dtypes(include=["int", "float"])
-            print('DETECTING')
 
             q1 = numeric.quantile(0.25)
             q3 = numeric.quantile(0.75)
@@ -212,7 +210,6 @@ def make_groupby_tool(df):
     )
 
 def make_difference_tool(df):
-    print('CALLING DIFF TOOL')
     def difference_analysis(column: str, method: str = "absolute"):
         try:
             if column not in df.columns:

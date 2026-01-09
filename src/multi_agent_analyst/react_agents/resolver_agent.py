@@ -21,7 +21,6 @@ def resolver_agent():
     )
     attempt = len(execution_list.execution_log_list.get("resolver_fix", [])) + 1
     if attempt > MAX_RETRIES:
-        print('aborting')
         logger.info(
             "ResolverAgent aborted after MAX TRIES",
             extra={

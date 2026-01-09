@@ -23,7 +23,7 @@ llm=get_default_llm()
 @tool
 def data_agent(data_agent_query: str, current_plan_step: str):
     """High-level DataAgent using SQL, selection, and merge tools."""
-
+    emit("Data Agent retrives data.")
     logger.info(
         "DataAgent started",
         extra={
@@ -32,13 +32,8 @@ def data_agent(data_agent_query: str, current_plan_step: str):
         }
     )
 
-    print(' ')
     tables=get_current_tables()
-    print(' ')
-    print('CURRENT TABLES THAT DATA AGENT SEES')
-    print(tables)
-    print(' ')
-    
+
     tools = [
         make_sql_query_tool(),
         make_select_columns_tool(),
@@ -55,7 +50,8 @@ def data_agent(data_agent_query: str, current_plan_step: str):
         )
 
     except Exception as e:
-        print(e)
+        return {"object_id":None, "summary":None, "exception":'Failed during Data-agent intitialization.'}
+    
 
     logger.info(
             f"Current tables under the thread:{list(current_tables.values())}",
@@ -64,9 +60,8 @@ def data_agent(data_agent_query: str, current_plan_step: str):
             }
         )
     
-    emit("Data Agent retrives data.")
+    
     result = agent.invoke({"messages": [{"role": "user", "content": data_agent_query}]})
-    print(result)
     last_msg = [m for m in result["messages"] if isinstance(m, AIMessage)]
     if not last_msg:
         return agent_error('Agent returned no AImessage')
@@ -145,7 +140,4 @@ def data_agent(data_agent_query: str, current_plan_step: str):
             }
 
         )
-    print(' ')
-    print(msg)
-    print(' ')
     return msg

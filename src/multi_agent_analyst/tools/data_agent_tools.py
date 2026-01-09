@@ -48,10 +48,7 @@ def qualify_sql(sql: str, schema: str) -> str:
 
 def make_sql_query_tool():
     thread_id = current_thread_id.get()
-    print(thread_id)
-    
     def sql_query(query: str):
-        print(query)
         try:
             with agent_execution(thread_id):
                 with get_thread_conn(thread_id) as conn:
@@ -59,7 +56,6 @@ def make_sql_query_tool():
 
                     df = pd.read_sql_query(qualified_query, conn)
                     df = normalize_dataframe_types(df)
-                    print(df)
                     obj_id = object_store.save(df)
 
                     return {
@@ -72,7 +68,6 @@ def make_sql_query_tool():
                     }
 
         except Exception as e:
-            print(e)
             return {
                 "object_id": None,
                 "exception": str(e),
@@ -152,7 +147,6 @@ def make_select_columns_tool():
             }
         
         obj_id = object_store.save(result)
-        print(obj_id)
 
         return {
                 "object_id": obj_id,
