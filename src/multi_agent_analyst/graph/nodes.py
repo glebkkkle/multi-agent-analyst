@@ -160,22 +160,40 @@ def routing(state:GraphState):
     return state.desicion
 
 
-def router_for(path_map: dict):
-    allowed = set(path_map.keys())
+def router_for(path_map: dict, default: str | None = None):
+    allowed = list(path_map.keys())          # deterministic order
+    allowed_set = set(allowed)
+
+    if default is None:
+        # Prefer END if present, otherwise first non-error route, otherwise first route
+        if "END" in allowed_set:
+            default = "END"
+        else:
+            non_error = [k for k in allowed if k != "error"]
+            default = non_error[0] if non_error else allowed[0]
 
     def _route(state: GraphState):
-        # ERROR ALWAYS WINS
-        if getattr(state, "has_error", False) and "error" in allowed:
-            return "error"
+        # only go to error if an actual error flag is set
+        if getattr(state, "has_error", False):
+            return "error" if "error" in allowed_set else default
 
         d = getattr(state, "desicion", None)
-        if d in allowed:
+        if d in allowed_set:
             return d
 
-        if "error" in allowed:
-            return "error"
+        # unknown decision is a bug; log it
+        logger.warning(
+            "Router fallback hit (unknown desicion)",
+            extra={
+                "thread_id": getattr(state, "thread_id", None),
+                "desicion": d,
+                "allowed": allowed,
+                "has_error": getattr(state, "has_error", None),
+                "execution_exception": getattr(state, "execution_exception", None),
+            },
+        )
+        return default
 
-        return next(iter(allowed))
     return _route
 
 
@@ -252,6 +270,12 @@ def chat_node(state: GraphState):
             "dataset_schemas": schemas,
         }
     
+    return {
+        "desicion": "abort",
+        "message_to_user": "I couldn't classify your request reliably. Please rephrase it.",
+        "dataset_schemas": schemas,
+        "conversation_history": state.conversation_history + [{"role": "user", "content": user_msg}],
+    }
 @guarded("chat_reply")
 def chat_reply(state: GraphState):
     reply = mini.invoke(CHAT_REPLY_PROMPT.format(user_query=state.query, conversation_history=state.conversation_history, data_list=state.dataset_schemas))
@@ -259,10 +283,12 @@ def chat_reply(state: GraphState):
 
 @guarded("execution_error")
 def execution_error_node(state: GraphState):
+    details = state.execution_exception or state.message_to_user or "Unknown routing/execution error (no exception captured)."
+    
     return {
         "final_response": (
-            "I ran into a problem while executing your request."
-            f"Details: {state.execution_exception}"
+            "I ran into a problem while executing your request.\n"
+            f"Details: {details}.\n"
             "You can try rephrasing your request or choosing a different operation."
         ),
         "final_obj_id": None,

@@ -100,9 +100,15 @@ def _run_graph(thread_id: str, session_id: str, requires_user_clarification: boo
             session_store.mark_completed(thread_id, session_id)
             thread_meta.clear_active_session(thread_id)
 
-            err = str(last_event["execution_error"])
-            execution_store.mark_failed(session_id, err)
-            return {"status": "failed", "final_response": f"Internal error: {err}"}
+            payload = last_event["execution_error"]
+
+            final_response = payload.get(
+                "final_response",
+                "Internal error occurred."
+            )
+
+            execution_store.mark_failed(session_id, final_response)
+            return {"status": "failed", "final_response": final_response}
 
         # success path
         if "final_result_node" in last_event:
@@ -138,3 +144,4 @@ def run_initial_graph(thread_id: str, session_id: str):
 def clarify_graph(thread_id: str, session_id: str):
     # do NOT init store again; keep milestones and seq
     return _run_graph(thread_id, session_id, requires_user_clarification=True, init_execution_store=False)
+
