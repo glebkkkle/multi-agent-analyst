@@ -215,8 +215,6 @@ planner_query: <the cleaned version of the query>"""
 
 #No conv history needed for the second node.
 
-
-
 cleaned_query = """
 You are a Query Normalization Agent. Your job is to resolve references in the user's query.
 
@@ -235,6 +233,8 @@ Current User Request:
 2. If the query is already clear and self-contained, return it as-is
 3. If there's a pronoun but nothing in context to resolve it to, return the query as-is
 4. Don't add extra information that wasn't implied by the reference
+5. **CRITICAL**: Only resolve references within the current query. Do NOT append, merge, or combine the current query with previous context
+6. The context is for reference resolution only, not for adding additional tasks
 
 ### EXAMPLES:
 Context: User just retrieved "sales data"
@@ -243,12 +243,16 @@ Query: "visualize it" → "visualize sales data"
 Context: User just analyzed "revenue and costs"  
 Query: "create a pie chart for those" → "create a pie chart for revenue and costs"
 
+Context: User just retrieved "customer feedback"
+Query: "show me a histogram" → "show me a histogram" (no reference to resolve)
+
 Context: Empty
 Query: "analyze this" → "analyze this" (nothing to resolve to)
 
 ### OUTPUT FORMAT (JSON ONLY):
   "planner_query": "the resolved query string",
   "error": null
+
 
 If you cannot process due to content policy violations, set "planner_query" to null and provide explanation in "error".
 """

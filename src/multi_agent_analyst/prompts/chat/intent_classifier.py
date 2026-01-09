@@ -60,15 +60,26 @@ and must result in intent = "clarification", until the clear limit is provided.
 ---
 
 ### DATA SIZE GUARD
-- If result_mode == "preview" AND dataset row_count > 200:
-    - Set intent = "clarification"
-    - Set is_sufficient = false
-    - Explain that preview requests exceed the allowed size
 
-- If result_mode == "analysis" AND dataset row_count > 1000:
-    - Set intent = "clarification"
-    - Set is_sufficient = false
-    - Explain that analysis requests exceed the allowed size
+**Check for explicit row limits in the user's query (e.g., "limit 100", "first 50 rows", "top 20").**
+
+- If the user specifies an explicit limit:
+    - For preview: Allow if limit ≤ 200
+    - For analysis: Allow if limit ≤ 1000
+    - If the explicit limit exceeds these thresholds, set intent = "clarification"
+
+- If NO explicit limit is specified:
+    - If result_mode == "preview" AND dataset row_count > 200:
+        - Set intent = "clarification"
+        - Set is_sufficient = false
+        - Explain that preview requests exceed the allowed size or suggest specifying a limit
+
+    - If result_mode == "analysis" AND dataset row_count > 1000:
+        - Set intent = "clarification"
+        - Set is_sufficient = false
+        - Explain that analysis requests exceed the allowed size or suggest specifying a limit
+
+**The key rule: When user specifies a limit, validate THAT limit, not the total dataset size.**
 ---
 
 ### SUFFICIENCY DECISION
@@ -81,6 +92,7 @@ If intent is "plan":
 * `is_sufficient = true` IF:
   - Referenced dataset/columns exist (fuzzy match allowed)
   - Tool requirements are satisfied
+  - Size constraints are met (either explicit limit is valid OR dataset is within threshold)
 
 * Otherwise:
   - `intent = "clarification"`
