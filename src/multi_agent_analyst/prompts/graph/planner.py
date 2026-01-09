@@ -53,7 +53,7 @@ IMPORTANT:
 
 - sub_query MUST be **short, general natural-language requests**,  
   describing what is required, NOT execution instructions.  
-  (Example: “retrieve sales data”, not “sql_query: SELECT …”)
+  (Example: “retrieve sales data”,'Create a pie chart using feedback data.', not “sql_query: SELECT …”)
 
 - A sub_query shouldn't reference a specific tool name or tool syntax.  
   Only describe the *intent*, not the command.

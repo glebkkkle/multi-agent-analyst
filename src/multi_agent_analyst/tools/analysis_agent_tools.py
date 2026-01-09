@@ -35,8 +35,9 @@ def make_correlation_tool(df):
     def correlation():
         try:
             result = df.corr(numeric_only=True)
-            result=sanitize_for_json(result)
             table_shape=result.shape
+            result=sanitize_for_json(result)
+            
         #format exception flag properly for the controller
         except Exception as e:
             return {
@@ -84,10 +85,8 @@ def make_anomaly_tool(df):
 
             annotated_df = df.copy()
             annotated_df["outlier"] = mask.any(axis=1)
-
-            annotated_df=sanitize_for_json(annotated_df)
-
             table_shape=annotated_df.shape
+            annotated_df=sanitize_for_json(annotated_df)
 
             obj_id = object_store.save(annotated_df)
 
@@ -126,8 +125,9 @@ def make_summary_tool(df):
     def summary():
         try:
             stats = df.describe(include="all").to_dict()
-            stats = sanitize_for_json(stats)
             table_shape=stats.shape
+            stats = sanitize_for_json(stats)
+            
         except Exception as e:
             return {
                 'exception': str(e)
@@ -173,9 +173,10 @@ def make_groupby_tool(df):
                 .agg(agg_function)
                 .reset_index()
             )
+            table_shape=grouped.shape
             grouped=sanitize_for_json(grouped)
 
-            table_shape=grouped.shape
+            
 
             obj_id = object_store.save(grouped)
 
@@ -294,11 +295,12 @@ def make_filter_tool(df):
                 raise ValueError(f"Unsupported operator '{operator}'")
 
             filtered = df[mask]
+            table_shape=filtered.shape
             filtered=sanitize_for_json(filtered)
 
             obj_id = object_store.save(filtered)
 
-            table_shape=filtered.shape
+            
         except Exception as e:
             return {"exception":str(e)}
         
@@ -337,11 +339,12 @@ def make_sort_tool(df):
                 df.sort_values(column, ascending=ascending)
                   .head(limit)
             )
+            table_shape=sorted_df.shape
             sorted_df=sanitize_for_json(sorted_df)
 
             obj_id = object_store.save(sorted_df)
 
-            table_shape=sorted_df.shape
+            
             return {
                 "object_id": obj_id,
                 "details": {
