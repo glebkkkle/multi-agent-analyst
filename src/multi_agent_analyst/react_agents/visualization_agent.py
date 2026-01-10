@@ -17,12 +17,12 @@ from src.multi_agent_analyst.tools.visualization_agent_tools import (
     make_histogram_tool
 )
 from src.multi_agent_analyst.utils.utils import context, agent_error, agent_success, object_store, execution_list, ExecutionLogEntry, generate_data_preview, load_and_validate_df
-from src.backend.llm.registry import  get_mini_llm
+from src.backend.llm.registry import  get_mini_llm, get_default_llm
 from src.multi_agent_analyst.logging import logger
 from src.backend.storage.emitter import emit
 
 
-mini=get_mini_llm()
+mini=get_default_llm()
 
 @tool(description="Visualization agent returning images/tables based on query.")
 def visualization_agent(visualizer_query: str, current_plan_step: str, data_id: str):

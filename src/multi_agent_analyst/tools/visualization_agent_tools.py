@@ -123,50 +123,51 @@ def make_line_plot_tool(df):
         description="Creates a line plot. Best for trends. Specify a date/time column for x_axis.",
         args_schema=LinePlotSchema
     )
-
 def make_pie_chart_tool(df):
-    def pie_chart(column_names: List[str]):
+    def pie_chart(category_column: str, value_column: str):
+        """
+        Creates a pie chart from already-grouped/aggregated data.
+        
+        Args:
+            category_column: The categorical column (e.g., 'region', 'product')
+            value_column: The aggregated numeric column (e.g., 'total_sales', 'sum_revenue')
+        """
         try:
-            missing = [c for c in column_names if c not in df.columns]
-            if missing:
-                raise ValueError(f"Columns not found in dataframe: {', '.join(missing)}")
-
-            subset = df[column_names].select_dtypes(include=['number'])
-            values = subset.sum().astype(float).tolist()
-            labels = subset.columns.tolist()
-
-            if not values:
-                raise ValueError("None of the selected columns contain numeric data.")
-
+            if category_column not in df.columns:
+                raise ValueError(f"Column '{category_column}' not found in dataframe.")
+            if value_column not in df.columns:
+                raise ValueError(f"Column '{value_column}' not found in dataframe.")
+            if not pd.api.types.is_numeric_dtype(df[value_column]):
+                raise ValueError(f"Column '{value_column}' must be numeric.")
+            
+            # Just extract the data - no grouping here
             vis_json = {
                 "type": "visualization",
                 "plot_type": "pie_chart",
-                "labels": labels,
-                "values": values,
+                "labels": df[category_column].tolist(),
+                "values": df[value_column].tolist(),
+                "title": f"{value_column} by {category_column}"
             }
-
-            obj_id = object_store.save(vis_json)
             
+            obj_id = object_store.save(vis_json)
             return {
                 "object_id": obj_id, 
                 "status": "success",
-                "details": f"Generated pie chart for: {', '.join(labels)}", 
-                "plot_type":'Pie Chart'
+                "details": f"Generated pie chart of {value_column} by {category_column}", 
+                "plot_type": 'Pie Chart'
             }
-
         except Exception as e:
-            return{
-                 'object_id':None, 
-                    'details':'Failed',
-                    'plot_type':'pie chart',
-                    'columns':labels,
-                    'exception':str(e)               
-                }
-
+            return {
+                'object_id': None, 
+                'status': 'error',
+                'details': f'Failed: {str(e)}',
+                'plot_type': 'pie chart',
+                'exception': str(e)               
+            }
     return StructuredTool.from_function(
         func=pie_chart,
         name="pie_chart",
-        description="Creates a pie chart comparing different numeric columns. Pass a list of column names.",
+        description="Creates a pie chart from already-grouped data. Expects a categorical column and an aggregated numeric column. Data must be pre-grouped by AnalysisAgent.",
         args_schema=PieChartSchema
     )
 

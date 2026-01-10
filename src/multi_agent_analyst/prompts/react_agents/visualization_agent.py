@@ -19,11 +19,11 @@ VISUALIZATION_AGENT_PROMPT = """
    1. **scatter_plot** | **line_plot**:
       - Arguments: `x_axis` (str), `y_axis` (str)
       - Mapping: Use your analysis to assign columns to X and Y for maximum readability.
-
+      
    2. **pie_chart**:
-      - Arguments: `column_names` (List[str])
-      - Mapping: Select the numeric columns that best represent the "parts of a whole" requested.
-
+      - Arguments: (category_column: str, value_column: str)
+      - Usage: Requires pre-grouped data. The category_column contains the slice labels, 
+      and value_column contains the aggregated values.
    3. **bar_chart**:
       - Arguments: 'category_column:str', 'value_column':str
       - Mapping: List format: [Logical_Category_Column, Logical_Value_Column].

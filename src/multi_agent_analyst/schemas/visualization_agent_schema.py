@@ -16,7 +16,8 @@ class ScatterPlotSchema(BaseModel):
 
 class PieChartSchema(BaseModel):
     model_config = ConfigDict(extra="forbid")
-    column_names: List[str] = Field(..., description="The names of the target columns for the pie chart")
+    category_column:str=Field(..., description='Categorical column for the pie chart')
+    value_column : str = Field(..., description='Value column for the pie chart')
 
 class TableVisualizationSchema(BaseModel):
     model_config = ConfigDict(extra="forbid")

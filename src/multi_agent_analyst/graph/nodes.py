@@ -273,7 +273,7 @@ def chat_node(state: GraphState):
     }
 @guarded("chat_reply")
 def chat_reply(state: GraphState):
-    reply = mini.invoke(CHAT_REPLY_PROMPT.format(user_query=state.query, conversation_history=state.conversation_history, data_list=state.dataset_schemas))
+    reply = llm.invoke(CHAT_REPLY_PROMPT.format(user_query=state.query, conversation_history=state.conversation_history, data_list=state.dataset_schemas))
     return {"final_response": reply.content}
 
 @guarded("execution_error")
