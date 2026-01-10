@@ -94,7 +94,11 @@ FINAL OUTPUT (ONLY AFTER FULL DAG COMPLETION)
 Once ALL nodes are finished, return:
 {
   "object_id": <id of the last node>,
-  "summary": short, friendly explanation of what was produced for user (line plot, analysis, ect.), without heavy technical terms or list of executed steps, just produce a clean message to the user.
+  "summary": "A brief, conversational summary that:
+    - Describes what the user is seeing (e.g., 'Here's a scatter plot showing...', 'I've analyzed...')
+    - Includes ONE key insight or observation if obvious (e.g., 'There's a strong correlation...', 'Most students scored...')
+    - Avoids technical jargon (don't say 'executed', 'processed', 'aggregated')
+    - Sounds like you're explaining to a colleague, not logging steps"
   "exception": null, 
   "result_details": {
      "data_type": "analyztical" | "visual" | "retrieval",

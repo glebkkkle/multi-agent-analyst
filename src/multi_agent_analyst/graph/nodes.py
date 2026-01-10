@@ -33,7 +33,7 @@ def planner_node(state: GraphState):
     )
     
     logger.info(
-        "Planner finished",
+        f"Planner finished. Thread: {state.thread_id}",
         extra={
             "thread_id": state.thread_id,
         }
@@ -45,6 +45,7 @@ def planner_node(state: GraphState):
 
 @guarded("critic")
 def critic(state: GraphState):
+    emit('Evaluating plan...')
     response = llm.with_structured_output(CriticStucturalResponse).invoke(
         CRITIC_PROMPT.format(
             schemas=state.dataset_schemas,
@@ -312,7 +313,7 @@ def clean_query(state:GraphState):
         }
     
     logger.info(
-        "Cleaned query generated",
+        f"Cleaned query: {response.planner_query}. Thread: {state.thread_id}",
         extra={
             "thread_id":state.thread_id,
             "original_query": state.query,
