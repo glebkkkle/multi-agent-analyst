@@ -265,10 +265,13 @@ async def upload_data(file: UploadFile = File(...), user: CurrentUser = Depends(
                 raise HTTPException(400, detail=f"Table '{table_name}' already exists.")
 
     ensure_schema(thread_id)
-    create_table(thread_id, table_name, schema_dict)
-    copy_dataframe(thread_id, table_name, df)
-    source_id = register_data_source(thread_id=thread_id, table_name=table_name, filename=filename)
-
+    try:
+        create_table(thread_id, table_name, schema_dict)
+        copy_dataframe(thread_id, table_name, df)
+        source_id = register_data_source(thread_id=thread_id, table_name=table_name, filename=filename)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    
     return {"status": "success", "rows": len(df), "table_name": table_name}
 
 router = APIRouter(prefix="/api")
