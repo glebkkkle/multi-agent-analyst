@@ -4,36 +4,39 @@
 
 **Upload Data → Agents Plan → Agents Execute → Self-Heal → Deliver Insights.**
 
+
+🌐 **Live Demo:** https://agent-analyst.dev  
+
 ## **🚀 Overview**
 
 **Multi-Agent Analyst** is a next-generation data intelligence platform powered by an autonomous orchestration engine. Unlike traditional analysis tools that require constant human guidance, this system employs a swarm of specialized AI agents capable of planning complex workflows, executing SQL queries, generating statistical models, and visualizing results.
 
-The system's defining feature is its **Self-Healing Execution Loop**. If a step fails—whether due to a missing column, syntax error, or data type mismatch—the Resolver Agent intercepts the error, diagnoses the root cause, patches the instruction, and re-executes the workflow autonomously.
+The system’s defining feature is its Collaborative Agent Mesh. Rather than relying on a single model to handle an entire analysis end-to-end, it coordinates a team of specialized agents under a central Controller. The Data Agent establishes the dataset context, the Analysis Agent builds on it to compute results, and the Visualization Agent renders those results into charts—each step continuously informed by the last. This tight handoff keeps multi-step workflows coherent and avoids the context drift that makes standard chatbot pipelines unreliable.
 
 ### **🔬 Technical Highlights**
 
 * **Hybrid Neuro-Symbolic Architecture:** Combines the deterministic stability of **Graph-based orchestration** (StateGraph) with the adaptive flexibility of **ReAct (Reasoning \+ Acting)** agents. This ensures high-level plan adherence while allowing individual agents to dynamically reason through unforeseen data anomalies at the node level.  
 * **Deterministic DAG Planning:** The Planner Agent constructs a Directed Acyclic Graph (DAG) for every request, ensuring logical dependency resolution and enabling parallel task execution.  
-* **Context-Aware SQL Generation:** Dynamically maps unstructured CSV/XLSX uploads to strict SQL types, handling schema inference and index optimization on the fly.  
+* **Continuous Agent Coordination**  Multi-Agent Analyst runs as a cooperating team of specialists under a central Controller. Agents don’t take isolated turns—they operate as a coordinated pipeline, continuously sharing progress and context so each step builds directly on the last. The Controller routes work to the right specialist at the right time and carries context forward so the workflow stays coherent from ingestion → analysis → visualization.
 * **Event-Driven Architecture:** Built on a non-blocking asyncio event loop with FastAPI, utilizing WebSockets for real-time agent thought streaming to the frontend.  
-* **Sandboxed Execution:** Each analysis session runs in an isolated PostgreSQL schema container, preventing data leakage and ensuring thread-safe operations.
+* **Enterprise-Grade Security Isolation**  Each analysis session runs in a strictly isolated PostgreSQL schema namespace with scoped permissions. Isolation is enforced at the database layer (schema + role scoping), not via application-side filtering, so sessions cannot access each other’s data.
 
 ## 📸 Interface
+## 🎥 Demo
+https://github.com/user-attachments/assets/f65c16ea-8d6a-44d8-9bd7-2f51a4832958
 
-<div align="center">  
-  <img src="./imgs/d.jpg" alt="Main Dashboard" width="100%" />
 
-  <div style="display: flex; justify-content: center; gap: 10px; margin-top: 10px;">
-    <img src="./imgs/l.jpg" alt="Agent Execution Trace" width="48%" />
-    <img src="./imgs/p.jpg" alt="Generated Visualization" width="48%" />
-  </div>
-</div>
+| | |
+|---|---|
+| ![](./imgs/example5.jpg) | ![](./imgs/example2.jpg) |
+| ![](./imgs/example3.jpg) | ![](./imgs/example1.jpg) |
+
 
 ## **✨ Key Capabilities**
 
 ### **🤖 Autonomous Multi-Agent Swarm**
 
-A hierarchical agent architecture ensures tasks are handled by specialists:
+A hierarchical agent architecture ensures tasks are handled by specialists who communicate continuously:
 
 * **Planner Agent:** Deconstructs user intent into a Directed Acyclic Graph (DAG) of executable steps.  
 * **Controller Agent:** The central brain that orchestrates execution and manages state.  
@@ -111,6 +114,16 @@ The system utilizes a **Graph-Controlled ReAct Pattern**. The Controller enforce
 4. **Resolution:** \- *Resolver Agent* inspects schema, realizes the column is named transaction\_date, not date.  
    * Updates the step parameters.  
 5. **Success:** Controller re-runs the visualization step. A clean line chart is returned to the UI.
+ 
+## 🔎 Transparency & Observability (Built on Trust)
+
+Unlike black-box AI tools, Multi-Agent Analyst is designed so you can see exactly what happened during execution.
+
+You get:
+- Full execution logs for every run  
+- Step-by-step agent actions (planning → querying → analysis → visualization)  
+- Executed SQL visibility and intermediate results (where applicable)  
+- Clear failure + retry trace when self-healing is triggered  
 
 ## **🛠 Technology Stack**
 
@@ -133,16 +146,7 @@ The system utilizes a **Graph-Controlled ReAct Pattern**. The Controller enforce
 * **Interactivity:** Vanilla JS (ES6+) for minimal latency  
 * **Visualization:** Matplotlib, Base64 Stream Rendering
 
-## **🗺 Roadmap**
-
-* \[x\] **MVP Core:** Planning, Execution, Self-Repair, SQL Ingestion.  
-* \[ \] **Predictive Module:** Forecasting, Clustering, and Anomaly Detection agents.  
-* \[ \] **Model Training:** Allow agents to train lightweight SKLearn models on uploaded data.  
-* \[ \] **Plugin System:** Hot-swappable tools for external API integration.  
-* \[ \] **Visual Trace UI:** Interactive graph showing real-time agent decision trees.
-
 ## **📄 License**
 
 Distributed under the MIT License. See LICENSE for more information.
 
-• Targeted Release: Jan 2025
