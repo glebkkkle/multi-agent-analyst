@@ -23,7 +23,6 @@ APP_DATABASE_URL = (
     f"{settings.postgres_db}"
 )
 
-# Main app engine (privileged)
 engine = create_engine(
     APP_DATABASE_URL,
     pool_size=10,
@@ -41,10 +40,8 @@ agent_base_engine = create_engine(
     connect_args={'connect_timeout': 10}
 )
 
-# Strict identifier validation: lowercase, can start with letter or underscore
 SAFE_IDENTIFIER = re.compile(r"^[a-z_][a-z0-9_]*$")
 
-# Reserved words to prevent conflicts
 RESERVED_WORDS = {
     'public', 'user', 'role', 'table', 'schema', 'database',
     'current_user', 'session_user', 'none', 'default', 'all'
@@ -59,8 +56,7 @@ def validate_identifier(name: str, param_name: str) -> str:
     """
     if not name:
         raise ValueError(f"{param_name} cannot be empty")
-    
-    # Normalize to lowercase
+
     name_lower = name.lower()
     
     if name_lower in RESERVED_WORDS:
@@ -83,9 +79,6 @@ def get_thread_role_name(thread_id: str) -> str:
     return f"thread_{safe_thread_id}"
 
 
-# ----------------------------
-# Privileged raw connection (COPY)
-# ----------------------------
 
 @contextmanager
 def get_conn():
@@ -142,17 +135,14 @@ def ensure_thread_role_exists(thread_id: str) -> None:
     safe_thread_id = validate_identifier(thread_id, "thread_id")
     role_name = get_thread_role_name(thread_id)
     
-    # Quick check without locking (optimization)
     if role_exists(role_name):
         return
     
-    # Role doesn't exist, initialize the thread
     logger.warning(f"Thread role {role_name} doesn't exist. Auto-initializing thread {thread_id}")
     initialize_thread(thread_id)
 
-# ----------------------------
-# Thread initialization (ONE TIME per thread)
-# ----------------------------
+
+
 
 def initialize_thread(thread_id: str) -> None:
     """
@@ -167,24 +157,23 @@ def initialize_thread(thread_id: str) -> None:
     safe_thread_id = validate_identifier(thread_id, "thread_id")
     role_name = get_thread_role_name(thread_id)
     
-    # Generate stable lock ID from thread_id
     lock_id = hash(thread_id) % (2**31 - 1)
     
     logger.info(f"Initializing thread {thread_id} with role {role_name}")
     
     with engine.begin() as conn:
-        # Acquire advisory lock to prevent concurrent initialization
+
         conn.execute(
             text("SELECT pg_advisory_xact_lock(:lock_id)"),
             {"lock_id": lock_id}
         )
         logger.debug(f"Acquired advisory lock {lock_id} for thread {thread_id}")
         
-        # Create schema (idempotent)
+
         conn.execute(text(f'CREATE SCHEMA IF NOT EXISTS "{safe_thread_id}"'))
         logger.info(f"Schema {safe_thread_id} created/verified")
         
-        # Check if role exists (within same transaction)
+
         if not role_exists(role_name, conn):
             # Create role
             conn.execute(text(f'CREATE ROLE "{role_name}" NOLOGIN'))
@@ -192,7 +181,6 @@ def initialize_thread(thread_id: str) -> None:
         else:
             logger.info(f"Role {role_name} already exists")
         
-        # Grant usage on schema (idempotent)
         conn.execute(text(f'GRANT USAGE ON SCHEMA "{safe_thread_id}" TO "{role_name}"'))
         
         # Grant SELECT-ONLY privileges on all current tables (READ-ONLY ACCESS)
@@ -231,9 +219,7 @@ def cleanup_thread(thread_id: str) -> None:
             
     logger.info(f"Thread {thread_id} cleanup complete")
 
-# ----------------------------
-# Secure agent execution
-# ----------------------------
+
 
 @contextmanager
 def get_thread_conn(thread_id: str) -> Iterator[Connection]:
@@ -300,7 +286,6 @@ def get_thread_conn(thread_id: str) -> Iterator[Connection]:
             # Role automatically resets when connection closes
             logger.debug(f"Thread connection for {thread_id} closed")
 
-# For backward compatibility with the old API
 @contextmanager
 def agent_execution(thread_id: str) -> Iterator[None]:
     """
@@ -314,9 +299,6 @@ def agent_execution(thread_id: str) -> Iterator[None]:
     ensure_thread_role_exists(thread_id)
     yield
 
-# ----------------------------
-# Legacy compatibility helpers
-# ----------------------------
 
 def ensure_schema(schema_name: str) -> None:
     """
@@ -346,9 +328,6 @@ def global_agent_lock() -> Iterator[None]:
     """
     yield
 
-# ----------------------------
-# Data management
-# ----------------------------
 
 def create_table(schema_name: str, table_name: str, columns: Dict[str, str]) -> None:
     """

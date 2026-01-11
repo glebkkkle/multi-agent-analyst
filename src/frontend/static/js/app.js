@@ -2,7 +2,7 @@ const API_BASE = "/api";
 let waitingForClarification = false;
 
 const PUBLIC_PAGES = [
-  "/",          // landing or redirect-to-login
+  "/",          
   "/login",
   "/index.html"
 ];
@@ -31,40 +31,39 @@ const pages = document.querySelectorAll(".page");
 
 
 function initMobileKeyboard() {
-  if (window.innerWidth > 768) return; // Only on mobile
+  if (window.innerWidth > 768) return; 
 
   const input = document.getElementById('chat-input');
   if (!input) return;
 
-  // When keyboard opens
+
   input.addEventListener('focus', () => {
     isKeyboardOpen = true;
     document.body.classList.add('keyboard-open');
     
-    // Scroll to input after keyboard animation
+
     setTimeout(() => {
       input.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }, 300);
   });
 
-  // When keyboard closes
+
   input.addEventListener('blur', () => {
     isKeyboardOpen = false;
     document.body.classList.remove('keyboard-open');
   });
 
-  // Detect keyboard via viewport height changes
+
   let lastHeight = window.visualViewport ? window.visualViewport.height : window.innerHeight;
   
   const handleResize = () => {
     const currentHeight = window.visualViewport ? window.visualViewport.height : window.innerHeight;
-    
-    // Keyboard opened (height decreased significantly)
+
     if (currentHeight < lastHeight - 150) {
       isKeyboardOpen = true;
       document.body.classList.add('keyboard-open');
     }
-    // Keyboard closed (height increased significantly)
+
     else if (currentHeight > lastHeight + 150) {
       isKeyboardOpen = false;
       document.body.classList.remove('keyboard-open');
@@ -110,7 +109,6 @@ function initMobileSidebar() {
     document.body.classList.remove('sidebar-open');
   });
 
-  // Move input container to body for iOS fixed positioning fix
   if (window.innerWidth <= 900) {
     const inputContainer = document.querySelector('.input-container');
     if (inputContainer) {
@@ -126,7 +124,6 @@ function initMobileSidebar() {
 }
 
 
-// Enhanced scroll to bottom for mobile
 function scrollToBottom() {
   const messagesDiv = document.getElementById('messages');
   if (!messagesDiv) return;
@@ -135,7 +132,7 @@ function scrollToBottom() {
     messagesDiv.scrollTop = messagesDiv.scrollHeight;
   });
   
-  // If keyboard is open, ensure input stays visible
+
   if (isKeyboardOpen && window.innerWidth <= 768) {
     setTimeout(() => {
       input?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -158,7 +155,7 @@ async function authorizedFetch(url, options = {}) {
         options.headers = {};
     }
 
-    // ONLY add Authorization, do NOT override FormData headers
+
     options.headers["Authorization"] = `Bearer ${token}`;
 
     return fetch(url, options);
@@ -169,7 +166,7 @@ let activeSessionId = null;
 let pollTimer = null;
 let afterSeq = 0;
 let seenMilestoneSeq = new Set();
-let currentExecEl = null; // DOM ref for the "thinking + milestones" message
+let currentExecEl = null; 
 
 document.addEventListener("click", function (e) {
     const target = e.target.closest("#data-upload-btn");
@@ -235,7 +232,7 @@ function createExecutionMessage() {
     const img = document.createElement("img");
     img.src = "/static/imgs/wired-gradient-426-brain.svg";
     img.alt = "AI thinking";
-    img.classList.add("thinking-brain"); // ← Make sure this class is here!
+    img.classList.add("thinking-brain");
     
     img.onerror = function() {
         console.error("Brain icon failed to load");
@@ -320,7 +317,7 @@ async function pollExecution(sessionId) {
             pollTimer = setTimeout(() => pollExecution(sessionId), 300);
             return;
         }
-        // Terminal-ish states (stop polling)
+
         stopPolling();
 
         // Convert the "Thinking…" message into final response
@@ -339,7 +336,7 @@ async function pollExecution(sessionId) {
         // Completed/failed/aborted
         waitingForClarification = false;
 
-        // ✅ THIS IS THE MISSING PIECE:
+
         await renderFinalArtifactIfAny(snap);
 
         return;
@@ -439,12 +436,12 @@ navItems.forEach(item => {
             pageEl.classList.add("active");
         }
 
-        // ✅ ADD THESE 3 LINES:
+
         if (window.innerWidth <= 900) {
             document.body.classList.remove("sidebar-open");
         }
 
-        // Show/hide input container based on page (mobile fix)
+
         const inputContainer = document.querySelector('.input-container');
         if (inputContainer) {
             inputContainer.style.display = (pageName === "chat") ? "" : "none";
@@ -470,7 +467,7 @@ const chatPage = document.getElementById("chat-page");
 
 if (chatPage) {
   chatPage.addEventListener("click", e => {
-    if (window.innerWidth <= 900) return; // Don't auto-focus on mobile
+    if (window.innerWidth <= 900) return; 
     
     if (e.target.closest("#chat-input") || 
         e.target.closest("#send-btn") ||
@@ -628,7 +625,7 @@ function addMessage(text, sender) {
     scrollToBottom();
 }
 function addDataTable(data, metadata = {}) {
-    // 1. HARD LIMIT - Set your max rows here
+
     const MAX_ROWS = 100; 
     
     const wrapper = document.createElement("div");
@@ -641,15 +638,13 @@ function addDataTable(data, metadata = {}) {
     const content = document.createElement("div");
     content.classList.add("message-content");
 
-    // DEBUG: Check what the data looks like in the console
     console.log("Table Data Received:", data);
 
-    // 2. DATA NORMALIZATION
-    // Ensure we are working with an array. If backend returns {data: [...]}, extract it.
+
     let rows = Array.isArray(data) ? data : (data && data.data ? data.data : []);
 
     if (rows.length > 0) {
-        // 3. APPLY HARD SLICE IMMEDIATELY
+
         const displayData = rows.slice(0, MAX_ROWS); // This forces the limit
 
         const tableContainer = document.createElement("div");
@@ -658,7 +653,7 @@ function addDataTable(data, metadata = {}) {
         const table = document.createElement("table");
         const keys = Object.keys(displayData[0]);
 
-        // Build Header
+ 
         const thead = document.createElement("thead");
         const headerRow = document.createElement("tr");
         keys.forEach(key => {
@@ -669,7 +664,7 @@ function addDataTable(data, metadata = {}) {
         thead.appendChild(headerRow);
         table.appendChild(thead);
 
-        // Build Body (Limited to displayData)
+
         const tbody = document.createElement("tbody");
         displayData.forEach(row => {
             const tr = document.createElement("tr");
@@ -684,7 +679,6 @@ function addDataTable(data, metadata = {}) {
         tableContainer.appendChild(table);
         content.appendChild(tableContainer);
 
-        // FOOTER REMOVED PER REQUEST
 
     } else {
         content.textContent = "No displayable data found.";
@@ -723,8 +717,6 @@ function addImage(base64OrBlob) {
 function renderVisualization(vis) {
     console.log("VIS RECEIVED:", vis);
 
-    // vis from backend is already the spec:
-    // { type: "visualization", plot_type: "scatter", x: [...], y: [...], ... }
     const spec = vis;
 
     const wrapper = document.createElement("div");
@@ -790,7 +782,7 @@ switch (spec.plot_type) {
 
     case "histogram":
         plotData = [{
-            x: spec.x, // Now matches the 'x' key from Python
+            x: spec.x, 
             type: "histogram",
             marker: {
                 color: "#60a5fa",
@@ -857,7 +849,6 @@ switch (spec.plot_type) {
             }
         }];
 }
-    // ---------- LAYOUT (enhanced dark theme with beautiful styling) ----------
     const layout = {
         title: {
             text: spec.title,
@@ -946,7 +937,6 @@ switch (spec.plot_type) {
         modeBarButtonsToRemove: ['lasso2d', 'select2d']
     };
 
-    // IMPORTANT: use plotData here, not "data"
     Plotly.newPlot(container, plotData, layout, config);
 }
 function addLoadingIndicator() {
@@ -1016,16 +1006,14 @@ async function sendMessage() {
 
     const isClarify = waitingForClarification;
 
-    // ✅ New message: create new exec bubble + reset seq tracking
-    // ✅ Clarify: reuse existing exec bubble + keep seq tracking
+
     if (!isClarify) {
         currentExecEl = createExecutionMessage();
         stopPolling();
         afterSeq = 0;
         seenMilestoneSeq = new Set();
     } else {
-        // optional: show you resumed
-        // appendMilestone(currentExecEl, { seq: afterSeq + 1, label: "Resuming…", ts: Date.now()/1000 });
+
         stopPolling();
     }
 
@@ -1050,7 +1038,6 @@ async function sendMessage() {
             stopPolling();
             waitingForClarification = false;
 
-            // Replace exec header if exists
             if (currentExecEl) {
                 setExecutionHeader(
                     currentExecEl,
@@ -1074,8 +1061,7 @@ async function sendMessage() {
         const data = await resp.json();
 
         activeSessionId = data.session_id;
-        // important: don't force waitingForClarification=false here;
-        // polling will set it based on snap.status
+
         pollExecution(activeSessionId);
 
     } catch (error) {
@@ -1140,7 +1126,7 @@ input.addEventListener("keypress", e => {
 
 window.addEventListener("load", () => {
     // Initialize mobile features
-    initMobileSidebar();     // ← ADD THIS LINE
+    initMobileSidebar();     
     initMobileKeyboard();
     
     // Only auto-focus on desktop

@@ -38,7 +38,6 @@ def make_correlation_tool(df):
             table_shape=result.shape
             result=sanitize_for_json(result)
             
-        #format exception flag properly for the controller
         except Exception as e:
             return {
                 'exception': str(e)
@@ -155,11 +154,11 @@ def make_groupby_tool(df):
             if group_column not in df.columns:
                 raise ValueError(f"Group column '{group_column}' does not exist in the dataframe.")
 
-            # Validate aggregation column
+
             if agg_column not in df.columns:
                 raise ValueError(f"Aggregation column '{agg_column}' does not exist in the dataframe.")
 
-            # Validate aggregation function
+
             allowed = ["mean", "sum", "count", "min", "max"]
             if agg_function not in allowed:
                 raise ValueError(
@@ -167,7 +166,7 @@ def make_groupby_tool(df):
                     f"Allowed: {allowed}"
                 )
 
-            # Perform grouping
+
             grouped = (
                 df.groupby(group_column)[agg_column]
                 .agg(agg_function)
@@ -180,7 +179,7 @@ def make_groupby_tool(df):
 
             obj_id = object_store.save(grouped)
 
-            # Build details
+
             details = {
                 "group_column": group_column,
                 "agg_column": agg_column,
@@ -441,7 +440,3 @@ def make_distribution_tool(df):
         args_schema=DistributionSchema,
     )
 
-
-#might wanna add the previous exceptions/repairs along to the resolver agent, so he doesnt try the same fix twice but rethink its approach if failing, along with limits 
-
-#making consistent format for tool outputs (always returning dataframe, but modified for example)

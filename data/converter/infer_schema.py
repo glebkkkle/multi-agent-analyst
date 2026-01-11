@@ -6,8 +6,6 @@ def infer_schema(df: pd.DataFrame) -> Dict[str, str]:
 
     for col in df.columns:
         series = df[col]
-
-        # Handle duplicate column names
         if isinstance(series, pd.DataFrame):
             series = series.iloc[:, 0]
 

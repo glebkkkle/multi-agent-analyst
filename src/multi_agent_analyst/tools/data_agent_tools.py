@@ -38,7 +38,6 @@ def qualify_sql(sql: str, schema: str) -> str:
     Naively qualifies unqualified table names with the thread schema.
     Assumes simple SELECTs (which is exactly your agent use case).
     """
-    # Example: FROM radial_data → FROM "thread_21".radial_data
     return re.sub(
         r'FROM\s+([a-zA-Z_][a-zA-Z0-9_]*)',
         rf'FROM "{schema}".\1',

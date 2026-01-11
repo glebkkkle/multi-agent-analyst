@@ -117,7 +117,7 @@ class RedisExecutionStore:
         }
 
         if reset_clock:
-            mapping["started_at"] = now   # ⏱️ reset execution timer
+            mapping["started_at"] = now  
 
         self.r.hset(self._key(session_id), mapping=mapping)
 
@@ -186,6 +186,6 @@ class RedisExecutionStore:
             "final_obj_id": data.get("final_obj_id", ""),
             "final_table_shape": data.get("final_table_shape", ""),
             "milestones": new_milestones,
-            "started_at": float(data.get("started_at", 0)),  # ✅ ADD
+            "started_at": float(data.get("started_at", 0)), 
             "updated_at": float(data.get("updated_at", 0)),
         }

@@ -204,17 +204,6 @@ Output ONLY the final cleaned instruction in the form:
 planner_query: <the cleaned version of the query>"""
 
 
-#first cleaning node.
-#Task: Reconstruct the query if needed (resolve references like it, that and so on)
-#rewrite the query cleanly for the planner, but not reformulating the task. Only making the query machine-readable as instruction without changing the intent.
-#perhaps this node should set the limit for the data, retrival limits as before (no more than 200)
-
-#Second node. Validity Check
-#Has access to the dataset schemas. Check if referenced data existsts (if the user mentioned the data at all, if not - clarify)
-#Check if the request satisfies tools definitions (vis, analysis)
-
-#No conv history needed for the second node.
-
 cleaned_query = """
 You are a Query Normalization Agent. Your job is to resolve references in the user's query.
 
@@ -252,7 +241,6 @@ Query: "analyze this" → "analyze this" (nothing to resolve to)
 ### OUTPUT FORMAT (JSON ONLY):
   "planner_query": "the resolved query string",
   "error": null
-
 
 If you cannot process due to content policy violations, set "planner_query" to null and provide explanation in "error".
 """

@@ -68,8 +68,7 @@ def make_histogram_tool(df):
             vis_json = {
                 "type": "visualization",
                 "plot_type": "histogram",
-                "title": f"Distribution of {selected_col}", # Added title
-                "x": plot_data,  # Changed 'data' to 'x' to match your other tools
+                "x": plot_data,  
                 "labels": {"x": selected_col, "y": "Frequency"},
             }
             
@@ -140,7 +139,6 @@ def make_pie_chart_tool(df):
             if not pd.api.types.is_numeric_dtype(df[value_column]):
                 raise ValueError(f"Column '{value_column}' must be numeric.")
             
-            # Just extract the data - no grouping here
             vis_json = {
                 "type": "visualization",
                 "plot_type": "pie_chart",
@@ -181,12 +179,12 @@ def make_bar_chart_tool(df):
             if not pd.api.types.is_numeric_dtype(df[value_column]):
                 raise ValueError(f"Column '{value_column}' must be numeric.")
             
-            # Extract the actual data, not just column names
+
             vis_json = {
                 "type": "visualization",
                 "plot_type": "bar",
-                "x": df[category_column].tolist(),  # Convert to actual data
-                "y": df[value_column].tolist(),     # Convert to actual data
+                "x": df[category_column].tolist(), 
+                "y": df[value_column].tolist(),  
                 "title": f"{value_column} by {category_column}",
                 "labels": {
                     "x": category_column,

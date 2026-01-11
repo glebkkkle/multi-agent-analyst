@@ -1,12 +1,3 @@
-#Suppose a step during execution fails. Tool retruned exception, and the agent retruned that issue to the controller. The resolver, based on the log and
-#previous fixes, should realize the issue and return the correction back to the controller.I think the corrected step should only include fixed subquery, respective agent and no edge fixes whatsoever. Controller should stay consistent with the original plan (if not aborted), but with a new fix. So essentially, reruning the plan from the specific failing point with the corrected information.
-#Must be carefull with the object ids though. Since rerun might happen not from the beginning, a specific id might be needed from prev step.
-
-
-
-#A new resolver behaivour, that UPDATES the DAG, instead of fixing a single step. Adjustments in prompts for controller and resolver are needed
-#Also adjustments to schema for resolver 
-#also apply limits on the amount of repairs, so to not end up in the infinte loop of repairs 
 
 RESOLVER_AGENT_PROMPT="""
 You are the Resolver Agent in a multi-step execution system.
@@ -96,14 +87,3 @@ Do NOT output anything outside this JSON.
 Current Log:
 {log}
 """
-
-#perhaps prompt the planner better 
-#modify the resolver
-#add stable analysis tools
-
-
-#analysis would still render all of the tables regardless of the constraints
-
-
-#analysis agent should perhaps have an idea about the date or other identifier within the dataset.
-#agents have pretty much no idea about the data they are working with, which makes them practically blind. 

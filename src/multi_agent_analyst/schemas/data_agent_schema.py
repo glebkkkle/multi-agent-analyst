@@ -17,7 +17,6 @@ class MergeTablesSchema(BaseModel):
 class ListDataSchema(BaseModel):
     pass
 
-
 class ExternalAgentSchema(BaseModel):
     object_id:Optional[str]=Field(..., description='A final ID of the object after all the modification completed.')
     summary:Optional[str]=Field(..., description='A short summary of steps peformed and final result')

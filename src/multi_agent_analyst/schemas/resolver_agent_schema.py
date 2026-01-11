@@ -9,8 +9,6 @@ class ResolverOutput(BaseModel):
     object_id:Optional[str]=None
     reason: str
 
-#a better schema needed for the resolver, with actual concrete fixes 
-#changing the prompting both to the controller and resolver 
 class NewResolverOuput(BaseModel):
     action:Literal['retry_with_fixed_step', 'abort']
     agent:str=None

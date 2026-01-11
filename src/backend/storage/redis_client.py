@@ -12,10 +12,9 @@ redis_client = redis.Redis(
     decode_responses=True,
 )
 
-# Redis Stack for LangGraph checkpointing
 REDIS_CHECKPOINTER_URL = (
     f"redis://{settings.redis_checkpointer_host}:"
-    f"{settings.redis_checkpointer_port}/"  # ← Change from redis_app_port to redis_checkpointer_port
+    f"{settings.redis_checkpointer_port}/" 
     f"{settings.redis_checkpointer_db}"
 )
 

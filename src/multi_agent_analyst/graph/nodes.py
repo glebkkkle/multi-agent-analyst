@@ -164,7 +164,6 @@ def router_for(path_map: dict, default: str | None = None):
     allowed_set = set(allowed)
 
     if default is None:
-        # Prefer END if present, otherwise first non-error route, otherwise first route
         if "END" in allowed_set:
             default = "END"
         else:
@@ -172,7 +171,6 @@ def router_for(path_map: dict, default: str | None = None):
             default = non_error[0] if non_error else allowed[0]
 
     def _route(state: GraphState):
-        # only go to error if an actual error flag is set
         if getattr(state, "has_error", False):
             return "error" if "error" in allowed_set else default
 
@@ -180,7 +178,6 @@ def router_for(path_map: dict, default: str | None = None):
         if d in allowed_set:
             return d
 
-        # unknown decision is a bug; log it
         logger.warning(
             "Router fallback hit (unknown desicion)",
             extra={
@@ -236,7 +233,7 @@ def chat_node(state: GraphState):
                 "message_to_user":intent.missing_info
                 }
 
-    # 🔒 GUARD: insufficient information
+
     if intent.intent == "clarification" and intent.is_sufficient == False:
         new_history = state.conversation_history + [
         {"role":'user', "content":user_msg},

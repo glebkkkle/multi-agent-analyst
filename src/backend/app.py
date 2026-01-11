@@ -12,7 +12,6 @@ from uuid import uuid4
 from datetime import timedelta
 from contextlib import asynccontextmanager
 from dotenv import load_dotenv
-# DB Imports
 from src.multi_agent_analyst.db.db_core import (
     engine, 
     get_conn, 
@@ -26,7 +25,6 @@ from src.multi_agent_analyst.db.loaders import load_user_tables
 from src.multi_agent_analyst.utils.utils import object_store
 import numpy as np 
 
-# Internal App Imports
 from src.backend.langgraph_runner.executor import run_initial_graph, clarify_graph
 from data.converter.reader import read_file
 from data.converter.infer_schema import infer_schema
@@ -340,7 +338,6 @@ def register_raw(data: LoginRequest):
 
             conn.commit()
     
-    # ✅ Initialize thread schema with proper security
     from src.multi_agent_analyst.db.db_core import initialize_thread
     initialize_thread(thread_id)
 

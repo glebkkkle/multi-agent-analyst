@@ -19,21 +19,22 @@ services:
       retries: 5
     volumes:
       - redis-stack-data:/data
-    # ❌ no ports in prod unless you actually need Redis UI
 
   postgres:
     image: postgres:16
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U glebkle -d multi_analyst"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 10s
       timeout: 5s
       retries: 5
     environment:
-      POSTGRES_DB: multi_analyst
-      POSTGRES_USER: glebkle
-      POSTGRES_PASSWORD: 123
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER} 
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD} 
     volumes:
       - postgres-data:/var/lib/postgresql/data
+    env_file:
+      - .env
 
   backend:
     build:
@@ -53,21 +54,20 @@ services:
       REDIS_CHECKPOINTER_PORT: 6379
       POSTGRES_HOST: postgres
       POSTGRES_PORT: 5432
-      POSTGRES_DB: multi_analyst
-      POSTGRES_USER: glebkle
-      POSTGRES_PASSWORD: 123
-      JWT_SECRET_KEY: RANDKEY123
-      JWT_ALGORITHM: HS256
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD} 
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY} 
+      JWT_ALGORITHM: ${JWT_ALGORITHM}
       JWT_ACCESS_TOKEN_EXPIRE_MINUTES: 1440
-     # ❌ no ports in prod
     env_file:
       - .env
+
   landing:
     build: ./src/frontend/landing
     environment:
       NODE_ENV: production
       NEXT_PUBLIC_API_URL: /api
-    # ❌ no ports in prod
 
   proxy:
     image: caddy:2

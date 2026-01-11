@@ -3,8 +3,6 @@ from src.multi_agent_analyst.graph.nodes import planner_node, router_for, final_
 from src.multi_agent_analyst.graph.states import GraphState
 from src.backend.storage.redis_client import checkpointer
 
-
-
 graph = StateGraph(GraphState)
 
 graph.add_node('planner', planner_node)
@@ -22,7 +20,7 @@ graph.add_node('final_result_node', final_result_node)
 
 clean_query_map = {
     'chat_node': 'chat_node',
-    'abort': 'final_result_node',  # If cleaning fails
+    'abort': 'final_result_node', 
 }
 graph.set_entry_point('clean_query')
 

@@ -15,7 +15,6 @@ execution_store=RedisExecutionStore(redis_client)
 
 def _run_graph(thread_id: str, session_id: str, requires_user_clarification: bool, init_execution_store: bool):
     MAX_EXECUTION_SECONDS = 180  
-    # Only init the execution_store once per session (new message)
     if init_execution_store:
         execution_store.init_session(session_id)
     else:
@@ -112,7 +111,6 @@ def _run_graph(thread_id: str, session_id: str, requires_user_clarification: boo
             session_store.mark_completed(thread_id, session_id)
             thread_meta.clear_active_session(thread_id)
 
-            # Your final_result_node looks like dict with final_response etc.
             result = last_event["final_result_node"]
 
             execution_store.mark_done(session_id, {
@@ -132,13 +130,11 @@ def _run_graph(thread_id: str, session_id: str, requires_user_clarification: boo
         return {"status": "failed", "final_response": "The system ended in an unexpected state."}
 
     finally:
-        # Hygiene: clear emitter so this task doesn't leak it
         clear_emitter()
 
 def run_initial_graph(thread_id: str, session_id: str):
     return _run_graph(thread_id, session_id, requires_user_clarification=False, init_execution_store=True)
 
 def clarify_graph(thread_id: str, session_id: str):
-    # do NOT init store again; keep milestones and seq
     return _run_graph(thread_id, session_id, requires_user_clarification=True, init_execution_store=False)
 

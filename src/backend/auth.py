@@ -57,10 +57,10 @@ def decode_access_token(token: str) -> TokenData:
             detail="Could not validate credentials",
         )
 
-# 2. Refactor the DB helper to use a context manager
+
 def get_user_by_id(user_id: int) -> Optional[CurrentUser]:
     """Retrieves user info using a pooled connection."""
-    # Use 'with' to ensure the connection returns to the pool automatically
+
     with get_conn() as conn:
         with conn.cursor() as cur:
             cur.execute("SELECT id, email, thread_id FROM users WHERE id = %s", (user_id,))

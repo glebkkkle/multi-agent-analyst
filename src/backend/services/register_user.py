@@ -3,7 +3,6 @@ import uuid
 from src.multi_agent_analyst.db.db_core import get_conn 
 
 def register_user(email: str, password: str):
-    # 2. Use a context manager for the connection
     with get_conn() as conn:
         with conn.cursor() as cur:
             # Hash password
@@ -36,6 +35,3 @@ def register_user(email: str, password: str):
                 conn.rollback() # Roll back if the insert fails (e.g., duplicate email)
                 print(f"Error registering user: {e}")
                 raise e
-
-# Example usage:
-# register_user("test@example.com", "mysecurepass")
