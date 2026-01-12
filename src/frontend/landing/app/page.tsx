@@ -491,7 +491,7 @@ export default function LandingPage() {
         <ul className="space-y-2 text-sm text-muted-foreground">
           <li>
             <a 
-              href="www.linkedin.com/in/hlib-klymenko-6b5b18290" 
+              href="https:/www.linkedin.com/in/hlib-klymenko-6b5b18290" 
               target="_blank"
               rel="noopener noreferrer"
               className="hover:text-foreground transition-colors"
