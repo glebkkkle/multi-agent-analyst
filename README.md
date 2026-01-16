@@ -138,7 +138,7 @@ You get:
 
 * **Database:** PostgreSQL (with dynamic schema generation)  
 * **Caching & State:** Redis  
-* **Storage:** MinIO / Local Object Store
+* **Storage:** MinIO / Redis
 
 ### **Frontend Experience**
 
